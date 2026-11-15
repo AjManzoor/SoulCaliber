@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cedicttn7nwwj"
-path="res://.godot/imported/Default.png-e1ea3ee9a22ae464ad61a930710859a9.ctex"
+path="res://.godot/imported/Default.png-f30c3184bc29c844afff9fa7d54d4f5e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Images/Nobunogi/Default.png"
-dest_files=["res://.godot/imported/Default.png-e1ea3ee9a22ae464ad61a930710859a9.ctex"]
+source_file="res://Images/NOBUNOGI/Default.png"
+dest_files=["res://.godot/imported/Default.png-f30c3184bc29c844afff9fa7d54d4f5e.ctex"]
 
 [params]
 

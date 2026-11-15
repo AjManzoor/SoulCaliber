@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://r0wtnm7y04ac"
-path="res://.godot/imported/Flattered.png-d71ba5967c9719f505b52934084bf36e.ctex"
+path="res://.godot/imported/Flattered.png-89d1878346c51a3a0a544c4c05101e88.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Images/Nobunogi/Flattered.png"
-dest_files=["res://.godot/imported/Flattered.png-d71ba5967c9719f505b52934084bf36e.ctex"]
+source_file="res://Images/NOBUNOGI/Flattered.png"
+dest_files=["res://.godot/imported/Flattered.png-89d1878346c51a3a0a544c4c05101e88.ctex"]
 
 [params]
 

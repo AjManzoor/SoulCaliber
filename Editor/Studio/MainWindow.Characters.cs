@@ -17,24 +17,7 @@ public partial class MainWindow
     private bool _characterDirty;
     private bool _reactionDirty;
 
-    private static readonly string[] CommonReactionKeys =
-    [
-        "ACCEPTING", "AMUSED", "ANGRY", "COLD", "CONSIDERING", "DISMISSIVE",
-        "FLATTERED", "IMPRESSED", "INTERESTED", "INTIMIDATED", "OFFENDED",
-        "PLEASED", "RECEPTIVE", "REFLECTIVE", "RELIEVED", "SUSPICIOUS",
-        "UNIMPRESSED", "UNINTERESTED", "UNMOVED", "WARM", "WARY"
-    ];
-
-    private void WireCharacterEditorEvents()
-    {
-        // ComboBox.SelectionChanged does not fire while typing a *new* reaction key.
-        // Listen for the inner editable TextBox so leaving the form cannot lose it.
-        ReactionKeyBox.AddHandler(System.Windows.Controls.Primitives.TextBoxBase.TextChangedEvent,
-            new TextChangedEventHandler(ReactionKey_TextChanged), handledEventsToo: true);
-    }
-
-    private void ReactionKey_TextChanged(object sender, TextChangedEventArgs e) =>
-        ReactionField_Changed(sender, e);
+    private void WireCharacterEditorEvents() { /* Reaction keys come from the catalogue; no free typing. */ }
 
     private void InitCharacters(string dbPath)
     {
@@ -43,7 +26,7 @@ public partial class MainWindow
         _characterLoading = true;
         try
         {
-            ReactionKeyBox.ItemsSource = CommonReactionKeys;
+            ReactionKeyBox.ItemsSource = _designer?.ReactionTypes().Select(x => x.Key).ToArray() ?? [];
             string? baseFolder = Path.GetDirectoryName(dbPath);
             string? parent = baseFolder is null ? null : Directory.GetParent(baseFolder)?.FullName;
             string? candidate = parent is null ? null : Path.Combine(parent, "Game");
@@ -116,8 +99,8 @@ public partial class MainWindow
     private void PopulateReaction(Reaction? reaction)
     {
         _activeReaction = reaction;
-        ReactionKeyBox.IsReadOnly = reaction is not null;
-        ReactionKeyBox.Text = reaction?.ReactionKey ?? "";
+        ReactionKeyBox.IsEnabled = reaction is null && _activeCharacter is not null;
+        ReactionKeyBox.SelectedItem = reaction?.ReactionKey;
         ReactionPathBox.Text = reaction?.ImagePath ?? "";
         RefreshReactionPreview();
     }
@@ -275,7 +258,7 @@ public partial class MainWindow
         {
             CharacterReactionList.SelectedItem = null;
             PopulateReaction(null);
-            CharacterStatus.Text = "New reaction: enter a key (e.g. AMUSED), import an image, then Save reaction.";
+            CharacterStatus.Text = "New reaction: choose a catalogue key, import an image, then Save reaction.";
         }
         finally { _characterLoading = false; }
     }
@@ -289,7 +272,7 @@ public partial class MainWindow
         }
         try
         {
-            string key = ReactionKeyBox.Text.Trim().ToUpperInvariant();
+            string key = ReactionKeyBox.SelectedItem as string ?? "";
             _characterStore.SaveReaction(_activeCharacter.Id, key, ReactionPathBox.Text, _activeReaction is not null);
             _reactionDirty = false;
             RefreshCharacterReactions(key);
@@ -320,14 +303,11 @@ public partial class MainWindow
         _designerLoading = true;
         try
         {
-            string? host = InteractionHostBox.SelectedItem as string;
             string? speaker = LineCharacterBox.SelectedItem as string;
             string? other = LineVisitorBox.SelectedItem as string;
             var ids = _designer.Characters();
-            InteractionHostBox.ItemsSource = ids;
             LineCharacterBox.ItemsSource = ids;
             LineVisitorBox.ItemsSource = new[] { "" }.Concat(ids).ToList();
-            InteractionHostBox.SelectedItem = host;
             LineCharacterBox.SelectedItem = speaker;
             LineVisitorBox.SelectedItem = other ?? "";
         }
@@ -424,6 +404,100 @@ public partial class MainWindow
         ReactionPortraitStatus.Text = preview.Status;
     }
 
+    private void GenerateDefaultPortraitPaths_Click(object sender, RoutedEventArgs e)
+    {
+        if (_characterStore is null || _activeCharacter is null)
+        {
+            MessageBox.Show(this, "Save and select a character first.", "Character required");
+            return;
+        }
+        if (_characterDirty || _reactionDirty)
+        {
+            MessageBox.Show(this, "Save your current character and reaction edits before generating database paths.",
+                "Unsaved changes", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        string folder = CharacterStudioStore.PortraitFolder(_activeCharacter.Id);
+        var decision = MessageBox.Show(this,
+            $"Generate portrait paths for {_activeCharacter.Name}?\n\n" +
+            $"Folder: {folder}\n" +
+            $"Default.png, Win.png, Lose.png and {_designer?.ReactionTypes().Count ?? 0} catalogue reactions.\n\n" +
+            "YES = fill empty paths only (preserve all custom paths)\n" +
+            "NO = overwrite all these paths with standard names\n" +
+            "CANCEL = make no changes\n\n" +
+            "Missing actual PNG files will remain publishing warnings, not errors.",
+            "Generate default paths", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        if (decision == MessageBoxResult.Cancel) return;
+        try
+        {
+            int changed = _characterStore.GenerateDefaultPortraitPaths(_activeCharacter.Id,
+                _designer?.ReactionTypes().Select(x => x.Key).ToArray() ?? [], overwrite: decision == MessageBoxResult.No);
+            string id = _activeCharacter.Id;
+            RefreshCharacters(id);
+            CharacterStatus.Text = $"Generated {changed} character/reaction database record update(s) for {id}. " +
+                "A SQLite backup was created; check portrait previews for missing PNGs.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Portrait generation failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void StandardisePortraitFolders_Click(object sender, RoutedEventArgs e)
+    {
+        if (_characterStore is null) return;
+        if (!CanLeaveTable() || !DesignerCanSwitch()) return;
+        if (_godotRoot is null)
+        {
+            MessageBox.Show(this, "Select the Godot project.godot file first.", "Godot project required");
+            return;
+        }
+        if (_characterDirty || _reactionDirty)
+        {
+            MessageBox.Show(this, "Save all character and reaction edits before migrating artwork folders.",
+                "Unsaved edits", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        try
+        {
+            var preview = _characterStore.PreviewPortraitFolderMigration(_godotRoot);
+            if (preview.Changes.Count == 0)
+            {
+                MessageBox.Show(this, "All configured portrait directories already match the character IDs.",
+                    "No changes needed", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            string summary = string.Join("\n", preview.Changes.Select(p =>
+                $"{p.CharacterId}: Images/{p.OldFolder} -> Images/{p.NewFolder}" +
+                (p.ActualSourceFolder is null ? " [source folder not found]" : "") +
+                (p.Conflict is null ? "" : " [CONFLICT: " + p.Conflict + "]")));
+            string warningText = preview.Warnings.Count == 0 ? "" :
+                "\n\nWarnings:\n" + string.Join("\n", preview.Warnings.Take(10));
+            var confirmed = MessageBox.Show(this,
+                "This one-time migration will rename portrait folders and update explicit paths in " +
+                "Characters, ReactionImages, Lines and Godot text resources (.tscn/.tres/etc.).\n\n" +
+                summary + "\n\n" +
+                $"References: {preview.DatabaseReferences} database paths; " +
+                $"{preview.ResourceFiles} Godot text files." + warningText + "\n\n" +
+                "BEFORE CONTINUING: close the Godot editor and running game, and keep a copy of your Godot project. " +
+                "Studio creates a SQLite backup and copies modified Godot text resources to StudioBackups.\n\n" +
+                "Proceed with the migration?",
+                "Standardise portrait folder names", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (confirmed != MessageBoxResult.Yes) return;
+            string report = _characterStore.StandardisePortraitFolders(_godotRoot);
+            RefreshCharacters(_activeCharacter?.Id);
+            CharacterStatus.Text = report + " Restart Godot to re-import the moved images.";
+            MessageBox.Show(this, report + "\n\nReopen Godot and check several portraits. " +
+                "If you previously referenced these images by paths outside SQLite/standard Godot resources, " +
+                "review those references too.", "Folder migration complete", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Folder migration stopped", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void CheckPortraits_Click(object sender, RoutedEventArgs e)
     {
         if (_activeCharacter is null || _characterStore is null)
@@ -484,17 +558,22 @@ public partial class MainWindow
             string extension = Path.GetExtension(source).ToLowerInvariant();
             if (extension is not (".png" or ".jpg" or ".jpeg" or ".webp" or ".bmp"))
                 throw new InvalidOperationException("Only PNG, JPG, WebP or BMP images can be assigned.");
+            string directory = Path.Combine(_godotRoot, "Images", id);
+            Directory.CreateDirectory(directory);
+            string stateKey = state == "Reaction" ? ReactionKeyBox.SelectedItem as string ?? "" : state;
+            if (string.IsNullOrWhiteSpace(stateKey) || stateKey.Any(c =>
+                    !char.IsAsciiLetterOrDigit(c) && c != '_'))
+                throw new InvalidOperationException("Enter a valid reaction key before importing its portrait.");
+            string canonical = Path.GetFileNameWithoutExtension(
+                CharacterStudioStore.FilenameForState(stateKey)) + extension;
             string target = source;
-            if (!WithinRoot(_godotRoot, source))
+            // Assets inside another image folder are copied into the character-ID folder too.
+            if (!string.Equals(Path.GetDirectoryName(source), directory, StringComparison.OrdinalIgnoreCase))
             {
-                // Import without overwriting any existing asset. Files are copied now;
-                // save the matching character/reaction DB record separately.
-                string directory = Path.Combine(_godotRoot, "Images", id);
-                Directory.CreateDirectory(directory);
-                string stateKey = state == "Reaction" ? ReactionKeyBox.Text.Trim().ToUpperInvariant() : state.ToUpperInvariant();
-                if (stateKey.Length == 0 || stateKey.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '_'))
-                    throw new InvalidOperationException("Enter a valid reaction key before importing its portrait.");
-                target = Path.Combine(directory, $"{stateKey}_{Guid.NewGuid():N}{extension}");
+                target = Path.Combine(directory, canonical);
+                if (File.Exists(target))
+                    target = Path.Combine(directory,
+                        Path.GetFileNameWithoutExtension(canonical) + "_" + Guid.NewGuid().ToString("N") + extension);
                 File.Copy(source, target, overwrite: false);
             }
             string path = "res://" + Path.GetRelativePath(_godotRoot, target).Replace('\\', '/');

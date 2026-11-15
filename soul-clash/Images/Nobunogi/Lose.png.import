@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cm6vx2g612kce"
-path="res://.godot/imported/Lose.png-ab0fcc5cdfe23e887608521e0ab12ae5.ctex"
+path="res://.godot/imported/Lose.png-44f0e420c6e9b1dec14920082e89dfca.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Images/Nobunogi/Lose.png"
-dest_files=["res://.godot/imported/Lose.png-ab0fcc5cdfe23e887608521e0ab12ae5.ctex"]
+source_file="res://Images/NOBUNOGI/Lose.png"
+dest_files=["res://.godot/imported/Lose.png-44f0e420c6e9b1dec14920082e89dfca.ctex"]
 
 [params]
 

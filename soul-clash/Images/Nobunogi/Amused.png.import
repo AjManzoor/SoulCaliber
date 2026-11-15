@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cs1mp7cvm0qxc"
-path="res://.godot/imported/Amused.png-3ad9471c8895299066994d2db43a2024.ctex"
+path="res://.godot/imported/Amused.png-499ca5b3118e5fc167a496b3da32a986.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Images/Nobunogi/Amused.png"
-dest_files=["res://.godot/imported/Amused.png-3ad9471c8895299066994d2db43a2024.ctex"]
+source_file="res://Images/NOBUNOGI/Amused.png"
+dest_files=["res://.godot/imported/Amused.png-499ca5b3118e5fc167a496b3da32a986.ctex"]
 
 [params]
 

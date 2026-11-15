@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6i8k2jnwq74h"
-path="res://.godot/imported/Angry.png-d45c0822a7215c606e81b8fdd56f48b9.ctex"
+path="res://.godot/imported/Angry.png-193a354490a4c3a0a8f4b87e6ade14cf.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Images/Youri/Angry.png"
-dest_files=["res://.godot/imported/Angry.png-d45c0822a7215c606e81b8fdd56f48b9.ctex"]
+source_file="res://Images/YOURI/Angry.png"
+dest_files=["res://.godot/imported/Angry.png-193a354490a4c3a0a8f4b87e6ade14cf.ctex"]
 
 [params]
 

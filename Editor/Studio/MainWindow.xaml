@@ -39,8 +39,8 @@
                 <TextBox x:Name="InteractionKeyBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
                 <TextBlock Text="Title" FontSize="11" Foreground="#B9C9E4"/>
                 <TextBox x:Name="InteractionTitleBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
-                <TextBlock Text="Host character" FontSize="11" Foreground="#B9C9E4"/>
-                <ComboBox x:Name="InteractionHostBox" Margin="0,2,0,6" SelectionChanged="DesignerField_Changed"/>
+                <TextBlock Text="Participants are chosen when the interaction starts in Godot."
+                           FontSize="11" Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,2,0,6"/>
                 <TextBlock Text="Starting node key" FontSize="11" Foreground="#B9C9E4"/>
                 <TextBox x:Name="InteractionStartBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
                 <WrapPanel>
@@ -54,32 +54,44 @@
             </DockPanel>
           </Border>
 
-          <!-- Node browser -->
+          <!-- Node browser: keep the list and New/Save/Delete visible at all window sizes.
+               The details editor scrolls independently instead of hiding the node list. -->
           <Border Grid.Column="1" Background="#242C39" CornerRadius="7" Padding="10" Margin="0,0,7,0">
-            <DockPanel>
-              <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                <TextBlock Text="DIALOGUE NODE / ROUND" FontWeight="SemiBold" Foreground="#B9C9E4" Margin="0,5"/>
-                <TextBlock Text="Node key" FontSize="11" Foreground="#B9C9E4"/>
-                <TextBox x:Name="NodeKeyBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
-                <StackPanel Orientation="Horizontal">
-                  <StackPanel Width="110"><TextBlock Text="Round" FontSize="11" Foreground="#B9C9E4"/><TextBox x:Name="NodeRoundBox" Text="1" TextChanged="DesignerField_Changed"/></StackPanel>
-                  <StackPanel Width="110" Margin="8,0,0,0"><TextBlock Text="Sort order" FontSize="11" Foreground="#B9C9E4"/><TextBox x:Name="NodeOrderBox" Text="0" TextChanged="DesignerField_Changed"/></StackPanel>
-                </StackPanel>
-                <TextBlock Text="Generic host introduction (fallback)" FontSize="11" Foreground="#B9C9E4" Margin="0,8,0,2"/>
-                <TextBox x:Name="NodeIntroBox" Height="86" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextChanged="DesignerField_Changed"/>
-                <Button Content="Edit character / pair introductions..." Click="EditIntroductions_Click"
-                        Margin="0,8,0,5" HorizontalAlignment="Left"/>
-                <TextBlock Text="Each node may override its generic introduction for a speaker or a particular character pairing."
-                           Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                <WrapPanel Margin="0,5,0,0">
-                  <Button Content="New" Click="NewNode_Click"/>
-                  <Button Content="Save" Click="SaveNode_Click"/>
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="155"/>
+                <RowDefinition Height="*"/>
+              </Grid.RowDefinitions>
+              <StackPanel Grid.Row="0" Margin="0,0,0,6">
+                <TextBlock Text="ROUNDS / NODES" FontWeight="Bold" Margin="0,0,0,4"/>
+                <WrapPanel>
+                  <Button Content="New node" Click="NewNode_Click"/>
+                  <Button Content="Save node" Click="SaveNode_Click"/>
                   <Button Content="Delete" Click="DeleteNode_Click"/>
                 </WrapPanel>
               </StackPanel>
-              <TextBlock DockPanel.Dock="Top" Text="ROUNDS / NODES" FontWeight="Bold" Margin="0,0,0,8"/>
-              <ListBox x:Name="NodeList" SelectionChanged="NodeList_SelectionChanged"/>
-            </DockPanel>
+              <ListBox Grid.Row="1" x:Name="NodeList" SelectionChanged="NodeList_SelectionChanged"
+                       Margin="0,0,0,8"/>
+              <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                            HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="0,0,8,6">
+                  <TextBlock Text="DIALOGUE NODE / ROUND" FontWeight="SemiBold" Foreground="#B9C9E4" Margin="0,5"/>
+                  <TextBlock Text="Node key" FontSize="11" Foreground="#B9C9E4"/>
+                  <TextBox x:Name="NodeKeyBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
+                  <StackPanel Orientation="Horizontal">
+                    <StackPanel Width="110"><TextBlock Text="Round" FontSize="11" Foreground="#B9C9E4"/><TextBox x:Name="NodeRoundBox" Text="1" TextChanged="DesignerField_Changed"/></StackPanel>
+                    <StackPanel Width="110" Margin="8,0,0,0"><TextBlock Text="Sort order" FontSize="11" Foreground="#B9C9E4"/><TextBox x:Name="NodeOrderBox" Text="0" TextChanged="DesignerField_Changed"/></StackPanel>
+                  </StackPanel>
+                  <TextBlock Text="Generic host introduction (fallback)" FontSize="11" Foreground="#B9C9E4" Margin="0,8,0,2"/>
+                  <TextBox x:Name="NodeIntroBox" Height="86" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextChanged="DesignerField_Changed"/>
+                  <Button Content="Edit character / pair introductions..." Click="EditIntroductions_Click"
+                          Margin="0,8,0,5" HorizontalAlignment="Left"/>
+                  <TextBlock Text="Each node may override its generic introduction for a speaker or a particular character pairing."
+                             Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                </StackPanel>
+              </ScrollViewer>
+            </Grid>
           </Border>
 
           <!-- Choice editor + dialogue lines -->
@@ -115,9 +127,10 @@
                 <TextBlock Text="Generic host reply on FAILURE" Foreground="#B9C9E4" FontSize="11" Margin="0,7,0,2"/>
                 <TextBox x:Name="OptionHostFailureBox" Height="65" AcceptsReturn="True" TextWrapping="Wrap" TextChanged="DesignerField_Changed"/>
                 <TextBlock Text="Target reaction on success" Foreground="#B9C9E4" FontSize="11" Margin="0,7,0,2"/>
-                <TextBox x:Name="OptionSuccessReactionBox" TextChanged="DesignerField_Changed"/>
+                <ComboBox x:Name="OptionSuccessReactionBox" IsEditable="False" IsTextSearchEnabled="True" SelectionChanged="DesignerField_Changed"/>
                 <TextBlock Text="Target reaction on failure" Foreground="#B9C9E4" FontSize="11" Margin="0,7,0,2"/>
-                <TextBox x:Name="OptionFailureReactionBox" TextChanged="DesignerField_Changed"/>
+                <ComboBox x:Name="OptionFailureReactionBox" IsEditable="False" IsTextSearchEnabled="True" SelectionChanged="DesignerField_Changed"/>
+                <Button Content="Manage reaction types..." Click="ManageReactionTypes_Click" HorizontalAlignment="Left" Margin="0,6,0,2"/>
                 <Button Content="Save choice and generic dialogue" Click="SaveOption_Click" Margin="0,10" FontWeight="Bold"/>
                 <Button Content="Edit choice mechanics..."
                         Click="EditChoiceMechanics_Click" HorizontalAlignment="Left" Margin="0,3,0,4"/>
@@ -225,11 +238,16 @@
                 <WrapPanel Margin="0,5,0,0">
                   <Button Content="Locate project.godot..." Click="ChooseGodotProject_Click"/>
                   <Button Content="Check portraits" Click="CheckPortraits_Click"/>
+                  <Button Content="Standardise folders &amp; paths..." Click="StandardisePortraitFolders_Click"/>
                 </WrapPanel>
                 <TextBlock x:Name="GodotProjectText" Text="Select your Godot project to enable image previews and imports."
                            Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap" Margin="2,4,0,7"/>
                 <Separator Margin="0,5,0,8"/>
                 <TextBlock Text="CORE PORTRAITS" FontWeight="Bold" Margin="0,0,0,7"/>
+                <Button Content="Generate default paths..." Click="GenerateDefaultPortraitPaths_Click"
+                        HorizontalAlignment="Left" Margin="0,0,0,9"/>
+                <TextBlock Text="Uses res://Images/{CHARACTER_ID}/. Fills missing values by default; existing custom paths are preserved."
+                           Foreground="#B9C9E4" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,9"/>
                 <TextBlock Text="Default portrait (res://...)" Foreground="#B9C9E4" FontSize="11"/>
                 <DockPanel Margin="0,3,0,6">
                   <Button Content="Browse / Import" DockPanel.Dock="Right" Tag="Default" Click="ImportPortrait_Click"/>
@@ -272,7 +290,8 @@
                            FontSize="11" TextWrapping="Wrap" Foreground="#B9C9E4" Margin="0,3,0,6"/>
                 <ListBox x:Name="CharacterReactionList" Height="116" SelectionChanged="CharacterReactionList_SelectionChanged"/>
                 <TextBlock Text="Reaction key" Foreground="#B9C9E4" FontSize="11" Margin="0,8,0,2"/>
-                <ComboBox x:Name="ReactionKeyBox" IsEditable="True" IsTextSearchEnabled="False" SelectionChanged="ReactionField_Changed"/>
+                <ComboBox x:Name="ReactionKeyBox" IsEditable="False" IsTextSearchEnabled="True" SelectionChanged="ReactionField_Changed"/>
+                <Button Content="Manage reaction types..." Click="ManageReactionTypes_Click" HorizontalAlignment="Left" Margin="0,4,0,4"/>
                 <TextBlock Text="Image path (res://...)" Foreground="#B9C9E4" FontSize="11" Margin="0,8,0,2"/>
                 <DockPanel>
                   <Button Content="Browse / Import" DockPanel.Dock="Right" Tag="Reaction" Click="ImportPortrait_Click"/>

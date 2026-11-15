@@ -9,7 +9,7 @@ namespace SoulCaliberStudio;
 /// content schema. Does not create/migrate tables or modify the savegame.
 /// Every modification is backed up before a single SQLite transaction.
 /// </summary>
-public sealed class CharacterStudioStore : IDisposable
+public sealed partial class CharacterStudioStore : IDisposable
 {
     private readonly SqliteConnection _db;
     private readonly DatabaseEditor _backups;
@@ -166,7 +166,6 @@ public sealed class CharacterStudioStore : IDisposable
         id = Identity(id, "Character ID");
         using (var blockers = Sql("""
             SELECT
-              (SELECT COUNT(*) FROM Interactions WHERE HostCharacterId=$id) +
               (SELECT COUNT(*) FROM Lines WHERE CharacterId=$id OR VisitorId=$id) +
               (SELECT COUNT(*) FROM NodeIntroductions WHERE CharacterId=$id OR VisitorId=$id);
             """))
@@ -199,6 +198,12 @@ public sealed class CharacterStudioStore : IDisposable
         string reaction = Identity(key, "Reaction key");
         string path = ResourcePath(imagePath);
         if (path.Length == 0) throw new InvalidOperationException("Select an artwork path before saving a reaction.");
+        using (var check = Sql("SELECT 1 FROM ReactionTypes WHERE Key=$key LIMIT 1"))
+        {
+            Add(check, "$key", reaction);
+            if (check.ExecuteScalar() is null)
+                throw new InvalidOperationException($"Reaction '{reaction}' is not in the catalogue. Add it via Manage reaction types.");
+        }
         Write(tx =>
         {
             using var cmd = Sql(existing

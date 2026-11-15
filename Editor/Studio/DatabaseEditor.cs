@@ -13,7 +13,7 @@ public sealed class DatabaseEditor(string databasePath) : IDisposable
 
     public static readonly string[] Tables =
     [
-        "Interactions", "Nodes", "NodeIntroductions", "Options", "Lines", "Characters", "ReactionImages",
+        "Interactions", "Nodes", "NodeIntroductions", "Options", "Lines", "Characters", "ReactionTypes", "ReactionImages",
         "Personalities", "Requirements", "ChanceModifiers", "Effects", "SkillChecks"
     ];
 
@@ -166,7 +166,6 @@ public sealed class DatabaseEditor(string databasePath) : IDisposable
         if (table == "Characters")
             return Exists("SELECT 1 FROM Lines WHERE CharacterId=$id OR VisitorId=$id LIMIT 1", row["Id"]) ||
                    Exists("SELECT 1 FROM NodeIntroductions WHERE CharacterId=$id OR VisitorId=$id LIMIT 1", row["Id"]) ||
-                   Exists("SELECT 1 FROM Interactions WHERE HostCharacterId=$id LIMIT 1", row["Id"]) ||
                    Exists("SELECT 1 FROM ReactionImages WHERE CharacterId=$id LIMIT 1", row["Id"]) ||
                    Exists("SELECT 1 FROM Personalities WHERE CharacterId=$id LIMIT 1", row["Id"]);
         return false;

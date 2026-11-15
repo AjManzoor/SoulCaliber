@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://lek46grhf24f"
-path="res://.godot/imported/Dismissive.png-e946d4031f3eada22d9b1a3f3d63d679.ctex"
+path="res://.godot/imported/Dismissive.png-6979b31758cb048070b53ee29fac6136.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Images/Ark/Dismissive.png"
-dest_files=["res://.godot/imported/Dismissive.png-e946d4031f3eada22d9b1a3f3d63d679.ctex"]
+source_file="res://Images/ARK/Dismissive.png"
+dest_files=["res://.godot/imported/Dismissive.png-6979b31758cb048070b53ee29fac6136.ctex"]
 
 [params]
 

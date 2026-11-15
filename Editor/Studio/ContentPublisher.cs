@@ -63,14 +63,14 @@ public static class ContentPublisher
     private static readonly Regex VersionPattern = new("^[A-Za-z0-9][A-Za-z0-9._-]{0,48}$", RegexOptions.Compiled);
     private static readonly string[] RequiredTables =
     [
-        "Characters", "ReactionImages", "Personalities", "Interactions", "Nodes", "Options",
+        "Characters", "ReactionTypes", "ReactionImages", "Personalities", "Interactions", "Nodes", "Options",
         "Requirements", "ChanceModifiers", "Effects", "Lines", "SkillChecks", "NodeIntroductions"
     ];
     private static readonly HashSet<string> Abilities = new(StringComparer.OrdinalIgnoreCase)
     { "Persuasion", "Intimidation", "Deception", "Charm", "Insight", "Resolve" };
 
     private sealed record CharacterRow(string Id, string Name, string DefaultImage, string WinImage, string LoseImage);
-    private sealed record InteractionRow(long Id, string Key, string Title, string HostId, string Start);
+    private sealed record InteractionRow(long Id, string Key, string Title, string Start);
     private sealed record NodeRow(long Id, long InteractionId, string Key, long Round);
     private sealed record OptionRow(long Id, long NodeId, string Key, string Label, long Chance,
         string? SuccessNext, string? FailureNext, string SuccessReaction, string FailureReaction);
@@ -303,6 +303,16 @@ public static class ContentPublisher
             CheckAsset(report, root, ch.LoseImage, $"{ch.Id} failure portrait");
         }
 
+        var reactionTypes = Read(db, "SELECT Key, DisplayName, SortOrder FROM ReactionTypes", r =>
+            (Key: r.GetString(0), Name: r.GetString(1), SortOrder: r.GetInt64(2)));
+        var validReactions = reactionTypes.Select(x => x.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (validReactions.Count == 0) report.Error("ReactionTypes", "The reaction catalogue is empty.");
+        foreach (var type in reactionTypes)
+        {
+            if (string.IsNullOrWhiteSpace(type.Name) || string.IsNullOrWhiteSpace(type.Key))
+                report.Error("ReactionTypes", "A reaction type has a blank key or display name.");
+        }
+
         var reactions = Read(db, "SELECT CharacterId, ReactionKey, ImagePath FROM ReactionImages", r =>
             (CharacterId: r.GetString(0), ReactionKey: r.GetString(1), ImagePath: Safe(r, 2)));
         foreach (var duplicates in reactions.GroupBy(x => (x.CharacterId.ToUpperInvariant(), x.ReactionKey.ToUpperInvariant()))
@@ -312,8 +322,8 @@ public static class ContentPublisher
         {
             if (!characterIds.Contains(reaction.CharacterId))
                 report.Error("ReactionImages", $"Unknown character {reaction.CharacterId}.");
-            if (string.IsNullOrWhiteSpace(reaction.ReactionKey))
-                report.Error("ReactionImages", $"Empty reaction key for {reaction.CharacterId}.");
+            if (!validReactions.Contains(reaction.ReactionKey))
+                report.Error("ReactionImages", $"Unknown reaction type '{reaction.ReactionKey}' for {reaction.CharacterId}.");
             CheckAsset(report, root, reaction.ImagePath, $"{reaction.CharacterId} / {reaction.ReactionKey}");
         }
 
@@ -331,8 +341,9 @@ public static class ContentPublisher
         foreach (var ch in characters.Where(x => !withPersonality.Contains(x.Id)))
             report.Warn("Personalities", $"{ch.Id} has no personality row; Godot will use the engine defaults.");
 
-        var interactions = Read(db, "SELECT Id, Key, Title, HostCharacterId, StartNodeKey FROM Interactions", r =>
-            new InteractionRow(r.GetInt64(0), r.GetString(1), Safe(r, 2), Safe(r, 3), Safe(r, 4)));
+        // Phase 6C: character associations are per encounter, not per interaction definition.
+        var interactions = Read(db, "SELECT Id, Key, Title, StartNodeKey FROM Interactions", r =>
+            new InteractionRow(r.GetInt64(0), r.GetString(1), Safe(r, 2), Safe(r, 3)));
         var nodes = Read(db, "SELECT Id, InteractionId, Key, Round FROM Nodes", r =>
             new NodeRow(r.GetInt64(0), r.GetInt64(1), r.GetString(2), r.GetInt64(3)));
         var options = Read(db,
@@ -346,7 +357,6 @@ public static class ContentPublisher
         var optionIds = options.Select(x => x.Id).ToHashSet();
         foreach (var inter in interactions)
         {
-            if (!characterIds.Contains(inter.HostId)) report.Error(inter.Key, $"Host character '{inter.HostId}' does not exist.");
             if (string.IsNullOrWhiteSpace(inter.Key) || string.IsNullOrWhiteSpace(inter.Title))
                 report.Error($"Interaction {inter.Id}", "Missing key or title.");
             var ownNodes = nodes.Where(x => x.InteractionId == inter.Id).ToList();
@@ -375,8 +385,10 @@ public static class ContentPublisher
                 report.Error("Options", $"Option {option.Id} has missing key or label.");
             if (option.Chance is < 0 or > 100)
                 report.Error("Options", $"Option {option.Key} has invalid base chance {option.Chance}.");
-            if (string.IsNullOrWhiteSpace(option.SuccessReaction) || string.IsNullOrWhiteSpace(option.FailureReaction))
-                report.Error("Options", $"Option '{option.Key}' has an empty target reaction.");
+            if (!validReactions.Contains(option.SuccessReaction))
+                report.Error("Options", $"Option '{option.Key}' has unknown success reaction '{option.SuccessReaction}'.");
+            if (!validReactions.Contains(option.FailureReaction))
+                report.Error("Options", $"Option '{option.Key}' has unknown failure reaction '{option.FailureReaction}'.");
             foreach (var next in new[] { option.SuccessNext, option.FailureNext })
             {
                 if (string.IsNullOrWhiteSpace(next)) continue;

@@ -22,6 +22,7 @@ public sealed partial class DialogueDesignerStore : IDisposable
         using var cmd = Command("PRAGMA busy_timeout=5000;");
         cmd.ExecuteNonQuery();
         EnsureIntroductionSchema();
+        EnsureReactionTypesSchema();
     }
 
     private void EnsureIntroductionSchema()
@@ -53,7 +54,34 @@ public sealed partial class DialogueDesignerStore : IDisposable
         catch { tx.Rollback(); throw; }
     }
 
-    public sealed record Interaction(int Id, string Key, string Title, string HostCharacterId, string StartNodeKey)
+
+    private void EnsureReactionTypesSchema()
+    {
+        using var check = Command("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ReactionTypes'");
+        if (check.ExecuteScalar() is not null) return;
+
+        // One-time, versioned schema migration. Runs only on the master authoring DB.
+        _backupSource.Backup();
+        using var stream = typeof(DialogueDesignerStore).Assembly.GetManifestResourceStream(
+            "SoulCaliberStudio.Migrations.002_ReactionTypes.sql")
+            ?? throw new InvalidOperationException("Embedded 002_ReactionTypes.sql migration is missing.");
+        using var reader = new StreamReader(stream);
+        string sql = reader.ReadToEnd();
+        using var transaction = _db.BeginTransaction();
+        try
+        {
+            using var command = Command(sql, transaction);
+            command.ExecuteNonQuery();
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
+
+    public sealed record Interaction(int Id, string Key, string Title, string StartNodeKey)
     {
         public override string ToString() => $"{Title}  [{Key}]";
     }
@@ -126,10 +154,10 @@ public sealed partial class DialogueDesignerStore : IDisposable
     }
     public List<Interaction> Interactions()
     {
-        using var cmd = Command("SELECT Id, Key, Title, HostCharacterId, StartNodeKey FROM Interactions ORDER BY Title, Id");
+        using var cmd = Command("SELECT Id, Key, Title, StartNodeKey FROM Interactions ORDER BY Title, Id");
         using var r = cmd.ExecuteReader();
         var items = new List<Interaction>();
-        while (r.Read()) items.Add(new(r.GetInt32(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetString(4)));
+        while (r.Read()) items.Add(new(r.GetInt32(0), r.GetString(1), r.GetString(2), r.GetString(3)));
         return items;
     }
     public List<Node> Nodes(int interactionId)
@@ -263,7 +291,8 @@ public sealed partial class DialogueDesignerStore : IDisposable
     {
         string key = Key(item.Key, "Interaction key");
         string title = Required(item.Title, "Interaction title");
-        string host = Required(item.HostCharacterId, "Host character");
+        // Interaction participants are provided at runtime. The legacy HostCharacterId
+        // column is retained to avoid rebuilding existing SQLite databases.
         string start = Text(item.StartNodeKey).Trim();
         if (start.Length > 0) Key(start, "Starting node");
         int id = item.Id;
@@ -274,9 +303,10 @@ public sealed partial class DialogueDesignerStore : IDisposable
         Write(tx =>
         {
             using var cmd = Command(item.Id == 0
-                ? "INSERT INTO Interactions(Key, Title, HostCharacterId, StartNodeKey) VALUES($key,$title,$host,$start)"
-                : "UPDATE Interactions SET Title=$title, HostCharacterId=$host, StartNodeKey=$start WHERE Id=$id", tx);
-            Add(cmd, "$key", key); Add(cmd, "$title", title); Add(cmd, "$host", host); Add(cmd, "$start", start); Add(cmd, "$id", item.Id);
+                // The NOT NULL legacy column is populated with an empty value; it is no longer used.
+                ? "INSERT INTO Interactions(Key, Title, HostCharacterId, StartNodeKey) VALUES($key,$title,'',$start)"
+                : "UPDATE Interactions SET Title=$title, StartNodeKey=$start WHERE Id=$id", tx);
+            Add(cmd, "$key", key); Add(cmd, "$title", title); Add(cmd, "$start", start); Add(cmd, "$id", item.Id);
             Changed(cmd, item.Id != 0);
             if (item.Id == 0) { using var last = Command("SELECT last_insert_rowid()", tx); id = Convert.ToInt32((long)last.ExecuteScalar()!); }
         });
@@ -316,6 +346,11 @@ public sealed partial class DialogueDesignerStore : IDisposable
             if (next is not null && !Exists(_db, "SELECT 1 FROM Nodes WHERE InteractionId=$id AND Key=$key", ("$id", interactionId), ("$key", next)))
                 throw new InvalidOperationException($"Next dialogue node '{next}' does not exist in this interaction.");
         }
+        string successReaction = Key(item.SuccessTargetReaction, "Success target reaction").ToUpperInvariant();
+        string failureReaction = Key(item.FailureTargetReaction, "Failure target reaction").ToUpperInvariant();
+        foreach (var reactionKey in new[] { successReaction, failureReaction })
+            if (!Exists(_db, "SELECT 1 FROM ReactionTypes WHERE Key=$key", ("$key", reactionKey)))
+                throw new InvalidOperationException($"Reaction '{reactionKey}' is not in the catalogue. Use Manage reaction types first.");
         int id = item.Id;
         if (item.Id > 0 && !Exists(_db, "SELECT 1 FROM Options WHERE Id=$id AND NodeId=$node AND Key=$key", ("$id", item.Id), ("$node", item.NodeId), ("$key", key)))
             throw new InvalidOperationException("Existing choice keys and parent nodes cannot change.");
@@ -338,8 +373,8 @@ public sealed partial class DialogueDesignerStore : IDisposable
             Add(cmd, "$success", success); Add(cmd, "$failure", failure);
             Add(cmd, "$player", Text(item.DefaultPlayerLine)); Add(cmd, "$hostSuccess", Text(item.DefaultHostSuccessLine));
             Add(cmd, "$hostFailure", Text(item.DefaultHostFailureLine));
-            Add(cmd, "$reactionSuccess", Required(item.SuccessTargetReaction, "Success target reaction").ToUpperInvariant());
-            Add(cmd, "$reactionFailure", Required(item.FailureTargetReaction, "Failure target reaction").ToUpperInvariant());
+            Add(cmd, "$reactionSuccess", successReaction);
+            Add(cmd, "$reactionFailure", failureReaction);
             Changed(cmd, item.Id != 0);
             if (item.Id == 0) { using var last = Command("SELECT last_insert_rowid()", tx); id = Convert.ToInt32((long)last.ExecuteScalar()!); }
         });

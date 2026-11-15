@@ -24,9 +24,9 @@ public partial class MainWindow
         try
         {
             var characterIds = _designer.Characters();
-            InteractionHostBox.ItemsSource = characterIds;
             LineCharacterBox.ItemsSource = characterIds;
             LineVisitorBox.ItemsSource = new[] { "" }.Concat(characterIds).ToList();
+            LoadReactionTypeChoices();
             _designerDirty = false;
         }
         finally { _designerLoading = false; }
@@ -72,7 +72,6 @@ public partial class MainWindow
         _activeInteraction = interaction;
         InteractionKeyBox.Text = interaction?.Key ?? "";
         InteractionTitleBox.Text = interaction?.Title ?? "";
-        InteractionHostBox.SelectedItem = interaction?.HostCharacterId;
         InteractionStartBox.Text = interaction?.StartNodeKey ?? "";
         InteractionKeyBox.IsReadOnly = interaction is not null;
         RefreshNodes();
@@ -118,8 +117,8 @@ public partial class MainWindow
         OptionPlayerLineBox.Text = option?.DefaultPlayerLine ?? "";
         OptionHostSuccessBox.Text = option?.DefaultHostSuccessLine ?? "";
         OptionHostFailureBox.Text = option?.DefaultHostFailureLine ?? "";
-        OptionSuccessReactionBox.Text = option?.SuccessTargetReaction ?? "RECEPTIVE";
-        OptionFailureReactionBox.Text = option?.FailureTargetReaction ?? "DISMISSIVE";
+        OptionSuccessReactionBox.SelectedItem = option?.SuccessTargetReaction ?? "RECEPTIVE";
+        OptionFailureReactionBox.SelectedItem = option?.FailureTargetReaction ?? "DISMISSIVE";
         RefreshLines();
         MechanicsSummaryText.Text = option is null || _designer is null
             ? "Save a choice to configure its mechanics."
@@ -254,8 +253,7 @@ public partial class MainWindow
         RunDesignerAction(() =>
         {
             int id = _designer.SaveInteraction(new(_activeInteraction?.Id ?? 0,
-                InteractionKeyBox.Text, InteractionTitleBox.Text,
-                InteractionHostBox.SelectedItem as string ?? "", InteractionStartBox.Text));
+                InteractionKeyBox.Text, InteractionTitleBox.Text, InteractionStartBox.Text));
             RefreshInteractions(id);
         });
     }
@@ -279,8 +277,9 @@ public partial class MainWindow
             int id = _designer.SaveOption(new(_activeOption?.Id ?? 0, _activeNode.Id, OptionKeyBox.Text,
                 OptionLabelBox.Text, Number(OptionOrderBox, "Sort order"), Number(OptionChanceBox, "Base chance"),
                 OptionSuccessNextBox.Text, OptionFailureNextBox.Text, OptionPlayerLineBox.Text,
-                OptionHostSuccessBox.Text, OptionHostFailureBox.Text, OptionSuccessReactionBox.Text,
-                OptionFailureReactionBox.Text), _activeInteraction.Id);
+                OptionHostSuccessBox.Text, OptionHostFailureBox.Text,
+                OptionSuccessReactionBox.SelectedItem as string ?? "",
+                OptionFailureReactionBox.SelectedItem as string ?? ""), _activeInteraction.Id);
             _designerLoading = true;
             try { RefreshOptions(id); }
             finally { _designerLoading = false; }
@@ -364,7 +363,7 @@ public partial class MainWindow
             MessageBox.Show(this, "Save your current dialogue form edits before opening the introduction editor.", "Unsaved changes");
             return;
         }
-        var window = new IntroOverridesWindow(_designer, _activeNode, _activeInteraction.HostCharacterId) { Owner = this };
+        var window = new IntroOverridesWindow(_designer, _activeNode, defaultHostId: null) { Owner = this };
         window.ShowDialog();
         // The modal saves to the same master database; the active node and choice remain selected.
     }
@@ -377,9 +376,9 @@ public partial class MainWindow
             MessageBox.Show(this, "Save your current dialogue form edits before previewing saved dialogue.", "Unsaved changes");
             return;
         }
+        var previewCharacters = _designer.Characters();
         var window = new DialoguePreviewWindow(_designer, _activeNode, _activeOption,
-            _designer.Characters().FirstOrDefault(x => x != _activeInteraction?.HostCharacterId),
-            _activeInteraction?.HostCharacterId) { Owner = this };
+            previewCharacters.FirstOrDefault(), previewCharacters.Skip(1).FirstOrDefault()) { Owner = this };
         window.ShowDialog();
     }
 

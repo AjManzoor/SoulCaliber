@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://s28a8tervg3c"
-path="res://.godot/imported/Suspicious.png-dd35e4d0aee7922565abebfbd5c45f90.ctex"
+path="res://.godot/imported/Suspicious.png-21678fd1d722f8591835dddb14b93095.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Images/Ark/Suspicious.png"
-dest_files=["res://.godot/imported/Suspicious.png-dd35e4d0aee7922565abebfbd5c45f90.ctex"]
+source_file="res://Images/ARK/Suspicious.png"
+dest_files=["res://.godot/imported/Suspicious.png-21678fd1d722f8591835dddb14b93095.ctex"]
 
 [params]
 

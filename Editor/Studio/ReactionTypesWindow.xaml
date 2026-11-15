@@ -1,0 +1,42 @@
+<Window x:Class="SoulCaliberStudio.ReactionTypesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Manage reaction types" Width="800" Height="560" MinWidth="680" MinHeight="450"
+        Background="#151D2B" Foreground="#F6F8FD" FontFamily="Segoe UI" FontSize="13"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="18">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="250"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+    <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <DockPanel Grid.Column="0" Margin="0,0,14,0">
+      <StackPanel DockPanel.Dock="Top">
+        <TextBlock Text="REACTION CATALOGUE" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"/>
+        <TextBlock Text="Global definitions, not per-character images" Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,0,0,8"/>
+      </StackPanel>
+      <ListBox x:Name="ReactionList" SelectionChanged="ReactionList_SelectionChanged"/>
+    </DockPanel>
+    <Border Grid.Column="1" Background="#242C39" CornerRadius="7" Padding="16">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+          <TextBlock Text="REACTION TYPE" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+          <TextBlock Text="Key (permanent ID)" Foreground="#B9C9E4"/>
+          <TextBox x:Name="KeyBox" Margin="0,3,0,12"/>
+          <TextBlock Text="Display name" Foreground="#B9C9E4"/>
+          <TextBox x:Name="NameBox" Margin="0,3,0,12"/>
+          <TextBlock Text="Description (optional)" Foreground="#B9C9E4"/>
+          <TextBox x:Name="DescriptionBox" Height="96" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,3,0,12"/>
+          <TextBlock Text="Sort order" Foreground="#B9C9E4"/>
+          <TextBox x:Name="OrderBox" Margin="0,3,0,12"/>
+          <TextBlock x:Name="UsageText" Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,0,0,14"/>
+          <WrapPanel>
+            <Button Content="New type" Click="New_Click"/>
+            <Button Content="Save" Click="Save_Click"/>
+            <Button Content="Delete" Click="Delete_Click"/>
+          </WrapPanel>
+          <TextBlock Text="A reaction type can only be deleted when no choice or character portrait references it. Keys cannot be renamed."
+                     Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,18,0,0"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+    <TextBlock Grid.Row="1" Grid.ColumnSpan="2" x:Name="StatusText" Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,12,0,0"/>
+  </Grid>
+</Window>
