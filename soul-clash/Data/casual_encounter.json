@@ -1,0 +1,489 @@
+{
+  "key": "CASUAL_ENCOUNTER",
+  "title": "A Chance Encounter",
+  "hostCharacterId": "YOURI",
+  "startNodeKey": "MEET",
+  "nodes": [
+    {
+      "key": "MEET",
+      "round": 1,
+      "hostIntroduction": "Well, {actor}. What brings you here?",
+      "options": [
+        {
+          "key": "GREET",
+          "label": "Greet warmly",
+          "baseSuccessChance": 85,
+          "defaultPlayerLine": "I was hoping we might talk.",
+          "defaultHostSuccessLine": "It is good to see you.",
+          "defaultHostFailureLine": "Do not pretend we are friends.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": "SECOND",
+          "failureNextNodeKey": "SECOND",
+          "successTargetReaction": "WARM",
+          "failureTargetReaction": "COLD"
+        },
+        {
+          "key": "COMPLIMENT",
+          "label": "Offer a sincere compliment",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "You look remarkable today.",
+          "defaultHostSuccessLine": "That is unexpectedly sweet of you.",
+          "defaultHostFailureLine": "Flattery will not get you far.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "delta": 6
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Romance",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Romance",
+              "delta": 1
+            }
+          ],
+          "successNextNodeKey": "SECOND",
+          "failureNextNodeKey": "SECOND",
+          "chanceModifiers": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "factor": 0.3
+            }
+          ],
+          "successTargetReaction": "FLATTERED",
+          "failureTargetReaction": "UNIMPRESSED"
+        },
+        {
+          "key": "TEASE",
+          "label": "Playfully tease",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "Still causing trouble, I see?",
+          "defaultHostSuccessLine": "I suppose you think that was clever.",
+          "defaultHostFailureLine": "That was not amusing.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": "SECOND",
+          "failureNextNodeKey": "SECOND",
+          "successTargetReaction": "AMUSED",
+          "failureTargetReaction": "OFFENDED"
+        },
+        {
+          "key": "SEEK_ALLIANCE",
+          "label": "Suggest working together",
+          "baseSuccessChance": 55,
+          "defaultPlayerLine": "What if we helped each other?",
+          "defaultHostSuccessLine": "An alliance could be useful.",
+          "defaultHostFailureLine": "I see no reason to trust you.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 10
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Allyship",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": -4
+            }
+          ],
+          "successNextNodeKey": "SECOND",
+          "failureNextNodeKey": "SECOND",
+          "successTargetReaction": "INTERESTED",
+          "failureTargetReaction": "DISMISSIVE"
+        },
+        {
+          "key": "CHALLENGE",
+          "label": "Issue a friendly challenge",
+          "baseSuccessChance": 70,
+          "defaultPlayerLine": "How about a test of skill?",
+          "defaultHostSuccessLine": "A challenge? That could be fun.",
+          "defaultHostFailureLine": "Know your place.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Fear",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": "SECOND",
+          "failureNextNodeKey": "SECOND",
+          "successTargetReaction": "ACCEPTING",
+          "failureTargetReaction": "DISMISSIVE"
+        },
+        {
+          "key": "FLIRT",
+          "label": "Show romantic interest",
+          "baseSuccessChance": 45,
+          "defaultPlayerLine": "I would rather this were more than a chance meeting.",
+          "defaultHostSuccessLine": "Perhaps I feel the same way.",
+          "defaultHostFailureLine": "You have misunderstood my intentions.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "delta": 12
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 5
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Romance",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Romance",
+              "delta": 3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": "SECOND",
+          "failureNextNodeKey": "SECOND",
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "minimum": 15
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "minimum": 12
+            }
+          ],
+          "chanceModifiers": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "factor": 0.5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "factor": 0.2
+            }
+          ],
+          "successTargetReaction": "FLATTERED",
+          "failureTargetReaction": "COLD"
+        }
+      ]
+    },
+    {
+      "key": "SECOND",
+      "round": 2,
+      "hostIntroduction": "And what would you like to do now, {actor}?",
+      "options": [
+        {
+          "key": "PART_WAYS",
+          "label": "Say farewell",
+          "baseSuccessChance": 95,
+          "defaultPlayerLine": "I should be going.",
+          "defaultHostSuccessLine": "Until next time.",
+          "defaultHostFailureLine": "Then farewell.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null,
+          "successTargetReaction": "WARM",
+          "failureTargetReaction": "COLD"
+        },
+        {
+          "key": "ASK_ABOUT_DAY",
+          "label": "Ask about their day",
+          "baseSuccessChance": 80,
+          "defaultPlayerLine": "How has your day been?",
+          "defaultHostSuccessLine": "There is more to tell than you might think.",
+          "defaultHostFailureLine": "You ask too many questions.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -1
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null,
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "UNINTERESTED"
+        },
+        {
+          "key": "OFFER_HELP",
+          "label": "Offer assistance",
+          "baseSuccessChance": 70,
+          "defaultPlayerLine": "Let me know if you need help.",
+          "defaultHostSuccessLine": "I may take you up on that.",
+          "defaultHostFailureLine": "I can manage without you.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null,
+          "successTargetReaction": "PLEASED",
+          "failureTargetReaction": "UNIMPRESSED"
+        },
+        {
+          "key": "SHARE_SECRET",
+          "label": "Confide a secret",
+          "baseSuccessChance": 55,
+          "defaultPlayerLine": "There is something I need to tell you.",
+          "defaultHostSuccessLine": "Your secret is safe with me.",
+          "defaultHostFailureLine": "I cannot promise discretion.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 8
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -8
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null,
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "WARY"
+        },
+        {
+          "key": "MAKE_PROMISE",
+          "label": "Promise another meeting",
+          "baseSuccessChance": 80,
+          "defaultPlayerLine": "We should meet again.",
+          "defaultHostSuccessLine": "I will look forward to it.",
+          "defaultHostFailureLine": "Do not make promises you cannot keep.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null,
+          "successTargetReaction": "PLEASED",
+          "failureTargetReaction": "WARY"
+        },
+        {
+          "key": "INVITE_DATE",
+          "label": "Ask for a private date",
+          "baseSuccessChance": 55,
+          "defaultPlayerLine": "Would you spend an evening with me?",
+          "defaultHostSuccessLine": "That sounds rather appealing.",
+          "defaultHostFailureLine": "I would rather we remained acquaintances.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "delta": 14
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 5
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Romance",
+              "delta": 4
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Romance",
+              "delta": 2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null,
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "minimum": 25
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "minimum": 0
+            }
+          ],
+          "chanceModifiers": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "factor": 0.5
+            }
+          ],
+          "successTargetReaction": "FLATTERED",
+          "failureTargetReaction": "COLD"
+        }
+      ]
+    }
+  ]
+}

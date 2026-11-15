@@ -1,0 +1,6 @@
+If you do not want to use a Directory.Build.targets file, run:
+    dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 8.0.33
+Or add this inside your existing .csproj:
+    <ItemGroup>
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.33" />
+    </ItemGroup>

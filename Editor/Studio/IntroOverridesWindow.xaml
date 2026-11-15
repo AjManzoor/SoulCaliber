@@ -1,0 +1,69 @@
+<Window x:Class="SoulCaliberStudio.IntroOverridesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Character &amp; Pair Introductions" Width="1060" Height="730" MinWidth="790" MinHeight="550"
+        WindowStartupLocation="CenterOwner" Closing="Window_Closing"
+        Background="{StaticResource BackgroundBrush}" Foreground="{StaticResource ForegroundBrush}">
+  <Grid Margin="20">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="300"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <StackPanel Grid.ColumnSpan="2" Margin="0,0,0,15">
+      <TextBlock x:Name="HeadingText" FontWeight="Bold" FontSize="21"/>
+      <TextBlock Text="Generic node introductions remain the fallback. Pair-specific overrides take priority over character-specific wording."
+                 Foreground="#B9C9E4" Margin="0,5,0,0" TextWrapping="Wrap"/>
+    </StackPanel>
+    <Border Grid.Row="1" Grid.Column="0" Background="#242C39" Padding="12" CornerRadius="7" Margin="0,0,12,0">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top">
+          <TextBlock Text="INTRODUCTION OVERRIDES" FontWeight="Bold" Margin="0,0,0,8"/>
+          <TextBlock Text="Each entry belongs to this dialogue round and the speaking character."
+                     Foreground="#B9C9E4" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,10"/>
+        </StackPanel>
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
+          <Button Content="New introduction" Click="New_Click"/>
+          <Button Content="Delete selected introduction" Click="Delete_Click"/>
+        </StackPanel>
+        <ListBox x:Name="IntroductionList" SelectionChanged="IntroductionList_SelectionChanged"/>
+      </DockPanel>
+    </Border>
+    <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="0,0,14,0">
+        <TextBlock Text="EDIT INTRODUCTION" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
+        <TextBlock Text="Speaking character (the partner / right-side character)" Foreground="#B9C9E4"/>
+        <ComboBox x:Name="IntroSpeakerBox" Margin="0,4,0,10" SelectionChanged="Editor_Changed"/>
+        <TextBlock Text="Other character (left-side visitor; blank = any)" Foreground="#B9C9E4"/>
+        <ComboBox x:Name="IntroVisitorBox" Margin="0,4,0,10" SelectionChanged="Editor_Changed"/>
+        <TextBlock Text="Introduction text" Foreground="#B9C9E4"/>
+        <TextBox x:Name="IntroTextBox" Margin="0,4,0,6" Height="100" TextWrapping="Wrap"
+                 AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextChanged="Editor_Changed"/>
+        <TextBlock Text="Use {actor} for the visitor's name and {partner} for the speaker's name."
+                   Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap"/>
+        <Button Content="Save introduction" Click="Save_Click" HorizontalAlignment="Left" Margin="0,11,0,0"/>
+        <Separator Margin="0,17,0,13"/>
+        <TextBlock Text="RESOLVED INTRODUCTION PREVIEW" FontWeight="Bold" FontSize="16" Margin="0,0,0,6"/>
+        <TextBlock Text="Choose any pair to see which phrase Godot will use in this round. Preview reads SAVED content."
+                   Foreground="#B9C9E4" TextWrapping="Wrap" FontSize="11" Margin="0,0,0,8"/>
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <StackPanel Grid.Column="0" Margin="0,0,8,0">
+            <TextBlock Text="Partner / speaking character" Foreground="#B9C9E4"/>
+            <ComboBox x:Name="PreviewSpeakerBox" Margin="0,4,0,5"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1">
+            <TextBlock Text="Visitor / other character" Foreground="#B9C9E4"/>
+            <ComboBox x:Name="PreviewVisitorBox" Margin="0,4,0,5"/>
+          </StackPanel>
+        </Grid>
+        <Button Content="Preview introduction" Click="Preview_Click" HorizontalAlignment="Left" Margin="0,8,0,8"/>
+        <TextBlock x:Name="PreviewSourceText" Foreground="#9EC5FF" Margin="0,1,0,5"/>
+        <Border Background="#151923" Padding="13" CornerRadius="6" MinHeight="96">
+          <TextBlock x:Name="PreviewResultText" TextWrapping="Wrap" FontSize="15"/>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+    <DockPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,12,0,0">
+      <Button Content="Close" DockPanel.Dock="Right" Click="Close_Click"/>
+      <TextBlock x:Name="StatusText" VerticalAlignment="Center" Foreground="#B9C9E4" TextWrapping="Wrap"/>
+    </DockPanel>
+  </Grid>
+</Window>

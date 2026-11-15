@@ -1,0 +1,59 @@
+{
+  "characters": [
+    {
+      "characterId": "ARK",
+      "stats": {
+        "persuasion": 55,
+        "intimidation": 90,
+        "deception": 70,
+        "charm": 45,
+        "insight": 60,
+        "resolve": 85
+      }
+    },
+    {
+      "characterId": "YOURI",
+      "stats": {
+        "persuasion": 40,
+        "intimidation": 45,
+        "deception": 55,
+        "charm": 90,
+        "insight": 45,
+        "resolve": 65
+      }
+    },
+    {
+      "characterId": "MIZURI",
+      "stats": {
+        "persuasion": 80,
+        "intimidation": 80,
+        "deception": 70,
+        "charm": 65,
+        "insight": 80,
+        "resolve": 90
+      }
+    },
+    {
+      "characterId": "NOBUNOGI",
+      "stats": {
+        "persuasion": 45,
+        "intimidation": 70,
+        "deception": 30,
+        "charm": 40,
+        "insight": 80,
+        "resolve": 90
+      }
+    },
+    {
+      "characterId": "GOLDIE_ROCKS",
+      "stats": {
+        "persuasion": 72,
+        "intimidation": 70,
+        "deception": 70,
+        "charm": 85,
+        "insight": 65,
+        "resolve": 60
+      }
+    }
+  ]
+}

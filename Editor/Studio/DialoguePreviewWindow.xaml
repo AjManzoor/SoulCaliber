@@ -1,0 +1,54 @@
+<Window x:Class="SoulCaliberStudio.DialoguePreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dialogue Outcome Preview" Width="930" Height="690" MinWidth="700" MinHeight="500"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource BackgroundBrush}"
+        Foreground="{StaticResource ForegroundBrush}">
+  <DockPanel Margin="20">
+    <StackPanel DockPanel.Dock="Top">
+      <TextBlock x:Name="HeadingText" FontSize="22" FontWeight="SemiBold"/>
+      <TextBlock Text="Inspect which saved introduction, actor phrase and host reply Godot will select for each outcome."
+                 Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,6,0,18"/>
+      <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+        <StackPanel Margin="0,0,10,0">
+          <TextBlock Text="Visitor / actor (left)" Foreground="#B9C9E4"/>
+          <ComboBox x:Name="PreviewActorBox" Margin="0,4,0,5"/>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Margin="0,0,10,0">
+          <TextBlock Text="Partner / host (right)" Foreground="#B9C9E4"/>
+          <ComboBox x:Name="PreviewHostBox" Margin="0,4,0,5"/>
+        </StackPanel>
+        <Button Grid.Column="2" Content="Resolve dialogue" Click="Resolve_Click" VerticalAlignment="Bottom" Margin="4,0,0,5"/>
+      </Grid>
+    </StackPanel>
+    <Button DockPanel.Dock="Bottom" Content="Close" HorizontalAlignment="Right" Click="Close_Click" Margin="0,12,0,0"/>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,14,0,0">
+      <StackPanel>
+        <TextBlock Text="INTRODUCTION" FontWeight="Bold" FontSize="15"/>
+        <TextBlock x:Name="IntroductionSource" Foreground="#A1C5FF" Margin="0,5,0,4"/>
+        <Border Background="#242C39" CornerRadius="6" Padding="13" Margin="0,0,0,16">
+          <TextBlock x:Name="IntroductionText" TextWrapping="Wrap"/>
+        </Border>
+        <TextBlock Text="ON SUCCESS" FontWeight="Bold" FontSize="16"/>
+        <TextBlock x:Name="SuccessPlayerSource" Foreground="#A1C5FF" Margin="0,5,0,4"/>
+        <Border Background="#242C39" CornerRadius="6" Padding="13" Margin="0,0,0,9">
+          <TextBlock x:Name="SuccessPlayerText" TextWrapping="Wrap"/>
+        </Border>
+        <TextBlock x:Name="SuccessHostSource" Foreground="#A1C5FF" Margin="0,5,0,4"/>
+        <Border Background="#242C39" CornerRadius="6" Padding="13" Margin="0,0,0,18">
+          <TextBlock x:Name="SuccessHostText" TextWrapping="Wrap"/>
+        </Border>
+        <TextBlock Text="ON FAILURE" FontWeight="Bold" FontSize="16"/>
+        <TextBlock x:Name="FailurePlayerSource" Foreground="#A1C5FF" Margin="0,5,0,4"/>
+        <Border Background="#242C39" CornerRadius="6" Padding="13" Margin="0,0,0,9">
+          <TextBlock x:Name="FailurePlayerText" TextWrapping="Wrap"/>
+        </Border>
+        <TextBlock x:Name="FailureHostSource" Foreground="#A1C5FF" Margin="0,5,0,4"/>
+        <Border Background="#242C39" CornerRadius="6" Padding="13" Margin="0,0,0,12">
+          <TextBlock x:Name="FailureHostText" TextWrapping="Wrap"/>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

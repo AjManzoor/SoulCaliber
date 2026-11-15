@@ -1,0 +1,311 @@
+{
+  "lines": [
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "KNEEL",
+      "text": "Your throne does not make you my master, but I will show respect.",
+      "imagePath": "res://Images/Ark/Kneel.png"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REFUSE",
+      "text": "I bow to no one.",
+      "imagePath": "res://Images/Ark/Defiant.png"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "DECEIVE",
+      "text": "Of course, Your Majesty. You have my loyalty.",
+      "imagePath": "res://Images/Ark/Deceptive.png"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "NEGOTIATE",
+      "text": "And what exactly would I gain from serving you?",
+      "imagePath": "res://Images/Ark/Negotiating.png"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "QUESTION",
+      "text": "Tell me why your authority should matter to me.",
+      "imagePath": "res://Images/Ark/Questioning.png"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REQUEST_FAVOUR",
+      "text": "There is a private matter worth your attention.",
+      "imagePath": "res://Images/Ark/Private.png"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "CONFRONT_2",
+      "optionKey": "STAND_FIRM",
+      "text": "I meant every word.",
+      "imagePath": "res://Images/Ark/Defiant.png"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "RESPECT_2",
+      "optionKey": "OFFER_SERVICE",
+      "text": "I have talents that your court may find useful.",
+      "imagePath": "res://Images/Ark/Negotiating.png"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "INTRIGUE_2",
+      "optionKey": "REVEAL_TRUTH",
+      "text": "You deserve to know my real intentions.",
+      "imagePath": "res://Images/Ark/Questioning.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "KNEEL",
+      "text": "I suppose even royalty deserves a little courtesy.",
+      "imagePath": "res://Images/Youri/Kneel.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REFUSE",
+      "text": "You expect *me* to kneel? How amusing.",
+      "imagePath": "res://Images/Youri/Defiant.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "DECEIVE",
+      "text": "Naturally, Your Majesty. Every eye ought to be on you.",
+      "imagePath": "res://Images/Youri/Smiling.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "NEGOTIATE",
+      "text": "Perhaps we could discuss an arrangement more befitting me.",
+      "imagePath": "res://Images/Youri/Negotiating.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "QUESTION",
+      "text": "A crown is a lovely accessory. Does it make one worthy?",
+      "imagePath": "res://Images/Youri/Questioning.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REQUEST_FAVOUR",
+      "text": "I have a request that simply cannot be refused.",
+      "imagePath": "res://Images/Youri/Smiling.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "RESPECT_2",
+      "optionKey": "PAY_COMPLIMENT",
+      "text": "Your palace is almost as exquisite as I am.",
+      "imagePath": "res://Images/Youri/Smiling.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "CONFRONT_2",
+      "optionKey": "STAND_FIRM",
+      "text": "I would not change a single word.",
+      "imagePath": "res://Images/Youri/Defiant.png"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "KNEEL",
+      "text": "Rise. You know how to behave before a queen.",
+      "imagePath": "res://Images/QueenMizuri/Approving.png",
+      "outcome": "SUCCESS"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "KNEEL",
+      "text": "Your reluctance speaks louder than your bow.",
+      "imagePath": "res://Images/QueenMizuri/Suspicious.png",
+      "outcome": "FAILURE"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REFUSE",
+      "text": "So you would challenge the throne itself?",
+      "imagePath": "res://Images/QueenMizuri/Angry.png",
+      "outcome": "FAILURE"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REFUSE",
+      "text": "A fearless answer. Perhaps too fearless.",
+      "imagePath": "res://Images/QueenMizuri/Assertive.png",
+      "outcome": "SUCCESS"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "DECEIVE",
+      "text": "Your devotion interests me. Prove it.",
+      "imagePath": "res://Images/QueenMizuri/Approving.png",
+      "outcome": "SUCCESS"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "DECEIVE",
+      "text": "Do not insult me with empty promises.",
+      "imagePath": "res://Images/QueenMizuri/Suspicious.png",
+      "outcome": "FAILURE"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "NEGOTIATE",
+      "text": "Then tell me what you have to offer.",
+      "imagePath": "res://Images/QueenMizuri/Approving.png",
+      "outcome": "SUCCESS"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "NEGOTIATE",
+      "text": "You are in no position to bargain.",
+      "imagePath": "res://Images/QueenMizuri/Unimpressed.png",
+      "outcome": "FAILURE"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "QUESTION",
+      "text": "You dare ask? I respect curiosity more than silence.",
+      "imagePath": "res://Images/QueenMizuri/Assertive.png",
+      "outcome": "SUCCESS"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "QUESTION",
+      "text": "You stand before the answer.",
+      "imagePath": "res://Images/QueenMizuri/Angry.png",
+      "outcome": "FAILURE"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REQUEST_FAVOUR",
+      "text": "I shall hear the request in private.",
+      "imagePath": "res://Images/QueenMizuri/Approving.png",
+      "outcome": "SUCCESS"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REQUEST_FAVOUR",
+      "text": "The court is not here to indulge you.",
+      "imagePath": "res://Images/QueenMizuri/Unimpressed.png",
+      "outcome": "FAILURE"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "REFUSE",
+      "text": "Ark, I expected nothing less. Now consider the cost.",
+      "imagePath": "res://Images/QueenMizuri/Angry.png",
+      "outcome": "FAILURE",
+      "visitorId": "ARK"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "ROYAL_AUDIENCE",
+      "nodeKey": "AUDIENCE",
+      "optionKey": "QUESTION",
+      "text": "Youri, beauty alone does not confer authority.",
+      "imagePath": "res://Images/QueenMizuri/Unimpressed.png",
+      "outcome": "FAILURE",
+      "visitorId": "YOURI"
+    },
+    {
+      "characterId": "ARK",
+      "interactionKey": "CASUAL_ENCOUNTER",
+      "nodeKey": "MEET",
+      "optionKey": "CHALLENGE",
+      "text": "Show me what you can do.",
+      "imagePath": "res://Images/Ark/Defiant.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "CASUAL_ENCOUNTER",
+      "nodeKey": "MEET",
+      "optionKey": "COMPLIMENT",
+      "text": "Of course I look remarkable.",
+      "imagePath": "res://Images/Youri/Default.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "CASUAL_ENCOUNTER",
+      "nodeKey": "MEET",
+      "optionKey": "FLIRT",
+      "text": "I know you are captivated by me.",
+      "imagePath": "res://Images/Youri/Default.png"
+    },
+    {
+      "characterId": "YOURI",
+      "interactionKey": "CASUAL_ENCOUNTER",
+      "nodeKey": "MEET",
+      "optionKey": "COMPLIMENT",
+      "visitorId": "ARK",
+      "outcome": "SUCCESS",
+      "text": "At last, someone with taste.",
+      "imagePath": "res://Images/Youri/Default.png"
+    },
+    {
+      "characterId": "MIZURI",
+      "interactionKey": "CASUAL_ENCOUNTER",
+      "nodeKey": "MEET",
+      "optionKey": "CHALLENGE",
+      "outcome": "SUCCESS",
+      "text": "You have courage. I acknowledge that.",
+      "imagePath": "res://Images/QueenMizuri/Approving.png"
+    }
+  ]
+}

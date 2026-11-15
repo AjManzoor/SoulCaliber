@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://238rgcspm4mr"
+
+[deps]
+
+files=["res://Reference/reaction_changes.Node.translation", "res://Reference/reaction_changes.Option.translation", "res://Reference/reaction_changes.Old success.translation", "res://Reference/reaction_changes.Old failure.translation", "res://Reference/reaction_changes.New success.translation", "res://Reference/reaction_changes.New failure.translation"]
+
+source_file="res://Reference/reaction_changes.csv"
+dest_files=["res://Reference/reaction_changes.Node.translation", "res://Reference/reaction_changes.Option.translation", "res://Reference/reaction_changes.Old success.translation", "res://Reference/reaction_changes.Old failure.translation", "res://Reference/reaction_changes.New success.translation", "res://Reference/reaction_changes.New failure.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

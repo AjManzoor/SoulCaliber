@@ -1,0 +1,1707 @@
+{
+  "key": "ROYAL_AUDIENCE",
+  "title": "The Royal Audience",
+  "hostCharacterId": "MIZURI",
+  "startNodeKey": "AUDIENCE",
+  "nodes": [
+    {
+      "key": "AUDIENCE",
+      "round": 1,
+      "hostIntroduction": "You stand before my throne. Will you acknowledge my authority?",
+      "options": [
+        {
+          "key": "KNEEL",
+          "label": "Kneel respectfully",
+          "baseSuccessChance": 90,
+          "defaultPlayerLine": "I acknowledge your authority, Your Majesty.",
+          "defaultHostSuccessLine": "Rise. Courtesy is not forgotten.",
+          "defaultHostFailureLine": "Your hesitation does not escape me.",
+          "successNextNodeKey": "RESPECT_2",
+          "failureNextNodeKey": "RESPECT_2",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -4
+            }
+          ],
+          "successTargetReaction": "PLEASED",
+          "failureTargetReaction": "SUSPICIOUS"
+        },
+        {
+          "key": "REFUSE",
+          "label": "Refuse to kneel",
+          "baseSuccessChance": 40,
+          "defaultPlayerLine": "I will not kneel simply because you demand it.",
+          "defaultHostSuccessLine": "A bold answer. Very well, let us speak as equals—for now.",
+          "defaultHostFailureLine": "Defiance without power is a dangerous habit.",
+          "successNextNodeKey": "CONFRONT_2",
+          "failureNextNodeKey": "CONFRONT_2",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": -4
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -8
+            }
+          ],
+          "successTargetReaction": "IMPRESSED",
+          "failureTargetReaction": "ANGRY"
+        },
+        {
+          "key": "DECEIVE",
+          "label": "Feign loyalty",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "My loyalty is yours, Your Majesty.",
+          "defaultHostSuccessLine": "Then perhaps there is use for your loyalty.",
+          "defaultHostFailureLine": "You offer me words, not proof.",
+          "successNextNodeKey": "INTRIGUE_2",
+          "failureNextNodeKey": "INTRIGUE_2",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -15
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -5
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "SUSPICIOUS"
+        },
+        {
+          "key": "NEGOTIATE",
+          "label": "Negotiate your position",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "What would each of us gain from an agreement?",
+          "defaultHostSuccessLine": "You may yet have a talent for diplomacy.",
+          "defaultHostFailureLine": "You mistake an audience for a marketplace.",
+          "successNextNodeKey": "RESPECT_2",
+          "failureNextNodeKey": "CONFRONT_2",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 9
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": -5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            }
+          ],
+          "successTargetReaction": "CONSIDERING",
+          "failureTargetReaction": "OFFENDED"
+        },
+        {
+          "key": "QUESTION",
+          "label": "Question her authority",
+          "baseSuccessChance": 50,
+          "defaultPlayerLine": "By what right do you claim obedience?",
+          "defaultHostSuccessLine": "A fair question from someone brave enough to ask it.",
+          "defaultHostFailureLine": "You are testing the limits of my patience.",
+          "successNextNodeKey": "CONFRONT_2",
+          "failureNextNodeKey": "CONFRONT_2",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "REFLECTIVE",
+          "failureTargetReaction": "ANGRY"
+        },
+        {
+          "key": "REQUEST_FAVOUR",
+          "label": "Ask for a private favour",
+          "baseSuccessChance": 35,
+          "defaultPlayerLine": "I would ask a favour not meant for the whole court.",
+          "defaultHostSuccessLine": "Then speak privately. I shall hear you.",
+          "defaultHostFailureLine": "You have asked too much of my goodwill.",
+          "successNextNodeKey": "INTRIGUE_2",
+          "failureNextNodeKey": "CONFRONT_2",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 10
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 5
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Allyship",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -12
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -6
+            }
+          ],
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "minimum": 30
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "DISMISSIVE"
+        }
+      ]
+    },
+    {
+      "key": "RESPECT_2",
+      "round": 2,
+      "hostIntroduction": "You have my attention. Tell me what you seek from this audience.",
+      "options": [
+        {
+          "key": "OFFER_SERVICE",
+          "label": "Offer your service",
+          "baseSuccessChance": 80,
+          "defaultPlayerLine": "I can be of use to your court.",
+          "defaultHostSuccessLine": "Then I shall remember your offer.",
+          "defaultHostFailureLine": "Do not promise what you cannot deliver.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "RESPECT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 3
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Allyship",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            }
+          ],
+          "successTargetReaction": "PLEASED",
+          "failureTargetReaction": "WARY"
+        },
+        {
+          "key": "ASK_PRIVILEGE",
+          "label": "Ask for a privilege",
+          "baseSuccessChance": 45,
+          "defaultPlayerLine": "I would ask permission to act in your name.",
+          "defaultHostSuccessLine": "You have earned consideration.",
+          "defaultHostFailureLine": "Such trust is not granted lightly.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "RESPECT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 3
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Allyship",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -8
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -4
+            }
+          ],
+          "successTargetReaction": "CONSIDERING",
+          "failureTargetReaction": "UNINTERESTED"
+        },
+        {
+          "key": "DISCUSS_LAWS",
+          "label": "Discuss the laws of the realm",
+          "baseSuccessChance": 75,
+          "defaultPlayerLine": "How do you intend to govern those who disagree?",
+          "defaultHostSuccessLine": "A reasonable concern. You may speak freely.",
+          "defaultHostFailureLine": "My court is not yours to lecture.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "RESPECT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            }
+          ],
+          "successTargetReaction": "REFLECTIVE",
+          "failureTargetReaction": "OFFENDED"
+        },
+        {
+          "key": "PAY_COMPLIMENT",
+          "label": "Compliment the queen",
+          "baseSuccessChance": 70,
+          "defaultPlayerLine": "Your court commands attention.",
+          "defaultHostSuccessLine": "You know how to show respect.",
+          "defaultHostFailureLine": "I know an empty compliment when I hear it.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "RESPECT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "delta": 8
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Romance",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Romance",
+              "delta": 1
+            }
+          ],
+          "chanceModifiers": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "factor": 0.25
+            }
+          ],
+          "successTargetReaction": "PLEASED",
+          "failureTargetReaction": "UNIMPRESSED"
+        },
+        {
+          "key": "END_AUDIENCE",
+          "label": "Ask to take your leave",
+          "baseSuccessChance": 85,
+          "defaultPlayerLine": "I have said what I came to say.",
+          "defaultHostSuccessLine": "Then go with my leave.",
+          "defaultHostFailureLine": "You may leave, though your timing is poor.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "RESPECT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 1
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -1
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 0
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "DISMISSIVE"
+        },
+        {
+          "key": "PERSONAL_TRUST",
+          "label": "Ask for personal trust",
+          "baseSuccessChance": 40,
+          "defaultPlayerLine": "Will you trust me with something important?",
+          "defaultHostSuccessLine": "Perhaps I shall.",
+          "defaultHostFailureLine": "Not yet.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "RESPECT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 8
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -8
+            }
+          ],
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "minimum": 25
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "minimum": 10
+            }
+          ],
+          "chanceModifiers": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "factor": 0.1
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "WARY"
+        }
+      ]
+    },
+    {
+      "key": "CONFRONT_2",
+      "round": 2,
+      "hostIntroduction": "Your words have stirred this court. Will you continue down this path?",
+      "options": [
+        {
+          "key": "STAND_FIRM",
+          "label": "Stand your ground",
+          "baseSuccessChance": 50,
+          "defaultPlayerLine": "I have nothing to retract.",
+          "defaultHostSuccessLine": "At least you stand by your words.",
+          "defaultHostFailureLine": "Pride will not shield you from consequences.",
+          "successNextNodeKey": "CONFRONT_3",
+          "failureNextNodeKey": "CONFRONT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            }
+          ],
+          "successTargetReaction": "IMPRESSED",
+          "failureTargetReaction": "ANGRY"
+        },
+        {
+          "key": "APOLOGISE",
+          "label": "Offer an apology",
+          "baseSuccessChance": 75,
+          "defaultPlayerLine": "I spoke too sharply. I meant no insult.",
+          "defaultHostSuccessLine": "An apology is a beginning.",
+          "defaultHostFailureLine": "Do not mistake apology for absolution.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "CONFRONT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 8
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 4
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "UNMOVED"
+        },
+        {
+          "key": "CHALLENGE",
+          "label": "Issue a formal challenge",
+          "baseSuccessChance": 30,
+          "defaultPlayerLine": "Then let deeds settle the matter.",
+          "defaultHostSuccessLine": "You are either capable or reckless. We shall see.",
+          "defaultHostFailureLine": "My guards would end this before it begins.",
+          "successNextNodeKey": "CONFRONT_3",
+          "failureNextNodeKey": "CONFRONT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Fear",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": -9
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -7
+            }
+          ],
+          "successTargetReaction": "WARY",
+          "failureTargetReaction": "DISMISSIVE"
+        },
+        {
+          "key": "ASK_MERCY",
+          "label": "Ask for leniency",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "Let us settle this without further hostility.",
+          "defaultHostSuccessLine": "For today, I will permit it.",
+          "defaultHostFailureLine": "You ask for restraint after provoking me?",
+          "successNextNodeKey": "CONFRONT_3",
+          "failureNextNodeKey": "CONFRONT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 3
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Fear",
+              "delta": -3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Fear",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "ANGRY"
+        },
+        {
+          "key": "CITE_CUSTOM",
+          "label": "Invoke royal custom",
+          "baseSuccessChance": 60,
+          "defaultPlayerLine": "Even a queen is bound by custom.",
+          "defaultHostSuccessLine": "You know our traditions. Interesting.",
+          "defaultHostFailureLine": "Do not hide behind customs you scarcely understand.",
+          "successNextNodeKey": "CONFRONT_3",
+          "failureNextNodeKey": "CONFRONT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "REFLECTIVE",
+          "failureTargetReaction": "UNIMPRESSED"
+        },
+        {
+          "key": "OFFER_TRUCE",
+          "label": "Propose a lasting truce",
+          "baseSuccessChance": 50,
+          "defaultPlayerLine": "We need not remain enemies.",
+          "defaultHostSuccessLine": "A truce may benefit us both.",
+          "defaultHostFailureLine": "A truce requires more than words.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "CONFRONT_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 12
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": -8
+            }
+          ],
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "minimum": 20
+            }
+          ],
+          "successTargetReaction": "CONSIDERING",
+          "failureTargetReaction": "WARY"
+        }
+      ]
+    },
+    {
+      "key": "INTRIGUE_2",
+      "round": 2,
+      "hostIntroduction": "Our conversation need not leave this chamber. What is your next move?",
+      "options": [
+        {
+          "key": "CONTINUE_RUSE",
+          "label": "Maintain your pretence",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "I speak with complete sincerity.",
+          "defaultHostSuccessLine": "Perhaps. Continue.",
+          "defaultHostFailureLine": "Your performance is beginning to wear thin.",
+          "successNextNodeKey": "INTRIGUE_3",
+          "failureNextNodeKey": "INTRIGUE_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -8
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -4
+            }
+          ],
+          "successTargetReaction": "CONSIDERING",
+          "failureTargetReaction": "SUSPICIOUS"
+        },
+        {
+          "key": "REVEAL_TRUTH",
+          "label": "Reveal your real intention",
+          "baseSuccessChance": 60,
+          "defaultPlayerLine": "There is something I have not told you.",
+          "defaultHostSuccessLine": "Candour has its uses.",
+          "defaultHostFailureLine": "You should have begun with the truth.",
+          "successNextNodeKey": "RESPECT_3",
+          "failureNextNodeKey": "INTRIGUE_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 8
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 4
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -8
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -4
+            }
+          ],
+          "successTargetReaction": "REFLECTIVE",
+          "failureTargetReaction": "OFFENDED"
+        },
+        {
+          "key": "NAME_RIVAL",
+          "label": "Offer information about a rival",
+          "baseSuccessChance": 70,
+          "defaultPlayerLine": "I have news about someone who opposes you.",
+          "defaultHostSuccessLine": "That information may prove useful.",
+          "defaultHostFailureLine": "Bring me facts, not rumours.",
+          "successNextNodeKey": "INTRIGUE_3",
+          "failureNextNodeKey": "INTRIGUE_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "INTERESTED",
+          "failureTargetReaction": "UNIMPRESSED"
+        },
+        {
+          "key": "ASK_SECRET",
+          "label": "Ask for confidential information",
+          "baseSuccessChance": 40,
+          "defaultPlayerLine": "What do you know that the court does not?",
+          "defaultHostSuccessLine": "I may share a little.",
+          "defaultHostFailureLine": "You have not earned such confidence.",
+          "successNextNodeKey": "INTRIGUE_3",
+          "failureNextNodeKey": "INTRIGUE_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -9
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -4
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "WARY"
+        },
+        {
+          "key": "WITHDRAW",
+          "label": "Withdraw the suggestion",
+          "baseSuccessChance": 80,
+          "defaultPlayerLine": "Perhaps I spoke too soon.",
+          "defaultHostSuccessLine": "A wise retreat, perhaps.",
+          "defaultHostFailureLine": "Do not waste my time with half-formed plans.",
+          "successNextNodeKey": "INTRIGUE_3",
+          "failureNextNodeKey": "INTRIGUE_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "DISMISSIVE"
+        },
+        {
+          "key": "PRIVATE_PACT",
+          "label": "Propose a secret pact",
+          "baseSuccessChance": 40,
+          "defaultPlayerLine": "Let us make a pact beyond the court’s knowledge.",
+          "defaultHostSuccessLine": "You have my interest.",
+          "defaultHostFailureLine": "You have badly misjudged my trust.",
+          "successNextNodeKey": "INTRIGUE_3",
+          "failureNextNodeKey": "INTRIGUE_3",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 10
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -12
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -6
+            }
+          ],
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "minimum": 30
+            }
+          ],
+          "successTargetReaction": "INTERESTED",
+          "failureTargetReaction": "SUSPICIOUS"
+        }
+      ]
+    },
+    {
+      "key": "RESPECT_3",
+      "round": 3,
+      "hostIntroduction": "One final matter remains before our audience ends.",
+      "options": [
+        {
+          "key": "PLEDGE",
+          "label": "Pledge your word",
+          "baseSuccessChance": 80,
+          "defaultPlayerLine": "You have my word.",
+          "defaultHostSuccessLine": "Then I shall hold you to it.",
+          "defaultHostFailureLine": "Promises are easy to break.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Allyship",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "SUSPICIOUS"
+        },
+        {
+          "key": "REQUEST_TASK",
+          "label": "Request a task",
+          "baseSuccessChance": 60,
+          "defaultPlayerLine": "Give me a task by which I can prove myself.",
+          "defaultHostSuccessLine": "I shall consider a suitable task.",
+          "defaultHostFailureLine": "You have not yet earned a commission.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "CONSIDERING",
+          "failureTargetReaction": "UNINTERESTED"
+        },
+        {
+          "key": "FORMAL_FAREWELL",
+          "label": "Take a formal farewell",
+          "baseSuccessChance": 90,
+          "defaultPlayerLine": "I take my leave with respect.",
+          "defaultHostSuccessLine": "Go in peace.",
+          "defaultHostFailureLine": "You are dismissed.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -1
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 0
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "DISMISSIVE"
+        },
+        {
+          "key": "PROMISE_RETURN",
+          "label": "Promise to return",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "Our paths will cross again.",
+          "defaultHostSuccessLine": "I expect they will.",
+          "defaultHostFailureLine": "We shall see whether you keep that promise.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": 3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Romance",
+              "delta": 2
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Allyship",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            }
+          ],
+          "successTargetReaction": "PLEASED",
+          "failureTargetReaction": "WARY"
+        },
+        {
+          "key": "INSIST_TERMS",
+          "label": "Insist on clear terms",
+          "baseSuccessChance": 55,
+          "defaultPlayerLine": "I expect our agreement to be honoured on both sides.",
+          "defaultHostSuccessLine": "Fair terms benefit us both.",
+          "defaultHostFailureLine": "You still presume too much.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            }
+          ],
+          "successTargetReaction": "ACCEPTING",
+          "failureTargetReaction": "ANGRY"
+        },
+        {
+          "key": "REQUEST_CROWN_ACCESS",
+          "label": "Request access to the inner court",
+          "baseSuccessChance": 35,
+          "defaultPlayerLine": "Permit me to join your closest council.",
+          "defaultHostSuccessLine": "I will grant you an audience there.",
+          "defaultHostFailureLine": "You have overreached.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 10
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -12
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -6
+            }
+          ],
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "minimum": 35
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "minimum": 20
+            }
+          ],
+          "successTargetReaction": "ACCEPTING",
+          "failureTargetReaction": "DISMISSIVE"
+        }
+      ]
+    },
+    {
+      "key": "CONFRONT_3",
+      "round": 3,
+      "hostIntroduction": "This audience must end. Choose your final words carefully.",
+      "options": [
+        {
+          "key": "ACCEPT_JUDGEMENT",
+          "label": "Accept the queen’s judgement",
+          "baseSuccessChance": 75,
+          "defaultPlayerLine": "I accept your decision, whether I agree or not.",
+          "defaultHostSuccessLine": "Then we have an understanding.",
+          "defaultHostFailureLine": "Do not mistake my restraint for weakness.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "WARY"
+        },
+        {
+          "key": "DEMAND_DUEL",
+          "label": "Demand a duel",
+          "baseSuccessChance": 25,
+          "defaultPlayerLine": "Then face me without your guards.",
+          "defaultHostSuccessLine": "You have courage. I will remember it.",
+          "defaultHostFailureLine": "That insolence has gone too far.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -12
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -6
+            }
+          ],
+          "successTargetReaction": "IMPRESSED",
+          "failureTargetReaction": "ANGRY"
+        },
+        {
+          "key": "SEEK_WITNESS",
+          "label": "Ask for witnesses",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "Let the court remember what happened here.",
+          "defaultHostSuccessLine": "There shall be witnesses.",
+          "defaultHostFailureLine": "You are courting unnecessary attention.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "ACCEPTING",
+          "failureTargetReaction": "UNINTERESTED"
+        },
+        {
+          "key": "WITHDRAW_DEFIANCE",
+          "label": "Withdraw your challenge",
+          "baseSuccessChance": 85,
+          "defaultPlayerLine": "I withdraw my challenge.",
+          "defaultHostSuccessLine": "A sensible conclusion.",
+          "defaultHostFailureLine": "You should have thought before speaking.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "RELIEVED",
+          "failureTargetReaction": "ANGRY"
+        },
+        {
+          "key": "WALK_AWAY",
+          "label": "Walk away without a bow",
+          "baseSuccessChance": 45,
+          "defaultPlayerLine": "Then we have nothing further to discuss.",
+          "defaultHostSuccessLine": "Go. I will not stop you.",
+          "defaultHostFailureLine": "Your exit is one more insult.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 1
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "DISMISSIVE",
+          "failureTargetReaction": "OFFENDED"
+        },
+        {
+          "key": "ASK_RECONCILIATION",
+          "label": "Ask to reconcile",
+          "baseSuccessChance": 40,
+          "defaultPlayerLine": "We could still make peace.",
+          "defaultHostSuccessLine": "Perhaps we could.",
+          "defaultHostFailureLine": "Not after today.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 10
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            }
+          ],
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "minimum": 25
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "UNMOVED"
+        }
+      ]
+    },
+    {
+      "key": "INTRIGUE_3",
+      "round": 3,
+      "hostIntroduction": "Be careful. Secrets rarely stay buried forever.",
+      "options": [
+        {
+          "key": "SEAL_AGREEMENT",
+          "label": "Seal your agreement",
+          "baseSuccessChance": 70,
+          "defaultPlayerLine": "Then our agreement stands.",
+          "defaultHostSuccessLine": "Very well. We have an understanding.",
+          "defaultHostFailureLine": "You have offered too little.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 10
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": -4
+            }
+          ],
+          "successTargetReaction": "ACCEPTING",
+          "failureTargetReaction": "UNINTERESTED"
+        },
+        {
+          "key": "CONCEAL_SECRET",
+          "label": "Keep your secret",
+          "baseSuccessChance": 60,
+          "defaultPlayerLine": "Some things are safer left unsaid.",
+          "defaultHostSuccessLine": "For now, I will allow your silence.",
+          "defaultHostFailureLine": "Silence can be as revealing as speech.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            }
+          ],
+          "successTargetReaction": "WARY",
+          "failureTargetReaction": "SUSPICIOUS"
+        },
+        {
+          "key": "OFFER_INFORMATION",
+          "label": "Offer more information",
+          "baseSuccessChance": 65,
+          "defaultPlayerLine": "I know something else you should hear.",
+          "defaultHostSuccessLine": "Then speak.",
+          "defaultHostFailureLine": "Your claims grow less convincing.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "INTERESTED",
+          "failureTargetReaction": "UNIMPRESSED"
+        },
+        {
+          "key": "CHANGE_SUBJECT",
+          "label": "Change the subject",
+          "baseSuccessChance": 75,
+          "defaultPlayerLine": "Let us return to a safer matter.",
+          "defaultHostSuccessLine": "Perhaps that is wise.",
+          "defaultHostFailureLine": "You cannot avoid me forever.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 1
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            }
+          ],
+          "successTargetReaction": "RECEPTIVE",
+          "failureTargetReaction": "ANGRY"
+        },
+        {
+          "key": "BREAK_OFF",
+          "label": "End the private discussion",
+          "baseSuccessChance": 80,
+          "defaultPlayerLine": "Our business is done.",
+          "defaultHostSuccessLine": "Then keep your counsel.",
+          "defaultHostFailureLine": "This was a waste of an audience.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 1
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -2
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -1
+            },
+            {
+              "direction": "ACTOR_TO_PARTNER",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successTargetReaction": "DISMISSIVE",
+          "failureTargetReaction": "OFFENDED"
+        },
+        {
+          "key": "REVEAL_LOYALTY",
+          "label": "Confide your loyalty",
+          "baseSuccessChance": 40,
+          "defaultPlayerLine": "You can trust me more than your court.",
+          "defaultHostSuccessLine": "That is an extraordinary offer.",
+          "defaultHostFailureLine": "Do not presume to know whom I trust.",
+          "successNextNodeKey": "",
+          "failureNextNodeKey": "",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 10
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -9
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -4
+            }
+          ],
+          "requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "minimum": 35
+            }
+          ],
+          "successTargetReaction": "FLATTERED",
+          "failureTargetReaction": "SUSPICIOUS"
+        }
+      ]
+    }
+  ]
+}

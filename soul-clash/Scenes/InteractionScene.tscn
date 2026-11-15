@@ -1,0 +1,259 @@
+[gd_scene format=3 uid="uid://c468tjqw7g3cw"]
+
+[ext_resource type="Script" uid="uid://0vlwyvpu3duk" path="res://Scenes/InteractionScene.cs" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_portrait"]
+bg_color = Color(0.115, 0.104, 0.155, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.38, 0.31, 0.47, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue"]
+bg_color = Color(0.15, 0.13, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.53, 0.43, 0.61, 1)
+corner_radius_top_left = 9
+corner_radius_top_right = 9
+corner_radius_bottom_right = 9
+corner_radius_bottom_left = 9
+
+[node name="InteractionScene" type="Control" unique_id=2137628468]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+VisitorCharacterId = "Ark"
+PartnerCharacterId = "Nobunogi"
+InteractionKey = "INFORMATION_GATHERING"
+
+[node name="Background" type="ColorRect" parent="." unique_id=987802654]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.065, 0.056, 0.085, 1)
+
+[node name="LeftFrame" type="Panel" parent="." unique_id=469321625]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.025
+anchor_top = 0.12
+anchor_right = 0.26
+anchor_bottom = 0.855
+theme_override_styles/panel = SubResource("StyleBoxFlat_portrait")
+
+[node name="LeftPortrait" type="TextureRect" parent="LeftFrame" unique_id=1926237343]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LeftPlaceholder" type="Label" parent="LeftFrame" unique_id=1547283050]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.72, 0.69, 0.79, 1)
+theme_override_font_sizes/font_size = 20
+text = "LEFT PORTRAIT
+
+Add an image to
+LeftPortrait.texture"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LeftName" type="Label" parent="." unique_id=588546437]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.025
+anchor_top = 0.865
+anchor_right = 0.26
+anchor_bottom = 0.925
+theme_override_colors/font_color = Color(0.95, 0.84, 0.69, 1)
+theme_override_font_sizes/font_size = 25
+text = "Ark"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RightFrame" type="Panel" parent="." unique_id=1348190561]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.74
+anchor_top = 0.12
+anchor_right = 0.975
+anchor_bottom = 0.855
+theme_override_styles/panel = SubResource("StyleBoxFlat_portrait")
+
+[node name="RightPortrait" type="TextureRect" parent="RightFrame" unique_id=2033779973]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="RightPlaceholder" type="Label" parent="RightFrame" unique_id=682457015]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.72, 0.69, 0.79, 1)
+theme_override_font_sizes/font_size = 20
+text = "RIGHT PORTRAIT
+
+Add an image to
+RightPortrait.texture"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RightName" type="Label" parent="." unique_id=1571702708]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.74
+anchor_top = 0.865
+anchor_right = 0.975
+anchor_bottom = 0.925
+theme_override_colors/font_color = Color(0.95, 0.84, 0.69, 1)
+theme_override_font_sizes/font_size = 25
+text = "Queen Mizuri"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SceneTitle" type="Label" parent="." unique_id=491278116]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.28
+anchor_top = 0.055
+anchor_right = 0.72
+anchor_bottom = 0.135
+theme_override_colors/font_color = Color(0.96, 0.83, 0.62, 1)
+theme_override_font_sizes/font_size = 26
+text = "THE ROYAL AUDIENCE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SpeakerLabel" type="Label" parent="." unique_id=2058577776]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.305
+anchor_top = 0.17
+anchor_right = 0.695
+anchor_bottom = 0.225
+theme_override_colors/font_color = Color(0.93, 0.79, 0.6, 1)
+theme_override_font_sizes/font_size = 22
+text = "Queen Mizuri"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DialoguePanel" type="Panel" parent="." unique_id=1704119811]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.295
+anchor_top = 0.24
+anchor_right = 0.705
+anchor_bottom = 0.42
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
+
+[node name="DialogueLabel" type="Label" parent="DialoguePanel" unique_id=187339038]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 14.0
+offset_right = -18.0
+offset_bottom = -14.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.96, 0.95, 0.98, 1)
+theme_override_font_sizes/font_size = 20
+text = "You stand before my throne, Ark. Will you kneel?"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ChoiceTitle" type="Label" parent="." unique_id=609953831]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.305
+anchor_top = 0.44
+anchor_right = 0.695
+anchor_bottom = 0.49
+theme_override_colors/font_color = Color(0.72, 0.71, 0.78, 1)
+theme_override_font_sizes/font_size = 16
+text = "CHOOSE YOUR RESPONSE"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ChoicesScroll" type="ScrollContainer" parent="." unique_id=2005267260]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.305
+anchor_top = 0.5
+anchor_right = 0.695
+anchor_bottom = 0.915
+horizontal_scroll_mode = 0
+
+[node name="Choices" type="VBoxContainer" parent="ChoicesScroll" unique_id=1083137537]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 9
+
+[node name="ContinueButton" type="Button" parent="." unique_id=608844167]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.325
+anchor_top = 0.6
+anchor_right = 0.675
+anchor_bottom = 0.69
+theme_override_font_sizes/font_size = 20
+text = "Continue"
+
+[node name="Footer" type="Label" parent="." unique_id=2828672]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.3
+anchor_top = 0.93
+anchor_right = 0.7
+anchor_bottom = 0.985
+theme_override_colors/font_color = Color(0.62, 0.6, 0.7, 1)
+theme_override_font_sizes/font_size = 14
+text = "Relationship-dependent dialogue  •  saved locally"
+horizontal_alignment = 1
+vertical_alignment = 1

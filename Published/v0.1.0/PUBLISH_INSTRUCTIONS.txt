@@ -1,0 +1,8 @@
+SoulCaliber content package v0.1.0
+
+1. In Godot, export your Windows .NET game to a separate folder. Use the 'Export all resources in the project' mode so portraits dynamically loaded from res:// paths are included in its PCK.
+2. Place this package's Content folder beside your exported .exe (or use Studio's Install button).
+3. Expected layout: SoulCaliber.exe, SoulCaliber.pck, Content/content.db, Content/manifest.json.
+4. Release builds must read <executable folder>/Content/content.db with SqliteOpenMode.ReadOnly. Do not ship the development-only absolute project.godot database setting.
+5. Player saves remain in Godot user://soulcaliber_savegame.db. Exported builds must be tested on a clean machine/folder.
+6. Artwork files are NOT copied to Content. Godot must import them and include them inside the exported PCK.

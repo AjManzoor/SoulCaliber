@@ -1,0 +1,260 @@
+{
+  "format": "SoulCaliberContentPackage/1",
+  "version": "0.1.0",
+  "createdUtc": "2026-11-15T12:12:38.8951303\u002B00:00",
+  "sqliteUserVersion": 0,
+  "database": {
+    "path": "Content/content.db",
+    "sha256": "7cff6410f27f9613cd6bbd1ab33d4f07fe3421b1d5a04b4dde71ee817c74fe9e",
+    "bytes": 135168
+  },
+  "counts": {
+    "ChanceModifiers": 6,
+    "Characters": 6,
+    "Effects": 263,
+    "Interactions": 3,
+    "Lines": 39,
+    "Nodes": 12,
+    "Options": 69,
+    "Personalities": 6,
+    "ReactionImages": 45,
+    "Requirements": 13,
+    "SkillChecks": 66
+  },
+  "referencedGodotAssets": [
+    {
+      "resourcePath": "res://Images/Ark/Amused.png",
+      "sha256": "4848193af42f434e19e22c177cdee5fe9d68795cff8ee2a56ccc71b8677eeed7",
+      "bytes": 1042426
+    },
+    {
+      "resourcePath": "res://Images/Ark/Default.png",
+      "sha256": "4fef5b8ee47fc52b6a1b595c460d756c95c4a3be1293601053046371c525c5f4",
+      "bytes": 1102919
+    },
+    {
+      "resourcePath": "res://Images/Ark/Dismissive.png",
+      "sha256": "70223cd63a6d055edcd7578bb902175989f8dd507b8b177c0e6537190d7b0975",
+      "bytes": 1049953
+    },
+    {
+      "resourcePath": "res://Images/Ark/Flattered.png",
+      "sha256": "e7ecb49386e8e4911366a2f2878c326f0fec21a8bb900ab99d6aed182b20b6a6",
+      "bytes": 1199189
+    },
+    {
+      "resourcePath": "res://Images/Ark/Intimidated.png",
+      "sha256": "a48cdedbe5d53e7aee7997f072c9a57ad5d211c2d273eaeda5b259a55176730c",
+      "bytes": 1111825
+    },
+    {
+      "resourcePath": "res://Images/Ark/Lose.png",
+      "sha256": "6430e77811d8624ad7d91bcc5f9035b904b751acf91cb4807018b3bf32e7289e",
+      "bytes": 1024439
+    },
+    {
+      "resourcePath": "res://Images/Ark/Win.png",
+      "sha256": "a7d9350b726aea69a2351d62bc26d1efaf21cbfc01831824ee96ab234d5414f7",
+      "bytes": 1073148
+    },
+    {
+      "resourcePath": "res://Images/GoldieRocks/Amused.png",
+      "sha256": "a6da5df9ed84e9433cb301e439ebc61e3b0f2ae6d58cabf2ff0877bb341db367",
+      "bytes": 2326753
+    },
+    {
+      "resourcePath": "res://Images/GoldieRocks/Default.png",
+      "sha256": "842f234a7b30ef9a77268773d5bf8fcb44f9c7a03a25acf0caa3fdd744f4b951",
+      "bytes": 2215087
+    },
+    {
+      "resourcePath": "res://Images/GoldieRocks/Dismissive.png",
+      "sha256": "3ce1479a5eddb9547406ad630bb816b5cf7cf9c0a4f9a7310e95007a3bf573ee",
+      "bytes": 2338434
+    },
+    {
+      "resourcePath": "res://Images/GoldieRocks/Flattered.png",
+      "sha256": "9839c89ad515f382415a412fd188c4482ed4512bc389361ed02a06f57cbfbd39",
+      "bytes": 2553121
+    },
+    {
+      "resourcePath": "res://Images/GoldieRocks/Intimidated.png",
+      "sha256": "d6c04418f6f8cf1568601dee09c3e6b31d604a25c77699fa9bfc3e4247d9c393",
+      "bytes": 2298006
+    },
+    {
+      "resourcePath": "res://Images/GoldieRocks/Lose.png",
+      "sha256": "cad62641633acb52d9e0416ca0ca43447f92a8d853514d1006e005d93b70f146",
+      "bytes": 2341795
+    },
+    {
+      "resourcePath": "res://Images/GoldieRocks/Win.png",
+      "sha256": "52e34863d982759dac409bc25adb2efc33b93117bbb928976970cb73187c5da5",
+      "bytes": 2325954
+    },
+    {
+      "resourcePath": "res://Images/LAW/DEFAULT_34d49717148d49b489b37024cde77140.png",
+      "sha256": "27b2c8aeb9dd3c65c2c50d29cc22d656a3fb60b2799c7d5aed0d8a36b753eb15",
+      "bytes": 2242473
+    },
+    {
+      "resourcePath": "res://Images/LAW/FAILURE_ce7f05322a8e45a8995da9293bbf28bd.png",
+      "sha256": "5bb6967681904a06745dc85c16ff1ba6f2758889b65fed85dcb2d50898fbaddf",
+      "bytes": 2338570
+    },
+    {
+      "resourcePath": "res://Images/LAW/SUCCESS_1720396e564d44f8bf14dce71222918f.png",
+      "sha256": "2f3ce3087cb0e2abea0dea73ec88e73c41f87544f615196998a32f0b850ee321",
+      "bytes": 2282649
+    },
+    {
+      "resourcePath": "res://Images/MIZURI/DEFAULT_c4f5fad06b444270a8d537088be6a940.png",
+      "sha256": "ee5cbc7609a06c5d49c824799472833baefaf2ad1bb0d2f9b48aabfa34e5a1b5",
+      "bytes": 2179158
+    },
+    {
+      "resourcePath": "res://Images/MIZURI/FAILURE_c5b2ca664fb2435681b62d241eb42019.png",
+      "sha256": "e008d392cb2201779124f66975de47dd6156c310cb3f52bd1a030dc6d5163e93",
+      "bytes": 2056522
+    },
+    {
+      "resourcePath": "res://Images/MIZURI/SUCCESS_4b2fcb703ec44577abd04b2b9f92172c.png",
+      "sha256": "27c99859e4d5de1a215f5e26f4b310e5723dee586caf8da04012e977a365472b",
+      "bytes": 2251196
+    },
+    {
+      "resourcePath": "res://Images/Nobunogi/Amused.png",
+      "sha256": "d7bcd0a94bc7b721e105f65b36982a016a1713bf0e3ce29f5c760b336d1da3ae",
+      "bytes": 832223
+    },
+    {
+      "resourcePath": "res://Images/Nobunogi/Default.png",
+      "sha256": "6653a5aa218afed03a65284d7f0e390be881add2dab6edaa26b5a6a89145be9a",
+      "bytes": 819098
+    },
+    {
+      "resourcePath": "res://Images/Nobunogi/Dismissive.png",
+      "sha256": "03a60b5a8a3a5bc8a980ab62462c2bae2152b199a2051a6322a1931ac76d75f1",
+      "bytes": 833886
+    },
+    {
+      "resourcePath": "res://Images/Nobunogi/Flattered.png",
+      "sha256": "ce5e75a7b7473a93b9225c3578c163de03d5e3c5966502c48bac38a2266bf990",
+      "bytes": 821440
+    },
+    {
+      "resourcePath": "res://Images/Nobunogi/Intimidated.png",
+      "sha256": "60e18b7221e3df2bd4981f25feb01f97d88ee9b7e07aa45c5886bee147003186",
+      "bytes": 958142
+    },
+    {
+      "resourcePath": "res://Images/Nobunogi/Lose.png",
+      "sha256": "da32d863369e47c6d8b73fd08051129e1b3968b7b46dbe31c0833d682361617e",
+      "bytes": 853883
+    },
+    {
+      "resourcePath": "res://Images/Nobunogi/Win.png",
+      "sha256": "0cae587dd404abb5fbbca7d084bc28e5223f9b49702f3bb52097938f059a7033",
+      "bytes": 1303887
+    },
+    {
+      "resourcePath": "res://Images/Youri/Amused.png",
+      "sha256": "3112eb8f6eec64a847dd360afb18897569d1baaf919bcaed89589d355cc2343b",
+      "bytes": 1639633
+    },
+    {
+      "resourcePath": "res://Images/Youri/Default.png",
+      "sha256": "8332bdeda349937b591fb6edbbe7c186f77a75d0561d8b0a50890579ee6b3e66",
+      "bytes": 1446485
+    },
+    {
+      "resourcePath": "res://Images/Youri/Dismissive.png",
+      "sha256": "1c1688e12b350222a2a6c769494b8d327c2c0e5741601e88133251526ff06d8c",
+      "bytes": 1493842
+    },
+    {
+      "resourcePath": "res://Images/Youri/Flattered.png",
+      "sha256": "c85ea2b751fee175670d29146ce9e923b2a19a67635ce4fe1818c725a776333f",
+      "bytes": 1574081
+    },
+    {
+      "resourcePath": "res://Images/Youri/Intimidated.png",
+      "sha256": "b8bb8ef7698d1f8103e49565a659c7d9d3b55d91c3197db89addebe1d0014150",
+      "bytes": 1598798
+    },
+    {
+      "resourcePath": "res://Images/Youri/Lose.png",
+      "sha256": "23ceee7b2d4e10a579b9df1a2640198e18937e9b54b87acfda859f0261d130cf",
+      "bytes": 1218974
+    },
+    {
+      "resourcePath": "res://Images/Youri/Win.png",
+      "sha256": "1027341633e902f95baf5c655de48bcf6041ff6bb018852001f6e5949462fea9",
+      "bytes": 1602153
+    }
+  ],
+  "warnings": [
+    "ARK / CONSIDERING: Image is missing: res://Images/Ark/Considering.png",
+    "ARK / OFFENDED: Image is missing: res://Images/Ark/Offended.png",
+    "ARK / RECEPTIVE: Image is missing: res://Images/Ark/Receptive.png",
+    "ARK / UNINTERESTED: Image is missing: res://Images/Ark/Uninterested.png",
+    "ARK / WARY: Image is missing: res://Images/Ark/Wary.png",
+    "GOLDIE_ROCKS / CONSIDERING: Image is missing: res://Images/GoldieRocks/Considering.png",
+    "GOLDIE_ROCKS / OFFENDED: Image is missing: res://Images/GoldieRocks/Offended.png",
+    "GOLDIE_ROCKS / RECEPTIVE: Image is missing: res://Images/GoldieRocks/Receptive.png",
+    "GOLDIE_ROCKS / UNINTERESTED: Image is missing: res://Images/GoldieRocks/Uninterested.png",
+    "GOLDIE_ROCKS / WARY: Image is missing: res://Images/GoldieRocks/Wary.png",
+    "MIZURI / AMUSED: Image is missing: res://Images/QueenMizuri/Amused.png",
+    "MIZURI / CONSIDERING: Image is missing: res://Images/QueenMizuri/Considering.png",
+    "MIZURI / DISMISSIVE: Image is missing: res://Images/QueenMizuri/Dismissive.png",
+    "MIZURI / FLATTERED: Image is missing: res://Images/QueenMizuri/Flattered.png",
+    "MIZURI / INTIMIDATED: Image is missing: res://Images/QueenMizuri/Intimidated.png",
+    "MIZURI / OFFENDED: Image is missing: res://Images/QueenMizuri/Offended.png",
+    "MIZURI / RECEPTIVE: Image is missing: res://Images/QueenMizuri/Receptive.png",
+    "MIZURI / UNINTERESTED: Image is missing: res://Images/QueenMizuri/Uninterested.png",
+    "MIZURI / WARY: Image is missing: res://Images/QueenMizuri/Wary.png",
+    "NOBUNOGI / CONSIDERING: Image is missing: res://Images/Nobunogi/Considering.png",
+    "NOBUNOGI / OFFENDED: Image is missing: res://Images/Nobunogi/Offended.png",
+    "NOBUNOGI / RECEPTIVE: Image is missing: res://Images/Nobunogi/Receptive.png",
+    "NOBUNOGI / UNINTERESTED: Image is missing: res://Images/Nobunogi/Uninterested.png",
+    "NOBUNOGI / WARY: Image is missing: res://Images/Nobunogi/Wary.png",
+    "YOURI / CONSIDERING: Image is missing: res://Images/Youri/Considering.png",
+    "YOURI / OFFENDED: Image is missing: res://Images/Youri/Offended.png",
+    "YOURI / RECEPTIVE: Image is missing: res://Images/Youri/Receptive.png",
+    "YOURI / UNINTERESTED: Image is missing: res://Images/Youri/Uninterested.png",
+    "YOURI / WARY: Image is missing: res://Images/Youri/Wary.png",
+    "Phrase 1 image: Image is missing: res://Images/Ark/Kneel.png",
+    "Phrase 2 image: Image is missing: res://Images/Ark/Defiant.png",
+    "Phrase 3 image: Image is missing: res://Images/Ark/Deceptive.png",
+    "Phrase 4 image: Image is missing: res://Images/Ark/Negotiating.png",
+    "Phrase 5 image: Image is missing: res://Images/Ark/Questioning.png",
+    "Phrase 6 image: Image is missing: res://Images/Ark/Private.png",
+    "Phrase 7 image: Image is missing: res://Images/Ark/Defiant.png",
+    "Phrase 8 image: Image is missing: res://Images/Ark/Negotiating.png",
+    "Phrase 9 image: Image is missing: res://Images/Ark/Questioning.png",
+    "Phrase 10 image: Image is missing: res://Images/Youri/Kneel.png",
+    "Phrase 11 image: Image is missing: res://Images/Youri/Defiant.png",
+    "Phrase 12 image: Image is missing: res://Images/Youri/Smiling.png",
+    "Phrase 13 image: Image is missing: res://Images/Youri/Negotiating.png",
+    "Phrase 14 image: Image is missing: res://Images/Youri/Questioning.png",
+    "Phrase 15 image: Image is missing: res://Images/Youri/Smiling.png",
+    "Phrase 16 image: Image is missing: res://Images/Youri/Smiling.png",
+    "Phrase 17 image: Image is missing: res://Images/Youri/Defiant.png",
+    "Phrase 18 image: Image is missing: res://Images/QueenMizuri/Approving.png",
+    "Phrase 19 image: Image is missing: res://Images/QueenMizuri/Suspicious.png",
+    "Phrase 20 image: Image is missing: res://Images/QueenMizuri/Angry.png",
+    "Phrase 21 image: Image is missing: res://Images/QueenMizuri/Assertive.png",
+    "Phrase 22 image: Image is missing: res://Images/QueenMizuri/Approving.png",
+    "Phrase 23 image: Image is missing: res://Images/QueenMizuri/Suspicious.png",
+    "Phrase 24 image: Image is missing: res://Images/QueenMizuri/Approving.png",
+    "Phrase 25 image: Image is missing: res://Images/QueenMizuri/Unimpressed.png",
+    "Phrase 26 image: Image is missing: res://Images/QueenMizuri/Assertive.png",
+    "Phrase 27 image: Image is missing: res://Images/QueenMizuri/Angry.png",
+    "Phrase 28 image: Image is missing: res://Images/QueenMizuri/Approving.png",
+    "Phrase 29 image: Image is missing: res://Images/QueenMizuri/Unimpressed.png",
+    "Phrase 30 image: Image is missing: res://Images/QueenMizuri/Angry.png",
+    "Phrase 31 image: Image is missing: res://Images/QueenMizuri/Unimpressed.png",
+    "Phrase 32 image: Image is missing: res://Images/Ark/Defiant.png",
+    "Phrase 36 image: Image is missing: res://Images/QueenMizuri/Approving.png"
+  ]
+}

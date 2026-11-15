@@ -1,0 +1,39 @@
+{
+  "reactionKeys": [
+    "ACCEPTING",
+    "AMUSED",
+    "ANGRY",
+    "COLD",
+    "CONSIDERING",
+    "DISMISSIVE",
+    "FLATTERED",
+    "IMPRESSED",
+    "INTERESTED",
+    "INTIMIDATED",
+    "OFFENDED",
+    "PLEASED",
+    "RECEPTIVE",
+    "REFLECTIVE",
+    "RELIEVED",
+    "SUSPICIOUS",
+    "UNIMPRESSED",
+    "UNINTERESTED",
+    "UNMOVED",
+    "WARM",
+    "WARY"
+  ],
+  "newKeysNotInOriginalCatalog": [
+    "ACCEPTING",
+    "ANGRY",
+    "COLD",
+    "IMPRESSED",
+    "INTERESTED",
+    "PLEASED",
+    "REFLECTIVE",
+    "RELIEVED",
+    "SUSPICIOUS",
+    "UNIMPRESSED",
+    "UNMOVED",
+    "WARM"
+  ]
+}

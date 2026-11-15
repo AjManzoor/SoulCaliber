@@ -1,0 +1,17 @@
+For some context. I'm creating a game. Part of the game will have interaction where each character is on one side. I therefore need the character in different states. I am going to upload a character. Create a default state image based on the picture uploaded. Make sure the image has no background and that the image is the same size as the image uploaded. Make sure all future images are exactly the same size and the character is always the same size.
+
+Create an image that's slightly different from this that would show a success state. She's happy she's won an interaction. It should be the same size and her actions should allow for a clean animation when changing potraits. Keep in line with Goldie Rocks character (A swash buckling pirate who loves adventure)
+
+Do one for when she loses an interaction.
+
+Do one where's she's Amused
+
+Do one where's she's Intimidated
+
+Can you one where she's dismissive
+
+can you do one where she's suspicious
+
+can you do one where she's impressed
+
+can you do one where she's pleased

@@ -1,0 +1,31 @@
+{
+  "characters": [
+	{
+	  "id": "ARK",
+	  "name": "Ark",
+	  "defaultImage": "res://Images/Ark/Default.png",
+	  "winImage": "res://Images/Ark/Win.png",
+  	  "loseImage": "res://Images/Ark/Lose.png"
+	},
+	{
+	  "id": "YOURI",
+	  "name": "Youri",
+	  "defaultImage": "res://Images/Youri/Default.png"
+	},
+	{
+	  "id": "MIZURI",
+	  "name": "Queen Mizuri",
+	  "defaultImage": "res://Images/QueenMizuri/Default.png"
+	},
+	{
+	  "id": "NOBUNOGI",
+	  "name": "Nobunogi",
+	  "defaultImage": "res://Images/Nobunogi/Default.png"
+	},
+	{
+	  "id": "GOLDIE_ROCKS",
+	  "name": "Goldie Rocks",
+	  "defaultImage": "res://Images/GoldieRocks/Default.png"
+	}
+  ]
+}

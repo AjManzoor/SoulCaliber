@@ -1,0 +1,76 @@
+VALIDATION PASSED WITH WARNINGS — publishing is allowed
+0 error(s) · 62 warning(s) · 34 referenced image resource(s)
+  ChanceModifiers: 6
+  Characters: 6
+  Effects: 263
+  Interactions: 3
+  Lines: 39
+  Nodes: 12
+  Options: 69
+  Personalities: 6
+  ReactionImages: 45
+  Requirements: 13
+  SkillChecks: 66
+
+[Warning] ARK / CONSIDERING: Image is missing: res://Images/Ark/Considering.png
+[Warning] ARK / OFFENDED: Image is missing: res://Images/Ark/Offended.png
+[Warning] ARK / RECEPTIVE: Image is missing: res://Images/Ark/Receptive.png
+[Warning] ARK / UNINTERESTED: Image is missing: res://Images/Ark/Uninterested.png
+[Warning] ARK / WARY: Image is missing: res://Images/Ark/Wary.png
+[Warning] GOLDIE_ROCKS / CONSIDERING: Image is missing: res://Images/GoldieRocks/Considering.png
+[Warning] GOLDIE_ROCKS / OFFENDED: Image is missing: res://Images/GoldieRocks/Offended.png
+[Warning] GOLDIE_ROCKS / RECEPTIVE: Image is missing: res://Images/GoldieRocks/Receptive.png
+[Warning] GOLDIE_ROCKS / UNINTERESTED: Image is missing: res://Images/GoldieRocks/Uninterested.png
+[Warning] GOLDIE_ROCKS / WARY: Image is missing: res://Images/GoldieRocks/Wary.png
+[Warning] MIZURI / AMUSED: Image is missing: res://Images/QueenMizuri/Amused.png
+[Warning] MIZURI / CONSIDERING: Image is missing: res://Images/QueenMizuri/Considering.png
+[Warning] MIZURI / DISMISSIVE: Image is missing: res://Images/QueenMizuri/Dismissive.png
+[Warning] MIZURI / FLATTERED: Image is missing: res://Images/QueenMizuri/Flattered.png
+[Warning] MIZURI / INTIMIDATED: Image is missing: res://Images/QueenMizuri/Intimidated.png
+[Warning] MIZURI / OFFENDED: Image is missing: res://Images/QueenMizuri/Offended.png
+[Warning] MIZURI / RECEPTIVE: Image is missing: res://Images/QueenMizuri/Receptive.png
+[Warning] MIZURI / UNINTERESTED: Image is missing: res://Images/QueenMizuri/Uninterested.png
+[Warning] MIZURI / WARY: Image is missing: res://Images/QueenMizuri/Wary.png
+[Warning] NOBUNOGI / CONSIDERING: Image is missing: res://Images/Nobunogi/Considering.png
+[Warning] NOBUNOGI / OFFENDED: Image is missing: res://Images/Nobunogi/Offended.png
+[Warning] NOBUNOGI / RECEPTIVE: Image is missing: res://Images/Nobunogi/Receptive.png
+[Warning] NOBUNOGI / UNINTERESTED: Image is missing: res://Images/Nobunogi/Uninterested.png
+[Warning] NOBUNOGI / WARY: Image is missing: res://Images/Nobunogi/Wary.png
+[Warning] YOURI / CONSIDERING: Image is missing: res://Images/Youri/Considering.png
+[Warning] YOURI / OFFENDED: Image is missing: res://Images/Youri/Offended.png
+[Warning] YOURI / RECEPTIVE: Image is missing: res://Images/Youri/Receptive.png
+[Warning] YOURI / UNINTERESTED: Image is missing: res://Images/Youri/Uninterested.png
+[Warning] YOURI / WARY: Image is missing: res://Images/Youri/Wary.png
+[Warning] Phrase 1 image: Image is missing: res://Images/Ark/Kneel.png
+[Warning] Phrase 2 image: Image is missing: res://Images/Ark/Defiant.png
+[Warning] Phrase 3 image: Image is missing: res://Images/Ark/Deceptive.png
+[Warning] Phrase 4 image: Image is missing: res://Images/Ark/Negotiating.png
+[Warning] Phrase 5 image: Image is missing: res://Images/Ark/Questioning.png
+[Warning] Phrase 6 image: Image is missing: res://Images/Ark/Private.png
+[Warning] Phrase 7 image: Image is missing: res://Images/Ark/Defiant.png
+[Warning] Phrase 8 image: Image is missing: res://Images/Ark/Negotiating.png
+[Warning] Phrase 9 image: Image is missing: res://Images/Ark/Questioning.png
+[Warning] Phrase 10 image: Image is missing: res://Images/Youri/Kneel.png
+[Warning] Phrase 11 image: Image is missing: res://Images/Youri/Defiant.png
+[Warning] Phrase 12 image: Image is missing: res://Images/Youri/Smiling.png
+[Warning] Phrase 13 image: Image is missing: res://Images/Youri/Negotiating.png
+[Warning] Phrase 14 image: Image is missing: res://Images/Youri/Questioning.png
+[Warning] Phrase 15 image: Image is missing: res://Images/Youri/Smiling.png
+[Warning] Phrase 16 image: Image is missing: res://Images/Youri/Smiling.png
+[Warning] Phrase 17 image: Image is missing: res://Images/Youri/Defiant.png
+[Warning] Phrase 18 image: Image is missing: res://Images/QueenMizuri/Approving.png
+[Warning] Phrase 19 image: Image is missing: res://Images/QueenMizuri/Suspicious.png
+[Warning] Phrase 20 image: Image is missing: res://Images/QueenMizuri/Angry.png
+[Warning] Phrase 21 image: Image is missing: res://Images/QueenMizuri/Assertive.png
+[Warning] Phrase 22 image: Image is missing: res://Images/QueenMizuri/Approving.png
+[Warning] Phrase 23 image: Image is missing: res://Images/QueenMizuri/Suspicious.png
+[Warning] Phrase 24 image: Image is missing: res://Images/QueenMizuri/Approving.png
+[Warning] Phrase 25 image: Image is missing: res://Images/QueenMizuri/Unimpressed.png
+[Warning] Phrase 26 image: Image is missing: res://Images/QueenMizuri/Assertive.png
+[Warning] Phrase 27 image: Image is missing: res://Images/QueenMizuri/Angry.png
+[Warning] Phrase 28 image: Image is missing: res://Images/QueenMizuri/Approving.png
+[Warning] Phrase 29 image: Image is missing: res://Images/QueenMizuri/Unimpressed.png
+[Warning] Phrase 30 image: Image is missing: res://Images/QueenMizuri/Angry.png
+[Warning] Phrase 31 image: Image is missing: res://Images/QueenMizuri/Unimpressed.png
+[Warning] Phrase 32 image: Image is missing: res://Images/Ark/Defiant.png
+[Warning] Phrase 36 image: Image is missing: res://Images/QueenMizuri/Approving.png

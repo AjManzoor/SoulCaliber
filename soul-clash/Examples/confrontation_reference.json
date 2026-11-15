@@ -1,0 +1,434 @@
+{
+  "key": "CONFRONTATION",
+  "title": "A Tense Confrontation",
+  "hostCharacterId": "NOBUNOGI",
+  "startNodeKey": "OPENING",
+  "nodes": [
+    {
+      "key": "OPENING",
+      "round": 1,
+      "hostIntroduction": "{actor}, we have a matter to settle. What do you want?",
+      "options": [
+        {
+          "key": "INTIMIDATE",
+          "label": "Attempt to intimidate",
+          "baseSuccessChance": 20,
+          "defaultPlayerLine": "Stand down. You should be afraid of what comes next.",
+          "defaultHostSuccessLine": "I will not interfere. You have made your point.",
+          "defaultHostFailureLine": "You do not frighten me.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Fear",
+              "delta": 15
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -3
+            }
+          ],
+          "successNextNodeKey": "ADVANTAGE",
+          "failureNextNodeKey": "REBUFFED",
+          "successTargetReaction": "INTIMIDATED",
+          "failureTargetReaction": "DISMISSIVE"
+        },
+        {
+          "key": "BLUFF",
+          "label": "Bluff about your strength",
+          "baseSuccessChance": 35,
+          "defaultPlayerLine": "You have no idea what I could do to you.",
+          "defaultHostSuccessLine": "Perhaps it is wiser not to test that claim.",
+          "defaultHostFailureLine": "An empty threat is still empty.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Fear",
+              "delta": 6
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -9
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -5
+            }
+          ],
+          "successNextNodeKey": "ADVANTAGE",
+          "failureNextNodeKey": "REBUFFED",
+          "successTargetReaction": "WARY",
+          "failureTargetReaction": "UNIMPRESSED"
+        },
+        {
+          "key": "NEGOTIATE",
+          "label": "Offer a compromise",
+          "baseSuccessChance": 50,
+          "defaultPlayerLine": "Neither of us needs a fight. We could reach an understanding.",
+          "defaultHostSuccessLine": "Then say what you have in mind.",
+          "defaultHostFailureLine": "I am not interested in your terms.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 7
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            }
+          ],
+          "successNextNodeKey": "ADVANTAGE",
+          "failureNextNodeKey": "REBUFFED",
+          "successTargetReaction": "CONSIDERING",
+          "failureTargetReaction": "UNINTERESTED"
+        },
+        {
+          "key": "CHALLENGE",
+          "label": "Issue an honourable duel challenge",
+          "baseSuccessChance": 60,
+          "defaultPlayerLine": "Settle this honourably. Face me in a duel.",
+          "defaultHostSuccessLine": "Very well. Let skill decide.",
+          "defaultHostFailureLine": "I refuse to waste my time on this.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 6
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -3
+            }
+          ],
+          "successNextNodeKey": "ADVANTAGE",
+          "failureNextNodeKey": "REBUFFED",
+          "successTargetReaction": "ACCEPTING",
+          "failureTargetReaction": "DISMISSIVE"
+        },
+        {
+          "key": "APPEAL",
+          "label": "Appeal to their better judgement",
+          "baseSuccessChance": 55,
+          "defaultPlayerLine": "We can handle this without losing our dignity.",
+          "defaultHostSuccessLine": "Perhaps you have a point.",
+          "defaultHostFailureLine": "Your appeal changes nothing.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 4
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": "ADVANTAGE",
+          "failureNextNodeKey": "REBUFFED",
+          "successTargetReaction": "REFLECTIVE",
+          "failureTargetReaction": "UNMOVED"
+        }
+      ]
+    },
+    {
+      "key": "ADVANTAGE",
+      "round": 2,
+      "hostIntroduction": "The encounter has turned in {actor}’s favour. {partner} waits for the next move.",
+      "options": [
+        {
+          "key": "SET_TERMS",
+          "label": "Set your terms",
+          "baseSuccessChance": 45,
+          "defaultPlayerLine": "Then listen carefully to my terms.",
+          "defaultHostSuccessLine": "I can accept those conditions.",
+          "defaultHostFailureLine": "You have asked too much.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -4
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        },
+        {
+          "key": "ASK_APOLOGY",
+          "label": "Demand an apology",
+          "baseSuccessChance": 20,
+          "defaultPlayerLine": "You owe me an apology.",
+          "defaultHostSuccessLine": "Very well. I was wrong.",
+          "defaultHostFailureLine": "I owe you nothing.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Fear",
+              "delta": 6
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -4
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        },
+        {
+          "key": "OFFER_TRUCE",
+          "label": "Offer a truce",
+          "baseSuccessChance": 70,
+          "defaultPlayerLine": "There is no need to make enemies today.",
+          "defaultHostSuccessLine": "A truce would serve us both.",
+          "defaultHostFailureLine": "The matter is not settled.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 7
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 4
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -3
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        },
+        {
+          "key": "SHOW_MERCY",
+          "label": "Show mercy",
+          "baseSuccessChance": 75,
+          "defaultPlayerLine": "You may leave. I will not pursue this.",
+          "defaultHostSuccessLine": "You have shown restraint.",
+          "defaultHostFailureLine": "Keep your mercy.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Love",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        },
+        {
+          "key": "PART_COMPANY",
+          "label": "Part company with dignity",
+          "baseSuccessChance": 85,
+          "defaultPlayerLine": "We will leave it there.",
+          "defaultHostSuccessLine": "Agreed.",
+          "defaultHostFailureLine": "This is not the end of it.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": 2
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -1
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        }
+      ]
+    },
+    {
+      "key": "REBUFFED",
+      "round": 2,
+      "hostIntroduction": "{partner} is unconvinced. {actor} must decide how to proceed.",
+      "options": [
+        {
+          "key": "TRY_AGAIN",
+          "label": "Attempt a stronger threat",
+          "baseSuccessChance": 10,
+          "defaultPlayerLine": "You should reconsider before I lose patience.",
+          "defaultHostSuccessLine": "Enough. I understand.",
+          "defaultHostFailureLine": "Threaten me again and you will regret it.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Fear",
+              "delta": 8
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -10
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        },
+        {
+          "key": "APOLOGISE",
+          "label": "Apologise",
+          "baseSuccessChance": 70,
+          "defaultPlayerLine": "I spoke badly. You have my apology.",
+          "defaultHostSuccessLine": "Then we can move on.",
+          "defaultHostFailureLine": "Your apology means little.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        },
+        {
+          "key": "REASON",
+          "label": "Try to reason with them",
+          "baseSuccessChance": 50,
+          "defaultPlayerLine": "Hear me out. We have common interests.",
+          "defaultHostSuccessLine": "I am listening.",
+          "defaultHostFailureLine": "You are wasting your breath.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Allyship",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -2
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        },
+        {
+          "key": "CONCEDE",
+          "label": "Concede the argument",
+          "baseSuccessChance": 80,
+          "defaultPlayerLine": "You have made your point.",
+          "defaultHostSuccessLine": "At least you know when to stop.",
+          "defaultHostFailureLine": "Then leave.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": 3
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Respect",
+              "delta": -3
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        },
+        {
+          "key": "DOUBLE_BLUFF",
+          "label": "Try one last bluff",
+          "baseSuccessChance": 20,
+          "defaultPlayerLine": "There is more at stake than you realise.",
+          "defaultHostSuccessLine": "Then I must rethink this.",
+          "defaultHostFailureLine": "Another lie? Enough.",
+          "successEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Fear",
+              "delta": 5
+            }
+          ],
+          "failureEffects": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "Trust",
+              "delta": -8
+            }
+          ],
+          "successNextNodeKey": null,
+          "failureNextNodeKey": null
+        }
+      ]
+    }
+  ]
+}
