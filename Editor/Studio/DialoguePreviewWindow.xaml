@@ -1,13 +1,13 @@
 <Window x:Class="SoulCaliberStudio.DialoguePreviewWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Dialogue Outcome Preview" Width="930" Height="690" MinWidth="700" MinHeight="500"
+        Title="Standard Dialogue Preview (No Conditions)" Width="930" Height="690" MinWidth="700" MinHeight="500"
         WindowStartupLocation="CenterOwner" Background="{StaticResource BackgroundBrush}"
         Foreground="{StaticResource ForegroundBrush}">
   <DockPanel Margin="20">
     <StackPanel DockPanel.Dock="Top">
       <TextBlock x:Name="HeadingText" FontSize="22" FontWeight="SemiBold"/>
-      <TextBlock Text="Inspect which saved introduction, actor phrase and host reply Godot will select for each outcome."
+      <TextBlock Text="Preview standard introductions and phrases only. For conditional rules and simulated relationships, use Edit conditional dialogue."
                  Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,6,0,18"/>
       <Grid>
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>

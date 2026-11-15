@@ -1,0 +1,22 @@
+GODOT RELEASE DATABASE PATH CHECK (DatabaseModels.cs)
+
+This is a CODE SNIPPET, not a file to copy into the Godot project. Do not duplicate DatabasePaths classes.
+
+The existing DatabasePaths.Content getter should use:
+
+  if (OS.HasFeature("editor"))
+  {
+      // Development: read the absolute source path configured in project.godot.
+      string configured = ProjectSettings.GetSetting("soulcaliber/content_database_path").AsString();
+      return Path.GetFullPath(configured);
+  }
+
+  // Exported Windows desktop game: read sidecar Content/content.db.
+  string executableFolder = Path.GetDirectoryName(OS.GetExecutablePath())!;
+  return Path.Combine(executableFolder, "Content", "content.db");
+
+Use Microsoft.Data.Sqlite.SqliteOpenMode.ReadOnly for ContentDbContext.
+Keep SaveDbContext writable at user://soulcaliber_savegame.db.
+Never run LegacyJsonImporter.EnsureContentImported() during normal gameplay.
+
+If the release getter already exists and works, do not change it.

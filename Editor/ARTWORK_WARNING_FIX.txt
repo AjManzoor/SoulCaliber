@@ -1,0 +1,15 @@
+Phase 4 Artwork Warning Fix
+===========================
+Missing image files in character, reaction, and phrase image paths now appear as
+[Warning] rather than [Error] and do not block Publish. Missing optional image
+assignments are warnings too. The snapshot and validation report can publish
+with warnings, and the manifest references only artwork that actually exists.
+
+Broken dialogue references, foreign keys, invalid probabilities and malformed
+or unsafe res:// paths remain blocking errors.
+
+Minimal install: replace Studio/ContentPublisher.cs in your existing Phase 4
+project and rebuild in Visual Studio.
+
+Or use this complete project archive. No database migration or Godot code
+change is needed.

@@ -11,5 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Migrations\002_ReactionTypes.sql" LogicalName="SoulCaliberStudio.Migrations.002_ReactionTypes.sql" />
+    <EmbeddedResource Include="..\Migrations\003_ConditionalDialogue.sql" LogicalName="SoulCaliberStudio.Migrations.003_ConditionalDialogue.sql" />
+    <EmbeddedResource Include="..\Migrations\004_UniversalConditionalDialogue.sql" LogicalName="SoulCaliberStudio.Migrations.004_UniversalConditionalDialogue.sql" />
   </ItemGroup>
 </Project>

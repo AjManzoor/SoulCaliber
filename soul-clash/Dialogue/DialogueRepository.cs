@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
+using SoulCaliber.Shared;
 
 namespace SoulCaliber.Dialogue;
 
@@ -17,6 +18,8 @@ public sealed class DialogueRepository
 	private readonly Dictionary<string, InteractionDefinition> _interactions;
 	private readonly List<CharacterLine> _lines;
 	private readonly List<NodeIntroduction> _introductions;
+	private readonly List<ConditionalVariant> _conditionalVariants;
+	private sealed record ConditionalVariant(string InteractionKey, string NodeKey, string? OptionKey, DialogueCandidate Candidate);
 	private readonly Dictionary<string, int> _interactionIds;
 	private sealed record NodeIntroduction(int InteractionId, string NodeKey, string CharacterId, string? VisitorId, string Text);
 	private readonly Dictionary<string, PersonalityStats> _personalities;
@@ -126,40 +129,82 @@ public sealed class DialogueRepository
 
 		// Optional Phase 5 table. Load it through a read-only SQLite connection, without
 		// introducing EF migrations into the game's read-only content database.
-		_introductions = new List<NodeIntroduction>();
-		using (var introDb = new SqliteConnection(new SqliteConnectionStringBuilder
-		{
-			DataSource = DatabasePaths.Content,
-			Mode = SqliteOpenMode.ReadOnly,
-			ForeignKeys = true,
-			Pooling = false
-		}.ToString()))
-		{
-			introDb.Open();
-			using var exists = new SqliteCommand(
+        _introductions = new List<NodeIntroduction>();
+        using (var introDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePaths.Content,
+            Mode = SqliteOpenMode.ReadOnly,
+            ForeignKeys = true,
+            Pooling = false
+        }.ToString()))
+        {
+            introDb.Open();
+            using var exists = new SqliteCommand(
 				"SELECT 1 FROM sqlite_master WHERE type='table' AND name='NodeIntroductions'", introDb);
-			if (exists.ExecuteScalar() is not null)
-			{
-				
-			using var cmd = new SqliteCommand(
-    			@"SELECT n.InteractionId, n.Key,
-             		x.CharacterId, x.VisitorId, x.Text
-      			FROM NodeIntroductions x
-      			JOIN Nodes n ON n.Id = x.NodeId
-	  			ORDER BY x.Id",
-			introDb);
-					
-				using var reader = cmd.ExecuteReader();
-				while (reader.Read())
-				{
-					_introductions.Add(new NodeIntroduction(
-						reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
-						reader.IsDBNull(3) ? null : reader.GetString(3), reader.GetString(4)));
-				}
-			}
-		}
+            if (exists.ExecuteScalar() is not null)
+            {
+                using var cmd = new SqliteCommand("""
+                    SELECT n.InteractionId, n.Key, x.CharacterId, x.VisitorId, x.Text
+                    FROM NodeIntroductions x JOIN Nodes n ON n.Id = x.NodeId
+                    ORDER BY x.Id
+                    """, introDb);
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    _introductions.Add(new NodeIntroduction(
+                        reader.GetInt32(0), reader.GetString(1), reader.GetString(2),
+                        reader.IsDBNull(3) ? null : reader.GetString(3), reader.GetString(4)));
+                }
+            }
+        }
 
-		// Resolve relational OptionId references into character-specific lines.
+        // Phase 7 variants are optional for older content databases. Both tables are
+        // read-only; relationship values come from the SAVE database via the engine.
+        _conditionalVariants = new List<ConditionalVariant>();
+        using (var variantDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePaths.Content, Mode = SqliteOpenMode.ReadOnly,
+            ForeignKeys = true, Pooling = false
+        }.ToString()))
+        {
+            variantDb.Open();
+            using var exists = new SqliteCommand(
+				"SELECT 1 FROM sqlite_master WHERE type='table' AND name='ConditionalDialogueVariants'", variantDb);
+            if (exists.ExecuteScalar() is not null)
+            {
+                var clauses = new Dictionary<int,List<DialogueClause>>();
+                using (var conditions = new SqliteCommand(
+                    "SELECT VariantId, Direction, Attribute, Minimum, Maximum FROM ConditionalDialogueConditions ORDER BY Id", variantDb))
+                using (var r = conditions.ExecuteReader())
+                    while (r.Read())
+                    {
+                        int id = r.GetInt32(0);
+                        if (!clauses.TryGetValue(id, out var list)) clauses[id] = list = new();
+                        list.Add(new DialogueClause(r.GetString(1), r.GetString(2),
+                            r.IsDBNull(3) ? null : r.GetInt32(3), r.IsDBNull(4) ? null : r.GetInt32(4)));
+                    }
+                using var variants = new SqliteCommand(@"SELECT Id, NodeId, OptionId, CharacterId,
+                    VisitorId, Outcome, Priority, Text, ImagePath FROM ConditionalDialogueVariants ORDER BY Id", variantDb);
+                using var vr = variants.ExecuteReader();
+                while (vr.Read())
+                {
+                    int id = vr.GetInt32(0);
+                    int? nodeId = vr.IsDBNull(1) ? null : vr.GetInt32(1);
+                    int? optionId = vr.IsDBNull(2) ? null : vr.GetInt32(2);
+                    var option = optionId is int oid ? optionLookup[oid] : null;
+                    var node = nodeId is int nid ? nodeLookup[nid] : nodeLookup[option!.NodeId];
+                    var interaction = interactionLookup[node.InteractionId];
+                    var candidate = new DialogueCandidate(id,vr.IsDBNull(3) ? null : vr.GetString(3),
+                        vr.IsDBNull(4) ? null : vr.GetString(4),
+                        vr.IsDBNull(5) ? null : vr.GetString(5), vr.GetInt32(6),
+                        vr.GetString(7),vr.GetString(8),true,
+                        clauses.TryGetValue(id,out var rules) ? rules : Array.Empty<DialogueClause>());
+                    _conditionalVariants.Add(new ConditionalVariant(interaction.Key,node.Key,option?.Key,candidate));
+                }
+            }
+        }
+
+        // Resolve relational OptionId references into character-specific lines.
 		_lines = new List<CharacterLine>();
 		foreach (var line in db.Lines.AsNoTracking().OrderBy(l => l.Id))
 		{
@@ -196,21 +241,33 @@ public sealed class DialogueRepository
 		}
 	}
 
-	// The host is the character on the right; the visitor is the character on the left.
-	// Pair-specific beats host-specific; otherwise use the node's generic introduction.
-	public string Introduction(string interactionKey, DialogueNode node, string hostId, string visitorId)
-	{
-		if (!_interactionIds.TryGetValue(interactionKey, out int interactionId))
-			throw new InvalidOperationException($"Unknown interaction '{interactionKey}'");
-		var selected = _introductions.Where(x => x.InteractionId == interactionId &&
-				Eq(x.NodeKey, node.Key) && Eq(x.CharacterId, hostId) &&
-				(x.VisitorId is null || Eq(x.VisitorId, visitorId)))
-			.OrderByDescending(x => x.VisitorId is not null)
-			.FirstOrDefault();
-		return selected?.Text ?? node.HostIntroduction;
-	}
+	    private static Dictionary<string,int> Values(RelationshipStats actorToPartner, RelationshipStats partnerToActor)
+    {
+        var values = new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase);
+        foreach (RelationshipAttribute attribute in Enum.GetValues<RelationshipAttribute>())
+        {
+            values[ConditionalDialogueRules.StatKey(RelationshipDirection.ActorToPartner,attribute.ToString())] = actorToPartner.Get(attribute);
+            values[ConditionalDialogueRules.StatKey(RelationshipDirection.PartnerToActor,attribute.ToString())] = partnerToActor.Get(attribute);
+        }
+        return values;
+    }
 
-	public CharacterDefinition Character(string id) => _characters.TryGetValue(id, out var value)
+    public string Introduction(string interactionKey, DialogueNode node, string hostId, string visitorId,
+        RelationshipStats actorToPartner, RelationshipStats partnerToActor)
+    {
+        if (!_interactionIds.TryGetValue(interactionKey, out int interactionId))
+			throw new InvalidOperationException($"Unknown interaction '{interactionKey}'");
+        var candidates = _introductions.Where(x => x.InteractionId == interactionId && Eq(x.NodeKey,node.Key))
+            .Select((x, i) => new DialogueCandidate(i + 1,x.CharacterId,x.VisitorId,null,0,x.Text,"",false,
+                Array.Empty<DialogueClause>())).ToList();
+        candidates.AddRange(_conditionalVariants.Where(x => x.OptionKey is null &&
+            Eq(x.InteractionKey,interactionKey) && Eq(x.NodeKey,node.Key)).Select(x => x.Candidate));
+        var selected = ConditionalDialogueRules.Resolve(candidates,hostId,visitorId,null,
+            Values(actorToPartner,partnerToActor));
+        return selected.Candidate?.Text ?? node.HostIntroduction;
+    }
+
+    public CharacterDefinition Character(string id) => _characters.TryGetValue(id, out var value)
 		? value : throw new InvalidOperationException($"Unknown character '{id}' in content.db");
 
 	public InteractionDefinition Interaction(string key) => _interactions.TryGetValue(key, out var value)
@@ -223,33 +280,39 @@ public sealed class DialogueRepository
 		_skillChecks.TryGetValue(LegacyJsonImporter.CompositeKey(interaction, node, option), out var check)
 			? check : null;
 
-	public CharacterLine PlayerLine(string interactionKey, DialogueNode node,
-		DialogueOption option, string playerId, string partnerId, bool succeeded) =>
-		FindLine(interactionKey, node, option, playerId, partnerId, succeeded)
-			?? new CharacterLine { CharacterId = playerId, Text = option.DefaultPlayerLine };
+    public CharacterLine PlayerLine(string interactionKey, DialogueNode node,
+        DialogueOption option, string playerId, string partnerId, bool succeeded,
+        RelationshipStats actorToPartner, RelationshipStats partnerToActor) =>
+        FindLine(interactionKey,node,option,playerId,partnerId,succeeded,actorToPartner,partnerToActor)
+            ?? new CharacterLine { CharacterId=playerId, Text=option.DefaultPlayerLine };
 
-	public CharacterLine HostLine(string interactionKey, DialogueNode node,
-		DialogueOption option, string hostId, string visitorId, bool succeeded) =>
-		FindLine(interactionKey, node, option, hostId, visitorId, succeeded)
-			?? new CharacterLine
-			{
-				CharacterId = hostId,
-				Text = succeeded ? option.DefaultHostSuccessLine : option.DefaultHostFailureLine
-			};
+    public CharacterLine HostLine(string interactionKey, DialogueNode node,
+        DialogueOption option, string hostId, string visitorId, bool succeeded,
+        RelationshipStats actorToPartner, RelationshipStats partnerToActor) =>
+        FindLine(interactionKey,node,option,hostId,visitorId,succeeded,actorToPartner,partnerToActor)
+            ?? new CharacterLine { CharacterId=hostId,
+                Text=succeeded ? option.DefaultHostSuccessLine : option.DefaultHostFailureLine };
 
-	private CharacterLine? FindLine(string interactionKey, DialogueNode node,
-		DialogueOption option, string characterId, string otherId, bool succeeded)
-	{
-		string outcome = succeeded ? "SUCCESS" : "FAILURE";
-		return _lines.Where(l => Eq(l.CharacterId, characterId) &&
-				Eq(l.InteractionKey, interactionKey) && Eq(l.NodeKey, node.Key) &&
-				Eq(l.OptionKey, option.Key) &&
-				(string.IsNullOrWhiteSpace(l.VisitorId) || Eq(l.VisitorId, otherId)) &&
-				(string.IsNullOrWhiteSpace(l.Outcome) || Eq(l.Outcome, outcome)))
-			.OrderByDescending(l => Eq(l.VisitorId ?? "", otherId))
-			.ThenByDescending(l => Eq(l.Outcome ?? "", outcome))
-			.FirstOrDefault();
-	}
+    private CharacterLine? FindLine(string interactionKey,DialogueNode node,DialogueOption option,
+        string speaker,string other,bool succeeded,RelationshipStats actorToPartner,RelationshipStats partnerToActor)
+    {
+        string outcome=succeeded ? "SUCCESS":"FAILURE";
+        var candidates = _lines.Where(l => Eq(l.InteractionKey,interactionKey) &&
+            Eq(l.NodeKey,node.Key) && Eq(l.OptionKey,option.Key))
+            .Select((l,i)=>new DialogueCandidate(i+1,l.CharacterId,l.VisitorId,l.Outcome,
+                0,l.Text,l.ImagePath,false,Array.Empty<DialogueClause>())).ToList();
+        candidates.AddRange(_conditionalVariants.Where(v => Eq(v.InteractionKey,interactionKey) &&
+            Eq(v.NodeKey,node.Key) && Eq(v.OptionKey,option.Key)).Select(v=>v.Candidate));
+        var selection=ConditionalDialogueRules.Resolve(candidates,speaker,other,outcome,
+            Values(actorToPartner,partnerToActor));
+        var selected=selection.Candidate;
+        if (selected is null) return null;
+        return new CharacterLine { CharacterId=speaker,VisitorId=selected.OtherCharacterId,
+            // Conditional artwork is specific to the resolved outcome, even with ANY text.
+            Outcome=selected.Conditional && !string.IsNullOrWhiteSpace(selected.ImagePath) ? outcome : selected.Outcome,
+            Text=selected.Text,ImagePath=selected.ImagePath,
+            InteractionKey=interactionKey,NodeKey=node.Key,OptionKey=option.Key };
+    }
 
 	private static bool Eq(string left, string right) =>
 		string.Equals(left, right, StringComparison.OrdinalIgnoreCase);

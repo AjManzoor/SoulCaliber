@@ -64,7 +64,8 @@ public static class ContentPublisher
     private static readonly string[] RequiredTables =
     [
         "Characters", "ReactionTypes", "ReactionImages", "Personalities", "Interactions", "Nodes", "Options",
-        "Requirements", "ChanceModifiers", "Effects", "Lines", "SkillChecks", "NodeIntroductions"
+        "Requirements", "ChanceModifiers", "Effects", "Lines", "SkillChecks", "NodeIntroductions",
+        "ConditionalDialogueVariants", "ConditionalDialogueConditions"
     ];
     private static readonly HashSet<string> Abilities = new(StringComparer.OrdinalIgnoreCase)
     { "Persuasion", "Intimidation", "Deception", "Charm", "Insight", "Resolve" };
@@ -152,7 +153,7 @@ public static class ContentPublisher
                 "Do not ship the development-only absolute project.godot database setting." + Environment.NewLine +
                 "5. Player saves remain in Godot user://soulcaliber_savegame.db. Exported builds must be tested on a clean machine/folder." + Environment.NewLine +
                 "6. Artwork files are NOT copied to Content. Godot must import them and include them inside the exported PCK." + Environment.NewLine +
-                "7. Phase 5 introductions require Godot's updated DialogueRepository.cs and DialogueEngine.cs to be compiled in the exported build." + Environment.NewLine,
+                "7. Phase 7 conditional dialogue requires the THREE GodotPatch/Dialogue files to be compiled in the exported build." + Environment.NewLine,
                 new UTF8Encoding(false));
             File.WriteAllText(Path.Combine(staging, "validation-report.txt"), report.Describe(), new UTF8Encoding(false));
             Directory.Move(staging, finalDirectory);
@@ -435,6 +436,61 @@ public static class ContentPublisher
                      (x.NodeId, x.Speaker.ToUpperInvariant(), (x.Visitor ?? "").ToUpperInvariant()))
                  .Where(g => g.Count() > 1))
             report.Error("NodeIntroductions", $"Duplicate introduction identity for node {duplicate.Key.NodeId}, speaker {duplicate.Key.Item2}.");
+
+        // Phase 7: structural validation of conditional variants and predicates.
+        // Broken conditions block a release; missing optional artwork remains a warning.
+        var variants = Read(db, @"SELECT Id,NodeId,OptionId,CharacterId,VisitorId,Outcome,Priority,Text,ImagePath
+            FROM ConditionalDialogueVariants", r =>
+            (Id:r.GetInt64(0), NodeId:r.IsDBNull(1)?(long?)null:r.GetInt64(1),
+             OptionId:r.IsDBNull(2)?(long?)null:r.GetInt64(2), Speaker:NullableText(r,3),
+             Other:NullableText(r,4), Outcome:NullableText(r,5), Priority:r.GetInt64(6),
+             Text:Safe(r,7), Image:Safe(r,8)));
+        var variantIds = variants.Select(v=>v.Id).ToHashSet();
+        var conditions = Read(db, @"SELECT Id,VariantId,Direction,Attribute,Minimum,Maximum
+            FROM ConditionalDialogueConditions",r=>(Id:r.GetInt64(0),VariantId:r.GetInt64(1),
+            Direction:Safe(r,2),Attribute:Safe(r,3),
+            Min:r.IsDBNull(4)?(long?)null:r.GetInt64(4),
+            Max:r.IsDBNull(5)?(long?)null:r.GetInt64(5)));
+        string[] allowedDirections = ["ACTOR_TO_PARTNER","PARTNER_TO_ACTOR"];
+        string[] allowedAttributes = ["Love","Fear","Allyship","Respect","Trust","Romance"];
+        foreach (var v in variants)
+        {
+            string location = $"Conditional variant {v.Id}";
+            if ((v.NodeId is null) == (v.OptionId is null)) report.Error(location,"Expected exactly one node or option.");
+            if (v.NodeId is long nodeId && !nodeLookup.ContainsKey(nodeId)) report.Error(location,"Unknown node.");
+            if (v.OptionId is long optionId && !optionIds.Contains(optionId)) report.Error(location,"Unknown choice.");
+            if (v.Speaker is not null && !characterIds.Contains(v.Speaker)) report.Error(location,"Unknown speaker.");
+            if (v.Other is not null && !characterIds.Contains(v.Other)) report.Error(location,"Unknown other character.");
+            if (v.Speaker is not null && v.Other is not null && string.Equals(v.Other,v.Speaker,StringComparison.OrdinalIgnoreCase))
+                report.Error(location,"Speaker and other character are identical.");
+            if (v.NodeId is not null && (v.Outcome is not null || v.Image.Length > 0))
+                report.Error(location,"An introduction cannot set an outcome or image.");
+            if (v.Outcome is not null && v.Outcome is not ("SUCCESS" or "FAILURE"))
+                report.Error(location,"Invalid outcome.");
+            if (v.Priority is < 0 or > 1000) report.Error(location,"Priority must be 0–1000.");
+            if (string.IsNullOrWhiteSpace(v.Text)) report.Error(location,"Missing text.");
+            if (conditions.All(c=>c.VariantId!=v.Id))report.Error(location,"At least one condition is required.");
+            if (!string.IsNullOrWhiteSpace(v.Image))CheckAsset(report,root,v.Image,location+" portrait");
+        }
+        foreach(var c in conditions)
+        {
+            string location=$"Conditional clause {c.Id}";
+            if (!variantIds.Contains(c.VariantId))report.Error(location,"Unknown variant.");
+            if (!allowedDirections.Contains(c.Direction,StringComparer.OrdinalIgnoreCase))report.Error(location,"Invalid direction.");
+            if (!allowedAttributes.Contains(c.Attribute,StringComparer.OrdinalIgnoreCase))report.Error(location,"Invalid attribute.");
+            long lower = c.Attribute.Equals("Fear",StringComparison.OrdinalIgnoreCase) ||
+                         c.Attribute.Equals("Romance",StringComparison.OrdinalIgnoreCase) ? 0 : -100;
+            if (c.Min is null && c.Max is null || c.Min is long lo && (lo < lower || lo > 100) ||
+                c.Max is long hi && (hi < lower || hi > 100) ||
+                c.Min is long a && c.Max is long b && a>b)
+                report.Error(location,"Invalid minimum/maximum bounds.");
+        }
+        foreach(var duplicate in conditions.GroupBy(c=>(c.VariantId,c.Direction.ToUpperInvariant(),c.Attribute.ToUpperInvariant()))
+                     .Where(x=>x.Count()>1))
+            report.Error("Conditional dialogue",$"Duplicate condition for variant {duplicate.Key.VariantId}.");
+        foreach(var duplicate in variants.GroupBy(v=>(v.NodeId,v.OptionId,(v.Speaker??"").ToUpperInvariant(),
+                 (v.Other??"").ToUpperInvariant(),(v.Outcome??"").ToUpperInvariant(),v.Priority)).Where(g=>g.Count()>1))
+            report.Warn("Conditional dialogue",$"Multiple variants have the same identity and priority; lowest ID wins if their conditions overlap (e.g. #{duplicate.Min(x=>x.Id)}).");
 
         // Phase 6: the dialogue engine reads these tables as game rules, so
         // validate records authored in either the friendly editor OR Advanced Tables.

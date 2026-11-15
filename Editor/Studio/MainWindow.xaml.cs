@@ -62,6 +62,7 @@ public partial class MainWindow : Window
             InitDesigner(picker.FileName);
             InitCharacters(picker.FileName);
             InitPublishing(picker.FileName);
+            InitTesting(picker.FileName);
             StatusText.Text = "Master content database opened. Edits are not committed until Save changes.";
         }
         catch (Exception ex)

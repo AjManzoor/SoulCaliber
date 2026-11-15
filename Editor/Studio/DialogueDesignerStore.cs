@@ -23,6 +23,8 @@ public sealed partial class DialogueDesignerStore : IDisposable
         cmd.ExecuteNonQuery();
         EnsureIntroductionSchema();
         EnsureReactionTypesSchema();
+        EnsureConditionalDialogueSchema();
+        EnsureUniversalConditionalDialogueSchema();
     }
 
     private void EnsureIntroductionSchema()
@@ -435,6 +437,8 @@ public sealed partial class DialogueDesignerStore : IDisposable
     {
         if (Exists(_db, "SELECT 1 FROM Options WHERE NodeId=$id", ("$id", id)))
             throw new InvalidOperationException("Delete this node's choices first.");
+        if (Exists(_db, "SELECT 1 FROM ConditionalDialogueVariants WHERE NodeId=$id", ("$id", id)))
+            throw new InvalidOperationException("Delete conditional introductions first.");
         if (Exists(_db, "SELECT 1 FROM NodeIntroductions WHERE NodeId=$id", ("$id", id)))
             throw new InvalidOperationException("Delete this node's character introductions first.");
         if (Exists(_db, "SELECT 1 FROM Interactions WHERE Id=$id AND StartNodeKey=$key", ("$id", interactionId), ("$key", key)))
@@ -448,6 +452,8 @@ public sealed partial class DialogueDesignerStore : IDisposable
     }
     public void DeleteOption(int id)
     {
+        if (Exists(_db, "SELECT 1 FROM ConditionalDialogueVariants WHERE OptionId=$id", ("$id", id)))
+            throw new InvalidOperationException("Delete conditional phrases first.");
         foreach (var table in new[] { "Lines", "Requirements", "ChanceModifiers", "Effects", "SkillChecks" })
             if (Exists(_db, $"SELECT 1 FROM {table} WHERE OptionId=$id", ("$id", id)))
                 throw new InvalidOperationException($"This choice has dependent {table}. Remove those records first (Advanced tables).");
