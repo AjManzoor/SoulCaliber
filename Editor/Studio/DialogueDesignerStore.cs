@@ -25,6 +25,7 @@ public sealed partial class DialogueDesignerStore : IDisposable
         EnsureReactionTypesSchema();
         EnsureConditionalDialogueSchema();
         EnsureUniversalConditionalDialogueSchema();
+        EnsureCheckProfilesSchema();
     }
 
     private void EnsureIntroductionSchema()

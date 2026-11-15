@@ -36,7 +36,7 @@ grow_vertical = 2
 script = ExtResource("1_script")
 VisitorCharacterId = "Law"
 PartnerCharacterId = "Ark"
-InteractionKey = "INFORMATION_GATHERING"
+InteractionKey = "FLIRT"
 
 [node name="Background" type="ColorRect" parent="." unique_id=987802654]
 layout_mode = 1

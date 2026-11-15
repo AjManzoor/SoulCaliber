@@ -32,6 +32,7 @@ C:\Users\User\Documents\SoulCaliber\Editor\Studio\bin\Debug\net10.0-windows\runt
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\bin\Debug\net10.0-windows\runtimes\win-x64\native\e_sqlite3.dll
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\bin\Debug\net10.0-windows\runtimes\win-x86\native\e_sqlite3.dll
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\SoulCaliberStudio.csproj.AssemblyReference.cache
+C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\CheckProfilesWindow.baml
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\ChoiceMechanicsWindow.baml
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\ConditionalDialogueWindow.baml
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\DialoguePreviewWindow.baml
@@ -40,6 +41,7 @@ C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\Intr
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\MainWindow.baml
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\ReactionTypesWindow.baml
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\App.baml
+C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\CheckProfilesWindow.g.cs
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\ChoiceMechanicsWindow.g.cs
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\ConditionalDialogueWindow.g.cs
 C:\Users\User\Documents\SoulCaliber\Editor\Studio\obj\Debug\net10.0-windows\DialoguePreviewWindow.g.cs

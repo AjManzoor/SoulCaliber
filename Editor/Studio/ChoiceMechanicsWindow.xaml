@@ -75,8 +75,14 @@
                 <ComboBox x:Name="SkillDefenderBox" SelectionChanged="Editor_Changed"/>
               </StackPanel>
             </Grid>
-            <TextBlock Text="Check mode" Foreground="#B9C9E4"/>
-            <ComboBox x:Name="SkillModeBox" Margin="0,4,0,12" SelectionChanged="Editor_Changed"/>
+            <TextBlock Text="Relationship check profile" Foreground="#B9C9E4"/>
+            <ComboBox x:Name="SkillModeBox" Margin="0,4,0,5" SelectionChanged="SkillMode_Changed"/>
+            <WrapPanel Margin="0,0,0,12">
+              <Button Content="Save profile for this choice" Click="SaveOptionProfile_Click"/>
+              <Button Content="Manage / edit check profile formulas..." Click="EditCheckProfiles_Click"/>
+            </WrapPanel>
+            <TextBlock Text="The relationship profile applies to this choice even without a personality skill check. Skill checks separately add skill-versus-skill points."
+                       Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,0,0,10"/>
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
               <StackPanel Grid.Column="0" Margin="0,0,12,12">
@@ -93,7 +99,9 @@
                 <TextBlock Text="HOW GODOT CALCULATES IT" FontWeight="Bold" Foreground="#9EC5FF"/>
                 <TextBlock Text="Initiator bonus = (initiator skill − 50) × initiator factor" Foreground="#E7EDF8" Margin="0,6,0,2"/>
                 <TextBlock Text="Recipient penalty = −(defender skill − 50) × recipient factor" Foreground="#E7EDF8"/>
-                <TextBlock Text="STANDARD uses target Trust (+0.20) and Respect (+0.10). INTIMIDATION uses target Fear (+0.10) and Trust (−0.05). Additional chance modifiers still apply. Final chance is capped at 5–95%."
+                <TextBlock Text="Chosen profile formula (live from master database):" Foreground="#9EC5FF" Margin="0,10,0,4"/>
+                <TextBlock x:Name="SkillProfileFormula" Foreground="#E7EDF8" TextWrapping="Wrap"/>
+                <TextBlock Text="Final chance = clamp(round(base + profile terms + choice modifiers + initiator skill contribution − recipient skill contribution), 5, 95)."
                            TextWrapping="Wrap" Foreground="#B9C9E4" Margin="0,9,0,0"/>
               </StackPanel>
             </Border>

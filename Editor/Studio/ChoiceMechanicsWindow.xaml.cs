@@ -37,7 +37,7 @@ public partial class ChoiceMechanicsWindow : Window
                 combo.ItemsSource = RelationshipAttributes;
             SkillActorBox.ItemsSource = Abilities;
             SkillDefenderBox.ItemsSource = Abilities;
-            SkillModeBox.ItemsSource = CheckModes;
+            SkillModeBox.ItemsSource = _store.CheckProfileKeys();
         }
         finally { _loading = false; }
 
@@ -143,12 +143,48 @@ public partial class ChoiceMechanicsWindow : Window
             var row = _store.GetSkillCheck(_option.Id);
             SkillActorBox.SelectedItem = row?.ActorSkill ?? "Persuasion";
             SkillDefenderBox.SelectedItem = row?.DefenderSkill ?? "Resolve";
-            SkillModeBox.SelectedItem = row?.CheckMode ?? "STANDARD";
+            SkillModeBox.SelectedItem = _store.GetOptionProfile(_option.Id);
             SkillActorFactorBox.Text = (row?.ActorFactor ?? 0.5).ToString("0.###", CultureInfo.CurrentCulture);
             SkillDefenderFactorBox.Text = (row?.DefenderFactor ?? 0.5).ToString("0.###", CultureInfo.CurrentCulture);
-            SkillStateText.Text = row is null ? "No skill check configured for this choice."
+            RefreshProfileFormula();
+            SkillStateText.Text = row is null ? "No skill check configured for this choice (STANDARD profile still applies)."
                 : $"Current: {row.ActorSkill} vs {row.DefenderSkill} ({row.CheckMode}).";
             _dirty = false;
+        }
+        finally { _loading = false; }
+    }
+
+    private void RefreshProfileFormula()
+    {
+        if (SkillProfileFormula is null || _store is null) return;
+        string key = SkillModeBox?.SelectedItem as string ?? "STANDARD";
+        SkillProfileFormula.Text = $"{key}: {_store.CheckProfileFormula(key)}";
+    }
+
+    private void SkillMode_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading) return;
+        RefreshProfileFormula();
+        Editor_Changed(sender, e);
+    }
+
+    private void SaveOptionProfile_Click(object sender, RoutedEventArgs e) => RunMechanicsAction(() =>
+    {
+        _store.SaveOptionProfile(_option.Id, SkillModeBox.SelectedItem as string ?? "STANDARD");
+        ReloadSkill();
+    }, "Relationship profile saved for this choice. It applies even without a skill check.");
+
+    private void EditCheckProfiles_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CanSwitch()) return;
+        string chosen = SkillModeBox.SelectedItem as string ?? "STANDARD";
+        new CheckProfilesWindow(_store) { Owner = this }.ShowDialog();
+        _loading = true;
+        try
+        {
+            SkillModeBox.ItemsSource = _store.CheckProfileKeys();
+            SkillModeBox.SelectedItem = _store.CheckProfileKeys().Contains(chosen) ? chosen : "STANDARD";
+            RefreshProfileFormula();
         }
         finally { _loading = false; }
     }
@@ -359,6 +395,7 @@ public partial class ChoiceMechanicsWindow : Window
             SkillDefenderBox.SelectedItem as string ?? "", SkillModeBox.SelectedItem as string ?? "",
             ParseDouble(SkillActorFactorBox.Text, "Initiator factor"),
             ParseDouble(SkillDefenderFactorBox.Text, "Recipient factor")));
+        _store.SaveOptionProfile(_option.Id, SkillModeBox.SelectedItem as string ?? "STANDARD");
         ReloadSkill();
     }, "Skill check saved.");
 

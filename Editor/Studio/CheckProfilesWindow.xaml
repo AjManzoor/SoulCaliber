@@ -1,0 +1,78 @@
+<Window x:Class="SoulCaliberStudio.CheckProfilesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Check Profiles — Formula Editor" Width="1110" Height="780" MinWidth="840" MinHeight="600"
+        WindowStartupLocation="CenterOwner" Background="{StaticResource BackgroundBrush}"
+        Foreground="{StaticResource ForegroundBrush}">
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+      <TextBlock Text="CHECK PROFILES &amp; FORMULAS" FontSize="23" FontWeight="Bold"/>
+      <TextBlock Text="Each profile contributes relationship terms to a choice's success chance. Changing a profile affects ALL choices that reference it, including existing ones."
+                 TextWrapping="Wrap" Foreground="#B9C9E4" Margin="0,6,0,0"/>
+    </StackPanel>
+    <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+      <Button DockPanel.Dock="Right" Content="Close" Click="Close_Click" MinWidth="100"/>
+      <TextBlock x:Name="StatusText" Text="Select a profile to edit or create a new one." Foreground="#B9C9E4" TextWrapping="Wrap"/>
+    </DockPanel>
+    <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="280"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <DockPanel Grid.Column="0" Margin="0,0,14,0">
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+          <Button Content="New profile" Click="NewProfile_Click"/>
+          <Button Content="Delete selected profile" Click="DeleteProfile_Click"/>
+        </StackPanel>
+        <ListBox x:Name="ProfileList" SelectionChanged="ProfileList_SelectionChanged"/>
+      </DockPanel>
+      <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,8,0">
+          <TextBlock Text="EDIT PROFILE" FontWeight="Bold" FontSize="16" Margin="0,0,0,8"/>
+          <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Margin="0,0,10,9">
+              <TextBlock Text="Profile key (immutable once saved)" Foreground="#B9C9E4"/>
+              <TextBox x:Name="KeyBox"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,0,0,9">
+              <TextBlock Text="Display name" Foreground="#B9C9E4"/>
+              <TextBox x:Name="NameBox"/>
+            </StackPanel>
+          </Grid>
+          <TextBlock Text="Description" Foreground="#B9C9E4"/>
+          <TextBox x:Name="DescriptionBox" Height="57" AcceptsReturn="True" TextWrapping="Wrap" Margin="0,4,0,8"/>
+          <Button Content="Save profile name / description" Click="SaveProfile_Click" HorizontalAlignment="Left" Margin="0,0,0,16"/>
+          <TextBlock Text="EDITABLE RELATIONSHIP FORMULA" FontWeight="Bold" FontSize="16"/>
+          <TextBlock Text="Each row adds (relationship value × factor) percentage points. Choose a direction, attribute and positive or negative factor. Leave all rows empty for a neutral profile."
+                     Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,5,0,9"/>
+          <Border Background="#151923" Padding="12" CornerRadius="6" Margin="0,0,0,12">
+            <StackPanel>
+              <TextBlock Text="CURRENT SAVED FORMULA" Foreground="#9EC5FF" FontWeight="Bold"/>
+              <TextBlock x:Name="FormulaText" TextWrapping="Wrap" Foreground="#E7EDF8" Margin="0,6,0,5" FontSize="14"/>
+            </StackPanel>
+          </Border>
+          <ListBox x:Name="TermList" Height="150" SelectionChanged="TermList_SelectionChanged"/>
+          <WrapPanel Margin="0,12,0,7">
+            <StackPanel Width="240" Margin="0,0,9,8">
+              <TextBlock Text="Relationship direction" Foreground="#B9C9E4"/>
+              <ComboBox x:Name="DirectionBox"/>
+            </StackPanel>
+            <StackPanel Width="150" Margin="0,0,9,8">
+              <TextBlock Text="Attribute" Foreground="#B9C9E4"/>
+              <ComboBox x:Name="AttributeBox"/>
+            </StackPanel>
+            <StackPanel Width="115" Margin="0,0,9,8">
+              <TextBlock Text="Factor (−10 to 10)" Foreground="#B9C9E4"/>
+              <TextBox x:Name="FactorBox"/>
+            </StackPanel>
+          </WrapPanel>
+          <WrapPanel>
+            <Button Content="New formula term" Click="NewTerm_Click"/>
+            <Button Content="Add / save formula term" Click="SaveTerm_Click"/>
+            <Button Content="Remove selected term" Click="RemoveTerm_Click"/>
+          </WrapPanel>
+          <TextBlock Text="Example: Recipient → Initiator, Trust, 0.20 means each 1 point of recipient Trust adds 0.20 percentage points. Changes to any profile require republishing content.db to the game."
+                     Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,18,0,0"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</Window>

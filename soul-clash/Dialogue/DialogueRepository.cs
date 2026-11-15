@@ -24,6 +24,8 @@ public sealed class DialogueRepository
 	private sealed record NodeIntroduction(int InteractionId, string NodeKey, string CharacterId, string? VisitorId, string Text);
 	private readonly Dictionary<string, PersonalityStats> _personalities;
 	private readonly Dictionary<string, OptionSkillCheck> _skillChecks;
+	private readonly Dictionary<string, IReadOnlyList<ChanceFactor>> _profiles;
+	private readonly Dictionary<string, string> _optionProfiles;
 	private static readonly PersonalityStats DefaultPersonality = new();
 
 	public DialogueRepository()
@@ -220,6 +222,57 @@ public sealed class DialogueRepository
 			});
 		}
 
+        // Phase 9: content-authored relationship formulas, read only. A missing table
+        // means the game is running an old content.db; publish the new master DB.
+        _profiles = new Dictionary<string, IReadOnlyList<ChanceFactor>>(StringComparer.OrdinalIgnoreCase);
+        using (var profileDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePaths.Content, Mode = SqliteOpenMode.ReadOnly,
+            ForeignKeys = true, Pooling = false
+        }.ToString()))
+        {
+            profileDb.Open();
+            using var keys = new SqliteCommand("SELECT Key FROM CheckProfiles", profileDb);
+            using (var reader = keys.ExecuteReader())
+                while (reader.Read()) _profiles.Add(reader.GetString(0), new List<ChanceFactor>());
+            var terms = _profiles.Keys.ToDictionary(k => k, _ => new List<ChanceFactor>(), StringComparer.OrdinalIgnoreCase);
+            using var cmd = new SqliteCommand(
+                "SELECT ProfileKey,Direction,Attribute,Factor FROM CheckProfileModifiers ORDER BY ProfileKey,Direction,Attribute", profileDb);
+            using (var r = cmd.ExecuteReader())
+                while (r.Read())
+                {
+                    if (!terms.TryGetValue(r.GetString(0), out var list))
+						throw new InvalidOperationException($"Unknown formula profile '{r.GetString(0)}'.");
+                    list.Add(new ChanceFactor(r.GetString(1), r.GetString(2), r.GetDouble(3)));
+                }
+            foreach (var (key, list) in terms) _profiles[key] = list;
+        }
+        if (!_profiles.ContainsKey("STANDARD"))
+            throw new InvalidOperationException("STANDARD profile is missing. Open the master database in Studio and republish.");
+
+        _optionProfiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        using (var profileAssignments = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePaths.Content, Mode = SqliteOpenMode.ReadOnly,
+            ForeignKeys = true, Pooling = false
+        }.ToString()))
+        {
+            profileAssignments.Open();
+            using var cmd = new SqliteCommand(@"SELECT i.Key, n.Key, o.Key, p.ProfileKey
+                FROM OptionCheckProfiles p
+                JOIN Options o ON o.Id=p.OptionId
+                JOIN Nodes n ON n.Id=o.NodeId
+                JOIN Interactions i ON i.Id=n.InteractionId", profileAssignments);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                string profileKey = reader.GetString(3);
+                if (!_profiles.ContainsKey(profileKey))
+					throw new InvalidOperationException($"Unknown check profile '{profileKey}' assigned to a choice.");
+                _optionProfiles.Add(LegacyJsonImporter.CompositeKey(reader.GetString(0),reader.GetString(1),reader.GetString(2)),profileKey);
+            }
+        }
+
 		_skillChecks = new Dictionary<string, OptionSkillCheck>(StringComparer.OrdinalIgnoreCase);
 		foreach (var check in db.SkillChecks.AsNoTracking())
 		{
@@ -228,8 +281,8 @@ public sealed class DialogueRepository
 			var interaction = interactionLookup[node.InteractionId];
 			PersonalityStats.ValidateAbility(check.ActorSkill);
 			PersonalityStats.ValidateAbility(check.DefenderSkill);
-			if (!Eq(check.CheckMode, "STANDARD") && !Eq(check.CheckMode, "INTIMIDATION"))
-				throw new InvalidOperationException($"Unknown skill check mode: {check.CheckMode}");
+            if (!_profiles.ContainsKey(check.CheckMode))
+                throw new InvalidOperationException($"Unknown check profile: {check.CheckMode}");
 			var skill = new OptionSkillCheck
 			{
 				InteractionKey = interaction.Key, NodeKey = node.Key, OptionKey = option.Key,
@@ -275,6 +328,14 @@ public sealed class DialogueRepository
 
 	public PersonalityStats Personality(string id) =>
 		_personalities.TryGetValue(id, out var value) ? value : DefaultPersonality;
+
+    public string OptionProfile(string interaction, string node, string option) =>
+        _optionProfiles.TryGetValue(LegacyJsonImporter.CompositeKey(interaction,node,option), out var key)
+            ? key : "STANDARD";
+
+    public IReadOnlyList<ChanceFactor> CheckProfile(string profileKey) =>
+        _profiles.TryGetValue(profileKey, out var terms) ? terms :
+		throw new InvalidOperationException($"Missing check profile '{profileKey}'. Republish content.db.");
 
 	public OptionSkillCheck? SkillCheck(string interaction, string node, string option) =>
 		_skillChecks.TryGetValue(LegacyJsonImporter.CompositeKey(interaction, node, option), out var check)

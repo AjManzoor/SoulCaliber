@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SoulCaliber.Shared;
 
 namespace SoulCaliber.Dialogue;
 
@@ -122,63 +123,38 @@ public sealed class DialogueEngine
 
 	public string ChanceBreakdown(DialogueOption option)
 	{
-		var (chance, relationship, actorEffect, defenderEffect, check) = CalculateChance(option);
-		string mode = check?.CheckMode ?? "STANDARD";
-		string details = $"Check: {mode}\n" +
-			$"Base: {option.BaseSuccessChance}%\n" +
-			$"Relationships: {relationship:+0.0;-0.0;0.0} points";
-		if (mode == "INTIMIDATION")
-			details += " (target Fear +0.10, target Trust -0.05)";
-		if (check is not null)
-		{
-			int actorScore = ActorPersonality.Get(check.ActorSkill);
-			int defenderScore = PartnerPersonality.Get(check.DefenderSkill);
-			details += $"\n{Visitor.Name} {check.ActorSkill}: {actorScore}/100 ({actorEffect:+0.0;-0.0;0.0})" +
-				$"\n{Host.Name} {check.DefenderSkill}: {defenderScore}/100 ({defenderEffect:+0.0;-0.0;0.0})";
-		}
-		return $"{details}\nFinal chance: {chance}% (capped at 5–95%)";
+		var check = _data.SkillCheck(Definition.Key, CurrentNode.Key, option.Key);
+		string profileKey = _data.OptionProfile(Definition.Key, CurrentNode.Key, option.Key);
+		ChanceResult chance = CalculateChance(option);
+		int? actorScore = check is null ? null : ActorPersonality.Get(check.ActorSkill);
+		int? defenderScore = check is null ? null : PartnerPersonality.Get(check.DefenderSkill);
+		return ChanceFormula.Explain(chance, option.BaseSuccessChance, profileKey,
+			actorScore, defenderScore, check?.ActorFactor ?? 0, check?.DefenderFactor ?? 0);
 	}
 
-	private int Chance(DialogueOption option) => CalculateChance(option).chance;
+	private int Chance(DialogueOption option) => CalculateChance(option).FinalChance;
 
-	private (int chance, double relationship, double actorEffect,
-		double defenderEffect, OptionSkillCheck? check) CalculateChance(DialogueOption option)
+	private ChanceResult CalculateChance(DialogueOption option)
 	{
-		var partnerView = PartnerToActor;
 		var check = _data.SkillCheck(Definition.Key, CurrentNode.Key, option.Key);
-		bool intimidating = check is not null && check.CheckMode == "INTIMIDATION";
+		string profileKey = _data.OptionProfile(Definition.Key, CurrentNode.Key, option.Key);
+		var profile = _data.CheckProfile(profileKey);
+		var terms = option.ChanceModifiers.Select(m =>
+			new ChanceFactor(m.Direction, m.Attribute, m.Factor));
+		return ChanceFormula.Calculate(option.BaseSuccessChance,
+			check is null ? null : ActorPersonality.Get(check.ActorSkill),
+			check is null ? null : PartnerPersonality.Get(check.DefenderSkill),
+			check?.ActorFactor ?? 0, check?.DefenderFactor ?? 0,
+			profile, terms,
+			(direction, attribute) => GetDirectionalStats(direction)
+				.Get(RelationshipStats.ParseAttribute(attribute)));
+	}
 
-		// Intimidation is not strengthened by the target liking/respecting you.
-		// Their existing fear makes them more susceptible; their trust makes them
-		// less likely to believe a threat. All relationships are directional.
-		double relationship = intimidating
-			? partnerView.Fear * 0.10 - partnerView.Trust * 0.05
-			: partnerView.Trust * 0.20 + partnerView.Respect * 0.10;
-		foreach (var modifier in option.ChanceModifiers)
+	private RelationshipStats GetDirectionalStats(string direction) =>
+		direction.ToUpperInvariant() switch
 		{
-			var attribute = RelationshipStats.ParseAttribute(modifier.Attribute);
-			relationship += GetDirectionalStats(modifier.Direction).Get(attribute) * modifier.Factor;
-		}
-
-		double actorEffect = 0, defenderEffect = 0;
-		if (check is not null)
-		{
-			// With equal 0.5 factors, the ability contribution is
-			// 0.5 x (actor skill - defender skill). That means a powerful
-			// defender can CANCEL a powerful actor's intimidation.
-            actorEffect = (ActorPersonality.Get(check.ActorSkill) - 50) * check.ActorFactor;
-            defenderEffect = -(PartnerPersonality.Get(check.DefenderSkill) - 50) * check.DefenderFactor;
-        }
-        double total = option.BaseSuccessChance + relationship + actorEffect + defenderEffect;
-        return (Math.Clamp((int)Math.Round(total), 5, 95),
-            relationship, actorEffect, defenderEffect, check);
-    }
-
-    private RelationshipStats GetDirectionalStats(string direction) =>
-        direction.ToUpperInvariant() switch
-        {
-            RelationshipDirection.ActorToPartner => ActorToPartner,
-            RelationshipDirection.PartnerToActor => PartnerToActor,
+			RelationshipDirection.ActorToPartner => ActorToPartner,
+			RelationshipDirection.PartnerToActor => PartnerToActor,
 			_ => throw new InvalidOperationException($"Unknown relationship direction '{direction}'.")
-        };
+		};
 }

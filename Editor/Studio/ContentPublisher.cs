@@ -65,7 +65,7 @@ public static class ContentPublisher
     [
         "Characters", "ReactionTypes", "ReactionImages", "Personalities", "Interactions", "Nodes", "Options",
         "Requirements", "ChanceModifiers", "Effects", "Lines", "SkillChecks", "NodeIntroductions",
-        "ConditionalDialogueVariants", "ConditionalDialogueConditions"
+        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles"
     ];
     private static readonly HashSet<string> Abilities = new(StringComparer.OrdinalIgnoreCase)
     { "Persuasion", "Intimidation", "Deception", "Charm", "Insight", "Resolve" };
@@ -551,6 +551,40 @@ public static class ContentPublisher
                 report.Error("ChanceModifiers", $"Modifier {modifier.Id} has a non-finite probability factor.");
         }
 
+        // Profile formula validation before referencing SkillChecks.
+        var profileKeys = Read(db,"SELECT Key,Name FROM CheckProfiles",
+            r => (Key:Safe(r,0), Name:Safe(r,1)));
+        var knownProfiles = profileKeys.Select(p=>p.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (!knownProfiles.Contains("STANDARD"))
+            report.Error("CheckProfiles", "STANDARD default profile is required (even without a skill check).");
+        foreach(var profile in profileKeys)
+        {
+            if (string.IsNullOrWhiteSpace(profile.Key) || string.IsNullOrWhiteSpace(profile.Name))
+                report.Error("CheckProfiles", "Every profile needs a key and name.");
+        }
+        var formulaTerms = Read(db,"SELECT ProfileKey,Direction,Attribute,Factor FROM CheckProfileModifiers",
+            r => (Profile:Safe(r,0), Direction:Safe(r,1), Attribute:Safe(r,2), Factor:r.GetDouble(3)));
+        foreach (var term in formulaTerms)
+        {
+            if (!knownProfiles.Contains(term.Profile)) report.Error("CheckProfileModifiers", $"Unknown profile '{term.Profile}'.");
+            if (!new[]{"PARTNER_TO_ACTOR","ACTOR_TO_PARTNER"}.Contains(term.Direction,StringComparer.OrdinalIgnoreCase))
+                report.Error("CheckProfileModifiers", $"Unknown direction '{term.Direction}'.");
+            if (!new[]{"Love","Fear","Allyship","Respect","Trust","Romance"}.Contains(term.Attribute,StringComparer.OrdinalIgnoreCase))
+                report.Error("CheckProfileModifiers", $"Unknown attribute '{term.Attribute}'.");
+            if (!double.IsFinite(term.Factor) || term.Factor < -10 || term.Factor > 10)
+                report.Error("CheckProfileModifiers", $"Non-finite/out-of-range factor for {term.Profile}.{term.Attribute}.");
+        }
+
+        var profileAssignments = Read(db, "SELECT OptionId,ProfileKey FROM OptionCheckProfiles",
+            r => (OptionId:r.GetInt64(0),ProfileKey:Safe(r,1)));
+        foreach(var assigned in profileAssignments)
+        {
+            if (!optionIds.Contains(assigned.OptionId))
+                report.Error("OptionCheckProfiles", $"Unknown choice {assigned.OptionId}.");
+            if (!knownProfiles.Contains(assigned.ProfileKey))
+                report.Error("OptionCheckProfiles", $"Unknown assigned profile '{assigned.ProfileKey}'.");
+        }
+
         var skillChecks = Read(db,
             "SELECT OptionId, ActorSkill, DefenderSkill, CheckMode, ActorFactor, DefenderFactor FROM SkillChecks",
             r => (OptionId: r.GetInt64(0), Actor: Safe(r, 1), Defender: Safe(r, 2), Mode: Safe(r, 3), ActorFactor: r.GetDouble(4), DefenderFactor: r.GetDouble(5)));
@@ -559,8 +593,8 @@ public static class ContentPublisher
             if (!optionIds.Contains(skill.OptionId)) report.Error("SkillChecks", $"Unknown choice {skill.OptionId}.");
             if (!Abilities.Contains(skill.Actor) || !Abilities.Contains(skill.Defender))
                 report.Error("SkillChecks", $"Unknown ability on choice {skill.OptionId}.");
-            if (!new[] { "STANDARD", "INTIMIDATION" }.Contains(skill.Mode, StringComparer.OrdinalIgnoreCase))
-                report.Error("SkillChecks", $"Unknown check mode '{skill.Mode}' on choice {skill.OptionId}.");
+            if (!knownProfiles.Contains(skill.Mode))
+                report.Error("SkillChecks", $"Unknown check profile '{skill.Mode}' on choice {skill.OptionId}.");
             if (!double.IsFinite(skill.ActorFactor) || !double.IsFinite(skill.DefenderFactor))
                 report.Error("SkillChecks", $"Non-finite skill factor on choice {skill.OptionId}.");
         }

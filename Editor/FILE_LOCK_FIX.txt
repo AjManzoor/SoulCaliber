@@ -1,1 +1,0 @@
-File lock fix: ContentPublisher.Snapshot, ContentPublisher.Inspect and ContentPublisher.ReadUserVersion now open SQLite connections with Pooling=false. This prevents pooled connections from holding a handle to temporary Content/content.db when FileHash or Directory.Move runs on Windows. No other C# files changed.

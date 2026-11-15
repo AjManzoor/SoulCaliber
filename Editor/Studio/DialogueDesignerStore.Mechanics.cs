@@ -15,7 +15,6 @@ public sealed partial class DialogueDesignerStore
     public static readonly string[] Abilities =
         ["Persuasion", "Intimidation", "Deception", "Charm", "Insight", "Resolve"];
 
-    public static readonly string[] CheckModes = ["STANDARD", "INTIMIDATION"];
 
     public sealed record RelationshipEffectRow(int Id, int OptionId, string Outcome,
         string Direction, string Attribute, int Delta)
@@ -224,8 +223,8 @@ public sealed partial class DialogueDesignerStore
             ?? throw new InvalidOperationException("Select an initiator skill.");
         string defender = Abilities.FirstOrDefault(x => string.Equals(x, item.DefenderSkill, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException("Select a recipient skill.");
-        if (!CheckModes.Contains(item.CheckMode, StringComparer.Ordinal))
-            throw new InvalidOperationException("Select STANDARD or INTIMIDATION mode.");
+        if (!CheckProfileKeys().Contains(item.CheckMode, StringComparer.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Select an existing check profile.");
         CheckNumber(item.ActorFactor, "Initiator factor");
         CheckNumber(item.DefenderFactor, "Recipient factor");
         if (item.ActorFactor < 0 || item.DefenderFactor < 0)

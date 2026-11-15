@@ -186,36 +186,19 @@ public partial class InteractionSimulatorWindow : Window
 
     private (int chance, string breakdown) CalculateChance(SimChoice option)
     {
-        // Mirrors the exact formula and Math.Round() / 5..95 clamping in Godot DialogueEngine.CalculateChance.
+        // Identical ChanceFormula source and profile terms as Godot. Simulated relationship
+        // values remain manually editable and never read from a real savegame.
         var skill = _data.Skill(option.Id);
-        var actorPersonality = _data.Personality(_actor);
-        var partnerPersonality = _data.Personality(_partner);
-        bool intimidating = skill is not null && skill.CheckMode.Equals("INTIMIDATION", StringComparison.OrdinalIgnoreCase);
-        double relationship = intimidating
-            ? GetValue("PARTNER_TO_ACTOR", "Fear") * .10 - GetValue("PARTNER_TO_ACTOR", "Trust") * .05
-            : GetValue("PARTNER_TO_ACTOR", "Trust") * .20 + GetValue("PARTNER_TO_ACTOR", "Respect") * .10;
-        var lines = new List<string> { $"Base: {option.BaseChance}%", $"Mode: {(intimidating ? "INTIMIDATION" : "STANDARD")}" };
-        foreach (var modifier in _data.Modifiers(option.Id))
-        {
-            double adjustment = GetValue(modifier.Direction, modifier.Attribute) * modifier.Factor;
-            relationship += adjustment;
-            lines.Add($"Modifier {modifier.Direction} {modifier.Attribute} × {modifier.Factor:0.###} = {adjustment:+0.##;-0.##;0}");
-        }
-        double actorEffect = 0, defenderEffect = 0;
-        if (skill is not null)
-        {
-            int a = actorPersonality.Get(skill.ActorSkill);
-            int d = partnerPersonality.Get(skill.DefenderSkill);
-            actorEffect = (a - 50) * skill.ActorFactor;
-            defenderEffect = -(d - 50) * skill.DefenderFactor;
-            lines.Add($"Actor {skill.ActorSkill} {a}/100 × {skill.ActorFactor:0.##} = {actorEffect:+0.##;-0.##;0}");
-            lines.Add($"Defender {skill.DefenderSkill} {d}/100 × {skill.DefenderFactor:0.##} = {defenderEffect:+0.##;-0.##;0}");
-        }
-        double total = option.BaseChance + relationship + actorEffect + defenderEffect;
-        int chance = Math.Clamp((int)Math.Round(total), 5, 95);
-        lines.Insert(2, $"Relationship total: {relationship:+0.##;-0.##;0}");
-        lines.Add($"Final = clamp(round({total:0.##}), 5, 95) = {chance}%");
-        return (chance, string.Join("\n", lines));
+        string profileKey = _data.ProfileForOption(option.Id);
+        int? actorScore = skill is null ? null : _data.Personality(_actor).Get(skill.ActorSkill);
+        int? defenderScore = skill is null ? null : _data.Personality(_partner).Get(skill.DefenderSkill);
+        var result = ChanceFormula.Calculate(option.BaseChance,
+            actorScore, defenderScore, skill?.ActorFactor ?? 0, skill?.DefenderFactor ?? 0,
+            _data.Profile(profileKey),
+            _data.Modifiers(option.Id).Select(m => new ChanceFactor(m.Direction,m.Attribute,m.Factor)),
+            GetValue);
+        return (result.FinalChance, ChanceFormula.Explain(result, option.BaseChance, profileKey,
+            actorScore, defenderScore, skill?.ActorFactor ?? 0, skill?.DefenderFactor ?? 0));
     }
 
     private SimulationChoiceDisplay SelectedChoice()

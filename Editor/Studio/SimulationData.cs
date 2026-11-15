@@ -13,6 +13,8 @@ public sealed class SimulationData : IDisposable
     public IReadOnlyList<SimInteraction> Interactions { get; }
     private readonly Dictionary<string, SimPersonality> _personalities;
     private readonly Dictionary<int, SimSkillCheck> _checks;
+    private readonly Dictionary<int, string> _optionProfiles;
+    private readonly Dictionary<string, IReadOnlyList<ChanceFactor>> _profiles;
     private readonly List<SimIntroduction> _introductions;
     private readonly List<SimPhrase> _phrases;
     private readonly List<SimVariant> _variants;
@@ -59,6 +61,18 @@ public sealed class SimulationData : IDisposable
         _effects = Read("SELECT OptionId, Outcome, Direction, Attribute, Delta FROM Effects ORDER BY Id",
             r => new SimEffect(r.GetInt32(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetInt32(4)))
             .GroupBy(x => x.OptionId).ToDictionary(g => g.Key, g => g.ToList());
+        _profiles = Read("SELECT Key FROM CheckProfiles", r => r.GetString(0))
+            .ToDictionary(key => key,
+                key => (IReadOnlyList<ChanceFactor>)new List<ChanceFactor>(), StringComparer.OrdinalIgnoreCase);
+        var groupedTerms = Read("SELECT ProfileKey,Direction,Attribute,Factor FROM CheckProfileModifiers ORDER BY ProfileKey,Direction,Attribute",
+            r => (Key: r.GetString(0), Term: new ChanceFactor(r.GetString(1),r.GetString(2),r.GetDouble(3))))
+            .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase);
+        foreach (var group in groupedTerms) _profiles[group.Key] = group.Select(x => x.Term).ToList();
+        if (!_profiles.ContainsKey("STANDARD"))
+            throw new InvalidOperationException("Missing STANDARD check profile. Reopen master database in Studio.");
+        _optionProfiles = Read("SELECT OptionId,ProfileKey FROM OptionCheckProfiles",
+            r => (OptionId: r.GetInt32(0), Key: r.GetString(1)))
+            .ToDictionary(x => x.OptionId, x => x.Key);
         _checks = Read("SELECT OptionId, ActorSkill, DefenderSkill, CheckMode, ActorFactor, DefenderFactor FROM SkillChecks",
             r => new SimSkillCheck(r.GetInt32(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetDouble(4), r.GetDouble(5)))
             .ToDictionary(x => x.OptionId);
@@ -111,6 +125,10 @@ public sealed class SimulationData : IDisposable
     public List<SimEffect> Effects(int optionId, bool success) =>
         (_effects.GetValueOrDefault(optionId) ?? []).Where(x => string.Equals(x.Outcome, success ? "SUCCESS" : "FAILURE", StringComparison.OrdinalIgnoreCase)).ToList();
     public SimSkillCheck? Skill(int optionId) => _checks.GetValueOrDefault(optionId);
+    public string ProfileForOption(int optionId) => _optionProfiles.GetValueOrDefault(optionId) ?? "STANDARD";
+    public IReadOnlyList<ChanceFactor> Profile(string profileKey) =>
+        _profiles.TryGetValue(profileKey, out var terms) ? terms :
+        throw new InvalidOperationException($"Unknown check profile '{profileKey}'.");
     public SimInteraction Interaction(string key) => Interactions.First(x => x.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
     public string Name(string id) => Characters.FirstOrDefault(x => x.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Name ?? id;
 
