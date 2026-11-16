@@ -12,6 +12,15 @@ public partial class MainWindow
         TestingDatabaseText.Text = path;
     }
 
+    private void ManageRelationshipAttributes_Click(object sender, RoutedEventArgs e)
+    {
+        if (_designer is null)
+        { MessageBox.Show(this,"Open the master database first.","Relationship attributes"); return; }
+        if (!DesignerCanSwitch() || !CharactersCanSwitch() || !CanLeaveTable()) return;
+        var window = new RelationshipAttributesWindow(_designer) { Owner = this };
+        window.ShowDialog();
+    }
+
     private void LaunchSimulator_Click(object sender, RoutedEventArgs e)
     {
         if (_testingDatabasePath is null)

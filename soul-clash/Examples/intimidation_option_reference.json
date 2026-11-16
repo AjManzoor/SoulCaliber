@@ -1,7 +1,0 @@
-{
-  "interaction": "CONFRONTATION",
-  "node": "OPENING",
-  "optionKey": "INTIMIDATE",
-  "successTargetReaction": "INTIMIDATED",
-  "failureTargetReaction": "DISMISSIVE"
-}

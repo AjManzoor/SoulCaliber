@@ -90,7 +90,7 @@ public partial class ReactionTypesWindow : Window
             string key = KeyBox.Text.Trim().ToUpperInvariant();
             _store.SaveReactionType(new ReactionType(key, NameBox.Text, DescriptionBox.Text, order), _selected?.Key);
             Refresh(key);
-            StatusText.Text = $"Reaction type {key} saved. SQLite backup created.";
+            StatusText.Text = $"Reaction type {key} saved.";
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Cannot save reaction type", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
@@ -98,14 +98,14 @@ public partial class ReactionTypesWindow : Window
     private void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (_selected is null || !CanChange()) return;
-        if (MessageBox.Show(this, $"Delete reaction type {_selected.Key}? This cannot be undone without restoring a backup.",
+        if (MessageBox.Show(this, $"Delete reaction type {_selected.Key}? No automatic backup will be created.",
             "Delete reaction type", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         try
         {
             _store.DeleteReactionType(_selected.Key);
             _selected = null;
             Refresh();
-            StatusText.Text = "Reaction type deleted. SQLite backup created.";
+            StatusText.Text = "Reaction type deleted.";
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Cannot delete reaction type", MessageBoxButton.OK, MessageBoxImage.Error); }
     }

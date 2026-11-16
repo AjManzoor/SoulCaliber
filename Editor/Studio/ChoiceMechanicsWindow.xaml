@@ -142,7 +142,7 @@
                   <TextBox x:Name="RequirementMaxBox" TextChanged="Editor_Changed"/>
                 </StackPanel>
               </WrapPanel>
-              <TextBlock Text="Leave one bound empty if not needed. Fear and Romance range 0–100; other relationship attributes range −100 to 100."
+              <TextBlock Text="Leave one bound empty if not needed. Each relationship attribute has its own editable minimum and maximum (see Relationship Attributes)."
                          TextWrapping="Wrap" Foreground="#B9C9E4" FontSize="11" Margin="0,1,0,7"/>
               <WrapPanel>
                 <Button Content="New requirement" Click="NewRequirement_Click"/>

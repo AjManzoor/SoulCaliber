@@ -14,7 +14,7 @@ public sealed class DatabaseEditor(string databasePath) : IDisposable
     public static readonly string[] Tables =
     [
         "Interactions", "Nodes", "NodeIntroductions", "Options", "Lines", "Characters", "ReactionTypes", "ReactionImages",
-        "Personalities", "Requirements", "ChanceModifiers", "Effects", "SkillChecks"
+        "CharacterSkills", "CharacterSkillValues", "PersonalityTraits", "PersonalityTraitModifiers", "CharacterTraits", "Requirements", "ChanceModifiers", "Effects", "SkillChecks"
     ];
 
     public void Open()
@@ -97,8 +97,7 @@ public sealed class DatabaseEditor(string databasePath) : IDisposable
         var dirty = data.Rows.Cast<DataRow>().Where(r => r.RowState != DataRowState.Unchanged && r.RowState != DataRowState.Detached).ToList();
         if (dirty.Count == 0) return;
 
-        // Make a consistent, recoverable snapshot BEFORE changing anything.
-        Backup();
+        // Save atomically; backups are created only when explicitly requested.
         using var transaction = Connection.BeginTransaction();
         try
         {
@@ -167,7 +166,8 @@ public sealed class DatabaseEditor(string databasePath) : IDisposable
             return Exists("SELECT 1 FROM Lines WHERE CharacterId=$id OR VisitorId=$id LIMIT 1", row["Id"]) ||
                    Exists("SELECT 1 FROM NodeIntroductions WHERE CharacterId=$id OR VisitorId=$id LIMIT 1", row["Id"]) ||
                    Exists("SELECT 1 FROM ReactionImages WHERE CharacterId=$id LIMIT 1", row["Id"]) ||
-                   Exists("SELECT 1 FROM Personalities WHERE CharacterId=$id LIMIT 1", row["Id"]);
+                   Exists("SELECT 1 FROM CharacterSkillValues WHERE CharacterId=$id LIMIT 1", row["Id"]) ||
+                   Exists("SELECT 1 FROM CharacterTraits WHERE CharacterId=$id LIMIT 1", row["Id"]);
         return false;
     }
     private bool Exists(string sql, object value)

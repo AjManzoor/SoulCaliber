@@ -1,9 +1,0 @@
-{
-  "id": "NOBUNOGI",
-  "reactionImages": {
-    "INTIMIDATED": "res://Images/Nobunogi/Intimidated.png",
-    "DISMISSIVE": "res://Images/Nobunogi/Dismissive.png",
-    "WARY": "res://Images/Nobunogi/Wary.png",
-    "UNIMPRESSED": "res://Images/Nobunogi/Unimpressed.png"
-  }
-}

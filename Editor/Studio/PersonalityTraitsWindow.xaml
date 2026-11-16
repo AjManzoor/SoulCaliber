@@ -1,0 +1,75 @@
+<Window x:Class="SoulCaliberStudio.PersonalityTraitsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Personality Traits &amp; Relationship Sensitivities" Width="1060" Height="760"
+        MinWidth="900" MinHeight="640" WindowStartupLocation="CenterOwner"
+        Background="#151A25" Foreground="#F5F7FD" FontFamily="Segoe UI" FontSize="13">
+  <Window.Resources>
+    <Style TargetType="Button"><Setter Property="Padding" Value="11,7"/><Setter Property="Margin" Value="0,5,8,0"/><Setter Property="Background" Value="#354E70"/><Setter Property="Foreground" Value="White"/></Style>
+    <Style TargetType="TextBox"><Setter Property="Margin" Value="0,2,6,7"/><Setter Property="Padding" Value="6"/></Style>
+    <Style TargetType="ComboBox"><Setter Property="Margin" Value="0,2,6,7"/><Setter Property="Padding" Value="5"/></Style>
+    <Style TargetType="CheckBox"><Setter Property="Foreground" Value="#F5F7FD"/></Style>
+  </Window.Resources>
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+      <TextBlock Text="PERSONALITY TRAITS" FontSize="21" FontWeight="Bold"/>
+      <TextBlock Text="A tag modifies relationship DELTAS for the character receiving the effect, after success or failure is determined. Multiple tags multiply (capped at ×4)."
+                 Foreground="#B9C9E4" TextWrapping="Wrap"/>
+    </StackPanel>
+    <!-- Fixed footer: visible even when the trait/modifier editor is scrolled. -->
+    <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0" LastChildFill="True">
+      <Button DockPanel.Dock="Right" Content="Close" Width="96" MinHeight="34"
+              Margin="12,0,0,0" IsCancel="True" Click="Close_Click"/>
+      <TextBlock x:Name="Status" Foreground="#BAD6F2" TextWrapping="Wrap"
+                 VerticalAlignment="Center"/>
+    </DockPanel>
+    <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="250"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <DockPanel Grid.Column="0" Margin="0,0,15,0">
+        <StackPanel DockPanel.Dock="Bottom">
+          <Button Content="New trait" Click="NewTrait_Click"/>
+          <Button Content="Delete selected trait" Click="DeleteTrait_Click"/>
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Top" Text="TRAIT CATALOGUE" FontWeight="Bold" Margin="0,0,0,7"/>
+        <ListBox x:Name="TraitList" Background="#202939" Foreground="White" Padding="5"
+                 SelectionChanged="TraitList_SelectionChanged"/>
+      </DockPanel>
+      <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,10,0">
+          <TextBlock Text="EDIT TRAIT" FontWeight="Bold" FontSize="16"/>
+          <Grid Margin="0,9,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0"><TextBlock Text="Permanent key"/><TextBox x:Name="KeyBox"/></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Text="Display name"/><TextBox x:Name="NameBox"/></StackPanel>
+          </Grid>
+          <TextBlock Text="Description"/><TextBox x:Name="DescriptionBox" AcceptsReturn="True" TextWrapping="Wrap" Height="55"/>
+          <StackPanel Orientation="Horizontal">
+            <StackPanel Width="140"><TextBlock Text="Sort order"/><TextBox x:Name="SortBox"/></StackPanel>
+            <CheckBox x:Name="ActiveBox" Content="Active" IsChecked="True" VerticalAlignment="Center" Margin="6,0,0,0"/>
+          </StackPanel>
+          <Button Content="Save trait" Click="SaveTrait_Click" FontWeight="Bold" HorizontalAlignment="Left"/>
+          <Separator Margin="0,14,0,13"/>
+          <TextBlock Text="RELATIONSHIP MODIFIERS FOR THIS TRAIT" FontWeight="Bold" FontSize="16" Margin="0,0,0,7"/>
+          <TextBlock Text="BOTH = either outcome / either sign. GAIN and LOSS refer to numerical direction (Fear +10 is GAIN). Factor 0 blocks changes; 1 leaves them unchanged."
+                     Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,0,0,8"/>
+          <ListBox x:Name="ModifierList" Height="135" Background="#202939" Foreground="White"
+                   SelectionChanged="ModifierList_SelectionChanged"/>
+          <Grid Margin="0,10,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="2*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0"><TextBlock Text="Relationship attribute"/><ComboBox x:Name="AttributeBox" DisplayMemberPath="Name" SelectedValuePath="Key"/></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Text="Outcome"/><ComboBox x:Name="OutcomeBox"/></StackPanel>
+            <StackPanel Grid.Column="2"><TextBlock Text="Change"/><ComboBox x:Name="ChangeBox"/></StackPanel>
+            <StackPanel Grid.Column="3"><TextBlock Text="Factor 0–3"/><TextBox x:Name="FactorBox" Text="1"/></StackPanel>
+          </Grid>
+          <WrapPanel Margin="0,6,0,0">
+            <Button Content="New modifier" Click="NewModifier_Click"/>
+            <Button Content="Save modifier" Click="SaveModifier_Click"/>
+            <Button Content="Delete selected modifier" Click="DeleteModifier_Click"/>
+          </WrapPanel>
+          <TextBlock Text="Assign saved traits to individual characters in the Character Manager. Effects are modified for the owner of the outgoing relationship, not necessarily the actor."
+                     TextWrapping="Wrap" Foreground="#B9C9E4" Margin="0,16,0,0"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</Window>

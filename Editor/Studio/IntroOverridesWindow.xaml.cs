@@ -108,7 +108,7 @@ public partial class IntroOverridesWindow : Window
                 IntroSpeakerBox.SelectedItem as string ?? "", IntroVisitorBox.SelectedItem as string,
                 IntroTextBox.Text));
             Reload(id);
-            StatusText.Text = "Saved to master database. A backup was created.";
+            StatusText.Text = "Saved to master database.";
         }
         catch (Exception ex)
         {
@@ -125,7 +125,7 @@ public partial class IntroOverridesWindow : Window
         {
             _store.DeleteIntroduction(_active.Id);
             Reload();
-            StatusText.Text = "Introduction deleted; a database backup was created.";
+            StatusText.Text = "Introduction deleted.";
         }
         catch (Exception ex)
         {

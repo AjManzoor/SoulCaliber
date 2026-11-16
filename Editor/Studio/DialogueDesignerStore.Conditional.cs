@@ -161,9 +161,11 @@ public sealed partial class DialogueDesignerStore
                 throw new InvalidOperationException("Combine conditions on the same attribute into one range.");
             if (condition.Minimum is null && condition.Maximum is null)
                 throw new InvalidOperationException("Each condition needs a minimum or maximum.");
-            int minimum = attribute is "Fear" or "Romance" ? 0 : -100;
-            if (condition.Minimum is int lo && (lo < minimum || lo > 100) ||
-                condition.Maximum is int hi && (hi < minimum || hi > 100) ||
+            var definition = GetAttribute(attribute);
+            int minimum = definition.Minimum;
+            int maximum = definition.Maximum;
+            if (condition.Minimum is int lo && (lo < minimum || lo > maximum) ||
+                condition.Maximum is int hi && (hi < minimum || hi > maximum) ||
                 condition.Minimum is int l && condition.Maximum is int h && l > h)
                 throw new InvalidOperationException($"Invalid bounds for {direction} / {attribute}.");
         }

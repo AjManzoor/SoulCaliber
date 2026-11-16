@@ -216,20 +216,17 @@
                 <TextBlock Text="Display name" Foreground="#B9C9E4" FontSize="11"/>
                 <TextBox x:Name="CharacterNameBox" TextChanged="CharacterField_Changed" Margin="0,3,0,12"/>
                 <Separator Margin="0,2,0,10"/>
-                <TextBlock Text="PERSONALITY (0–100)" FontWeight="Bold" Margin="0,0,0,7"/>
-                <TextBlock Text="Persuasion" Foreground="#B9C9E4"/>
-                <TextBox x:Name="CharPersuasionBox" Margin="0,2,0,6" TextChanged="CharacterField_Changed"/>
-                <TextBlock Text="Intimidation" Foreground="#B9C9E4"/>
-                <TextBox x:Name="CharIntimidationBox" Margin="0,2,0,6" TextChanged="CharacterField_Changed"/>
-                <TextBlock Text="Deception" Foreground="#B9C9E4"/>
-                <TextBox x:Name="CharDeceptionBox" Margin="0,2,0,6" TextChanged="CharacterField_Changed"/>
-                <TextBlock Text="Charm" Foreground="#B9C9E4"/>
-                <TextBox x:Name="CharCharmBox" Margin="0,2,0,6" TextChanged="CharacterField_Changed"/>
-                <TextBlock Text="Insight" Foreground="#B9C9E4"/>
-                <TextBox x:Name="CharInsightBox" Margin="0,2,0,6" TextChanged="CharacterField_Changed"/>
-                <TextBlock Text="Resolve" Foreground="#B9C9E4"/>
-                <TextBox x:Name="CharResolveBox" Margin="0,2,0,8" TextChanged="CharacterField_Changed"/>
-                <Button Content="Save character &amp; personality" Click="SaveCharacter_Click" FontWeight="Bold" Margin="0,8,0,0"/>
+                <TextBlock Text="CHARACTER SKILLS" FontWeight="Bold" Margin="0,0,0,7"/>
+                <TextBlock Text="How capable this character is. Used by skill checks." Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <Button Content="Manage character skill catalogue..." Click="ManageCharacterSkills_Click" Margin="0,0,0,8"/>
+                <StackPanel x:Name="CharacterSkillsPanel" />
+                <Separator Margin="0,9,0,10"/>
+                <TextBlock Text="PERSONALITY TRAITS" FontWeight="Bold" Margin="0,0,0,7"/>
+                <TextBlock Text="Traits change how relationship effects are received after an outcome. They do not affect the skill roll."
+                           Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <Button Content="Manage personality traits and modifiers..." Click="ManagePersonalityTraits_Click" Margin="0,0,0,8"/>
+                <WrapPanel x:Name="CharacterTraitsPanel"/>
+                <Button Content="Save character, skills and traits" Click="SaveCharacter_Click" FontWeight="Bold" Margin="0,8,0,0"/>
               </StackPanel>
             </ScrollViewer>
           </Border>
@@ -392,6 +389,7 @@
               <TextBlock Text="Source database" FontWeight="SemiBold"/>
               <TextBlock x:Name="TestingDatabaseText" Text="Open the master database first."
                          Foreground="#C4D7F3" TextWrapping="Wrap" Margin="0,5,0,16"/>
+              <Button Content="Manage relationship attributes..." Click="ManageRelationshipAttributes_Click" Margin="0,0,0,8"/>
               <Button Content="Launch interaction simulator..." Click="LaunchSimulator_Click"
                       HorizontalAlignment="Left" FontWeight="Bold" Padding="18,10"/>
               <TextBlock Text="The simulator opens the content database in read-only mode and never opens soulcaliber_savegame.db. The relationship values you enter are temporary."

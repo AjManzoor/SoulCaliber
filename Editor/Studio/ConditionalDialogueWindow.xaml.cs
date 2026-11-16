@@ -35,8 +35,8 @@ public partial class ConditionalDialogueWindow : Window
         PreviewActorBox.SelectedItem=characters.FirstOrDefault();
         PreviewPartnerBox.SelectedItem=characters.Skip(1).FirstOrDefault();
         DirectionBox.ItemsSource=DialogueDesignerStore.Directions;
-        AttributeBox.ItemsSource=DialogueDesignerStore.RelationshipAttributes;
-        DirectionBox.SelectedIndex=0;AttributeBox.SelectedIndex=4;
+        AttributeBox.ItemsSource=_store.RelationshipAttributes;
+        DirectionBox.SelectedIndex=0;AttributeBox.SelectedItem="TRUST";
         OutcomeBox.SelectedIndex=0;
         BuildStats(ActorStatsPanel,"ACTOR_TO_PARTNER");
         BuildStats(PartnerStatsPanel,"PARTNER_TO_ACTOR");
@@ -54,14 +54,14 @@ public partial class ConditionalDialogueWindow : Window
 
     private void BuildStats(UniformGrid panel,string direction)
     {
-        foreach(string name in DialogueDesignerStore.RelationshipAttributes)
+        foreach(var definition in _store.AttributeDefinitions(true))
         {
             var box=new StackPanel { Margin=new Thickness(2) };
-            box.Children.Add(new TextBlock { Text=name,FontSize=10 });
-            var input=new TextBox { Text="0",MinWidth=43 };
+            box.Children.Add(new TextBlock { Text=definition.Name,FontSize=10,ToolTip=definition.Key });
+            var input=new TextBox { Text=definition.Default.ToString(CultureInfo.InvariantCulture),MinWidth=43, ToolTip=$"{definition.Name}: {definition.Minimum} to {definition.Maximum}" };
             box.Children.Add(input);
             panel.Children.Add(box);
-            _testValues[ConditionalDialogueRules.StatKey(direction,name)]=input;
+            _testValues[ConditionalDialogueRules.StatKey(direction,definition.Key)]=input;
         }
     }
 
@@ -112,7 +112,7 @@ public partial class ConditionalDialogueWindow : Window
         else
         {
             DirectionBox.SelectedItem = "PARTNER_TO_ACTOR";
-            AttributeBox.SelectedItem = "Trust";
+            AttributeBox.SelectedItem = "TRUST";
             MinimumBox.Clear();
             MaximumBox.Clear();
         }
@@ -165,11 +165,13 @@ public partial class ConditionalDialogueWindow : Window
         int? max = ParseOptional(MaximumBox.Text);
         if (min is null && max is null)
             throw new InvalidOperationException("Set a minimum or maximum.");
-        int lowerBound = attribute is "Fear" or "Romance" ? 0 : -100;
-        if (min is int lo && (lo < lowerBound || lo > 100) ||
-            max is int hi && (hi < lowerBound || hi > 100) ||
+        var definition = _store.GetAttribute(attribute);
+        int lowerBound = definition.Minimum;
+        int upperBound = definition.Maximum;
+        if (min is int lo && (lo < lowerBound || lo > upperBound) ||
+            max is int hi && (hi < lowerBound || hi > upperBound) ||
             min is int low && max is int high && low > high)
-            throw new InvalidOperationException($"Valid {attribute} range is {lowerBound} to 100, with Min <= Max.");
+            throw new InvalidOperationException($"Valid {attribute} range is {lowerBound} to {upperBound}, with Min <= Max.");
         return new DialogueClause(direction, attribute, min, max);
     }
 
@@ -270,7 +272,7 @@ public partial class ConditionalDialogueWindow : Window
                 SpeakerBox.SelectedItem as string ?? "",OtherBox.SelectedItem as string,
                 outcome,priority,PhraseBox.Text,IsIntro?"":ImageBox.Text,_conditions.ToArray()));
             Refresh(id);
-            Status.Text="Saved to the master database; a backup was created.";
+            Status.Text="Saved to the master database.";
         }
         catch(Exception ex){ MessageBox.Show(this,ex.Message,"Unable to save conditional dialogue",MessageBoxButton.OK,MessageBoxImage.Error); }
     }
@@ -291,8 +293,9 @@ public partial class ConditionalDialogueWindow : Window
             var stats=new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase);
             foreach(var (key,input) in _testValues)
             {
-                if(!int.TryParse(input.Text,out int number) || number < (key.EndsWith(":FEAR") || key.EndsWith(":ROMANCE") ? 0:-100) || number > 100)
-                    throw new InvalidOperationException($"Invalid simulated relationship value for {key}.");
+                var definition = _store.GetAttribute(key.Split(':')[1]);
+                if(!int.TryParse(input.Text,out int number) || number < definition.Minimum || number > definition.Maximum)
+                    throw new InvalidOperationException($"Invalid simulated relationship value for {key} ({definition.Minimum}..{definition.Maximum}).");
                 stats.Add(key,number);
             }
             var intro=_store.PreviewConditionalIntroduction(_node.Id,partner,actor,stats);

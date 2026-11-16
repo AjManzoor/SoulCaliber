@@ -34,9 +34,9 @@ public partial class ChoiceMechanicsWindow : Window
                 combo.ItemsSource = Directions.Select(DirectionDisplay).ToList();
             }
             foreach (var combo in new[] { EffectAttributeBox, RequirementAttributeBox, ModifierAttributeBox })
-                combo.ItemsSource = RelationshipAttributes;
-            SkillActorBox.ItemsSource = Abilities;
-            SkillDefenderBox.ItemsSource = Abilities;
+                combo.ItemsSource = _store.RelationshipAttributes;
+            SkillActorBox.ItemsSource = _store.SkillKeys;
+            SkillDefenderBox.ItemsSource = _store.SkillKeys;
             SkillModeBox.ItemsSource = _store.CheckProfileKeys();
         }
         finally { _loading = false; }
@@ -82,7 +82,7 @@ public partial class ChoiceMechanicsWindow : Window
         _activeEffect = row;
         EffectOutcomeBox.SelectedItem = row?.Outcome ?? "SUCCESS";
         SetDirection(EffectDirectionBox, row?.Direction ?? "PARTNER_TO_ACTOR");
-        EffectAttributeBox.SelectedItem = row?.Attribute ?? "Trust";
+        EffectAttributeBox.SelectedItem = row?.Attribute ?? "TRUST";
         EffectDeltaBox.Text = (row?.Delta ?? 5).ToString(CultureInfo.CurrentCulture);
     }
 
@@ -106,7 +106,7 @@ public partial class ChoiceMechanicsWindow : Window
     {
         _activeRequirement = row;
         SetDirection(RequirementDirectionBox, row?.Direction ?? "PARTNER_TO_ACTOR");
-        RequirementAttributeBox.SelectedItem = row?.Attribute ?? "Trust";
+        RequirementAttributeBox.SelectedItem = row?.Attribute ?? "TRUST";
         RequirementMinBox.Text = row?.Minimum?.ToString(CultureInfo.CurrentCulture) ?? "";
         RequirementMaxBox.Text = row?.Maximum?.ToString(CultureInfo.CurrentCulture) ?? "";
     }
@@ -131,7 +131,7 @@ public partial class ChoiceMechanicsWindow : Window
     {
         _activeModifier = row;
         SetDirection(ModifierDirectionBox, row?.Direction ?? "PARTNER_TO_ACTOR");
-        ModifierAttributeBox.SelectedItem = row?.Attribute ?? "Trust";
+        ModifierAttributeBox.SelectedItem = row?.Attribute ?? "TRUST";
         ModifierFactorBox.Text = (row?.Factor ?? 0.10).ToString("0.###", CultureInfo.CurrentCulture);
     }
 
@@ -141,8 +141,8 @@ public partial class ChoiceMechanicsWindow : Window
         try
         {
             var row = _store.GetSkillCheck(_option.Id);
-            SkillActorBox.SelectedItem = row?.ActorSkill ?? "Persuasion";
-            SkillDefenderBox.SelectedItem = row?.DefenderSkill ?? "Resolve";
+            SkillActorBox.SelectedItem = row?.ActorSkill ?? _store.SkillKeys.FirstOrDefault();
+            SkillDefenderBox.SelectedItem = row?.DefenderSkill ?? _store.SkillKeys.LastOrDefault();
             SkillModeBox.SelectedItem = _store.GetOptionProfile(_option.Id);
             SkillActorFactorBox.Text = (row?.ActorFactor ?? 0.5).ToString("0.###", CultureInfo.CurrentCulture);
             SkillDefenderFactorBox.Text = (row?.DefenderFactor ?? 0.5).ToString("0.###", CultureInfo.CurrentCulture);
@@ -307,7 +307,7 @@ public partial class ChoiceMechanicsWindow : Window
         try
         {
             save();
-            StatusText.Text = success + " A SQLite backup was created before the change.";
+            StatusText.Text = success;
         }
         catch (Exception ex)
         {
@@ -317,7 +317,7 @@ public partial class ChoiceMechanicsWindow : Window
     }
 
     private bool ConfirmDelete(string label) =>
-        MessageBox.Show(this, $"Delete the selected {label}? A database backup will be created.",
+        MessageBox.Show(this, $"Delete the selected {label}? No automatic backup will be created.",
             "Confirm deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
 
     private void NewEffect_Click(object sender, RoutedEventArgs e)

@@ -1,0 +1,43 @@
+<Window x:Class="SoulCaliberStudio.CharacterSkillsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Character Skill Catalogue" Width="900" Height="680" MinWidth="760" MinHeight="560"
+        WindowStartupLocation="CenterOwner" Background="#151A25" Foreground="#F5F7FD">
+  <Window.Resources>
+    <Style TargetType="Button"><Setter Property="Padding" Value="12,8"/><Setter Property="Margin" Value="0,5,8,0"/><Setter Property="Background" Value="#354E70"/><Setter Property="Foreground" Value="White"/></Style>
+    <Style TargetType="TextBox"><Setter Property="Margin" Value="0,3,8,10"/><Setter Property="Padding" Value="7"/></Style>
+  </Window.Resources>
+  <DockPanel Margin="16">
+    <TextBlock DockPanel.Dock="Top" Text="CHARACTER SKILLS — permanent keys, editable definitions" FontSize="20" FontWeight="Bold" Margin="0,0,0,12"/>
+    <TextBlock DockPanel.Dock="Bottom" x:Name="Status" TextWrapping="Wrap" Foreground="#B8D1EF" Margin="0,8,0,0"/>
+    <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="300"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <DockPanel Grid.Column="0" Margin="0,0,12,0">
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+          <Button Content="New skill" Click="New_Click"/>
+          <Button Content="Delete selected skill" Click="Delete_Click"/>
+        </StackPanel>
+        <ListBox x:Name="SkillList" SelectionChanged="SkillList_SelectionChanged"
+                 Background="#202939" Foreground="White" Padding="6"/>
+      </DockPanel>
+      <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="4,0,8,0">
+          <TextBlock Text="Key (permanent after saving)"/><TextBox x:Name="KeyBox"/>
+          <TextBlock Text="Display name"/><TextBox x:Name="NameBox"/>
+          <TextBlock Text="Description"/><TextBox x:Name="DescriptionBox" Height="55" TextWrapping="Wrap" AcceptsReturn="True"/>
+          <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0"><TextBlock Text="Minimum"/><TextBox x:Name="MinimumBox"/></StackPanel>
+            <StackPanel Grid.Column="1"><TextBlock Text="Maximum"/><TextBox x:Name="MaximumBox"/></StackPanel>
+            <StackPanel Grid.Column="2"><TextBlock Text="Default"/><TextBox x:Name="DefaultBox"/></StackPanel>
+          </Grid>
+          <TextBlock Text="Display order"/><TextBox x:Name="OrderBox"/>
+          <CheckBox x:Name="ActiveBox" Content="Active in skill checks" IsChecked="True" Margin="0,8,0,8"/>
+          <TextBlock Text="Existing skill keys are immutable. A skill referenced by a check cannot be deleted or deactivated. Values already outside new ranges must be corrected first."
+                     Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,10,0,12"/>
+          <Button Content="Save skill" FontWeight="Bold" HorizontalAlignment="Left" Click="Save_Click"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</Window>

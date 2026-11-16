@@ -22,7 +22,7 @@ public partial class MainWindow : Window
         WireCharacterEditorEvents();
         TableSelector.ItemsSource = DatabaseEditor.Tables;
         HintText.Text = "Open the EXISTING soulcaliber_master.db, not soulcaliber_savegame.db. " +
-                        "Select a table; edit cells and press Save. A backup is made before each saved change.";
+                        "Select a table; edit cells and press Save. Backups are optional via Create safety backup.";
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e) { }
@@ -166,7 +166,7 @@ public partial class MainWindow : Window
             _editor.SaveChanges(_table);
             string name = _table.TableName;
             LoadTable(name);
-            StatusText.Text = "Changes saved transactionally. A backup was created before the write.";
+            StatusText.Text = "Changes saved transactionally. No automatic backup was created.";
         }
         catch (Exception ex)
         {

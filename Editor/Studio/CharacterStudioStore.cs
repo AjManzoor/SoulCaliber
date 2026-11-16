@@ -5,9 +5,9 @@ using System.IO;
 namespace SoulCaliberStudio;
 
 /// <summary>
-/// Character, personality and reaction-image authoring using the existing Godot
+/// Character, skill and reaction-image authoring using the existing Godot
 /// content schema. Does not create/migrate tables or modify the savegame.
-/// Every modification is backed up before a single SQLite transaction.
+/// Modifications use SQLite transactions; backups are not made for routine saves.
 /// </summary>
 public sealed partial class CharacterStudioStore : IDisposable
 {
@@ -17,11 +17,6 @@ public sealed partial class CharacterStudioStore : IDisposable
     public sealed record Character(string Id, string Name, string DefaultImage, string WinImage, string LoseImage)
     {
         public override string ToString() => $"{Name}  [{Id}]";
-    }
-
-    public sealed record Personality(int Persuasion, int Intimidation, int Deception, int Charm, int Insight, int Resolve)
-    {
-        public static Personality Default => new(50, 50, 50, 50, 50, 50);
     }
 
     public sealed record Reaction(string CharacterId, string ReactionKey, string ImagePath)
@@ -78,7 +73,6 @@ public sealed partial class CharacterStudioStore : IDisposable
 
     private void Write(Action<SqliteTransaction> change)
     {
-        _backups.Backup(); // Uses SQLite backup API so WAL changes are included.
         using var tx = _db.BeginTransaction();
         try { change(tx); tx.Commit(); }
         catch { tx.Rollback(); throw; }
@@ -95,20 +89,6 @@ public sealed partial class CharacterStudioStore : IDisposable
         return result;
     }
 
-    public Personality GetPersonality(string characterId)
-    {
-        using var cmd = Sql("""
-            SELECT Persuasion, Intimidation, Deception, Charm, Insight, Resolve
-            FROM Personalities WHERE CharacterId=$id;
-            """);
-        Add(cmd, "$id", characterId);
-        using var reader = cmd.ExecuteReader();
-        return reader.Read()
-            ? new(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2),
-                reader.GetInt32(3), reader.GetInt32(4), reader.GetInt32(5))
-            : Personality.Default;
-    }
-
     public List<Reaction> GetReactions(string characterId)
     {
         using var cmd = Sql("SELECT CharacterId, ReactionKey, ImagePath FROM ReactionImages WHERE CharacterId=$id ORDER BY ReactionKey;");
@@ -117,48 +97,6 @@ public sealed partial class CharacterStudioStore : IDisposable
         var result = new List<Reaction>();
         while (reader.Read()) result.Add(new(reader.GetString(0), reader.GetString(1), reader.GetString(2)));
         return result;
-    }
-
-    public void SaveCharacter(Character character, Personality personality, string? existingId)
-    {
-        string id = Identity(character.Id, "Character ID");
-        string name = character.Name.Trim();
-        if (name.Length == 0) throw new InvalidOperationException("Character name is required.");
-        if (existingId is not null && !string.Equals(existingId, id, StringComparison.Ordinal))
-            throw new InvalidOperationException("An existing character ID cannot be changed. Create another character instead.");
-        string neutral = ResourcePath(character.DefaultImage);
-        string success = ResourcePath(character.WinImage);
-        string failure = ResourcePath(character.LoseImage);
-        var stats = new[] { personality.Persuasion, personality.Intimidation, personality.Deception,
-            personality.Charm, personality.Insight, personality.Resolve };
-        var names = new[] { "Persuasion", "Intimidation", "Deception", "Charm", "Insight", "Resolve" };
-        for (int i = 0; i < stats.Length; i++) Stat(stats[i], names[i]);
-
-        Write(tx =>
-        {
-            using (var cmd = Sql(existingId is null
-                ? "INSERT INTO Characters(Id,Name,DefaultImage,WinImage,LoseImage) VALUES($id,$name,$neutral,$win,$lose);"
-                : "UPDATE Characters SET Name=$name,DefaultImage=$neutral,WinImage=$win,LoseImage=$lose WHERE Id=$id;", tx))
-            {
-                Add(cmd, "$id", id); Add(cmd, "$name", name);
-                Add(cmd, "$neutral", neutral); Add(cmd, "$win", success); Add(cmd, "$lose", failure);
-                if (cmd.ExecuteNonQuery() != 1)
-                    throw new DBConcurrencyException("Character could not be saved. Reload the roster and retry.");
-            }
-            using var persona = Sql("""
-                INSERT INTO Personalities(CharacterId,Persuasion,Intimidation,Deception,Charm,Insight,Resolve)
-                VALUES($id,$p,$i,$d,$c,$ins,$r)
-                ON CONFLICT(CharacterId) DO UPDATE SET
-                  Persuasion=excluded.Persuasion, Intimidation=excluded.Intimidation,
-                  Deception=excluded.Deception, Charm=excluded.Charm,
-                  Insight=excluded.Insight, Resolve=excluded.Resolve;
-                """, tx);
-            Add(persona, "$id", id); Add(persona, "$p", personality.Persuasion);
-            Add(persona, "$i", personality.Intimidation); Add(persona, "$d", personality.Deception);
-            Add(persona, "$c", personality.Charm); Add(persona, "$ins", personality.Insight);
-            Add(persona, "$r", personality.Resolve);
-            persona.ExecuteNonQuery();
-        });
     }
 
     public void DeleteCharacter(string id)
@@ -178,9 +116,9 @@ public sealed partial class CharacterStudioStore : IDisposable
 
         Write(tx =>
         {
-            // Explicitly remove authored portrait and personality rows, even though
+            // Explicitly remove authored portrait and skill rows, even though
             // the imported schema also specifies ON DELETE CASCADE for these tables.
-            foreach (string table in new[] { "ReactionImages", "Personalities" })
+            foreach (string table in new[] { "ReactionImages", "CharacterSkillValues", "CharacterTraits", "Personalities" })
             {
                 using var child = Sql($"DELETE FROM {table} WHERE CharacterId=$id;", tx);
                 Add(child, "$id", id);

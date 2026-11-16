@@ -234,7 +234,7 @@ public partial class MainWindow
         {
             action();
             _designerDirty = false;
-            DesignerStatus.Text = "Saved successfully. A consistent SQLite backup was created before the change.";
+            DesignerStatus.Text = "Saved successfully. No automatic backup was created.";
         }
         catch (Exception ex)
         {
@@ -300,7 +300,7 @@ public partial class MainWindow
         });
     }
     private bool ConfirmDelete(string label) => MessageBox.Show(this,
-        $"Permanently delete {label} from the master content database?\n\nA backup will be created before deletion.",
+        $"Permanently delete {label} from the master content database?\n\nNo automatic backup will be created.",
         "Confirm content deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
     private void DeleteInteraction_Click(object sender, RoutedEventArgs e)
     {

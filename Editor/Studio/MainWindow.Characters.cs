@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System.IO;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -16,6 +17,8 @@ public partial class MainWindow
     private bool _characterLoading;
     private bool _characterDirty;
     private bool _reactionDirty;
+    private readonly Dictionary<string, TextBox> _skillEditors = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, CheckBox> _traitEditors = new(StringComparer.OrdinalIgnoreCase);
 
     private void WireCharacterEditorEvents() { /* Reaction keys come from the catalogue; no free typing. */ }
 
@@ -68,16 +71,83 @@ public partial class MainWindow
         CharWinImageBox.Text = character?.WinImage ?? "";
         CharLoseImageBox.Text = character?.LoseImage ?? "";
 
-        Personality stats = character is null || _characterStore is null
-            ? Personality.Default : _characterStore.GetPersonality(character.Id);
-        CharPersuasionBox.Text = stats.Persuasion.ToString();
-        CharIntimidationBox.Text = stats.Intimidation.ToString();
-        CharDeceptionBox.Text = stats.Deception.ToString();
-        CharCharmBox.Text = stats.Charm.ToString();
-        CharInsightBox.Text = stats.Insight.ToString();
-        CharResolveBox.Text = stats.Resolve.ToString();
+        BuildCharacterStatEditors(character?.Id);
+        BuildCharacterTraitEditors(character?.Id);
         RefreshCharacterReactions();
         RefreshPortraitPreviews();
+    }
+
+    private static TextBlock StatLabel(string text) => new()
+    {
+        Text=text,Foreground=System.Windows.Media.Brushes.LightSteelBlue,Margin=new Thickness(0,4,0,2),
+        TextWrapping=TextWrapping.Wrap
+    };
+
+    private TextBox StatEditor(string text)
+    {
+        var box=new TextBox { Text=text,Margin=new Thickness(0,0,0,6),Padding=new Thickness(6),MinWidth=70 };
+        box.TextChanged+=CharacterField_Changed;
+        return box;
+    }
+
+    private void BuildCharacterStatEditors(string? characterId)
+    {
+        _skillEditors.Clear();
+        CharacterSkillsPanel.Children.Clear();
+        if(_designer is null || _characterStore is null) return;
+        var skills=_characterStore.GetSkills(characterId);
+        foreach(var definition in _designer.SkillDefinitions(true))
+        {
+            CharacterSkillsPanel.Children.Add(StatLabel($"{definition.Name} ({definition.Minimum} to {definition.Maximum})"));
+            var box=StatEditor(skills.GetValueOrDefault(definition.Key,definition.Default).ToString(CultureInfo.InvariantCulture));
+            _skillEditors.Add(definition.Key,box);
+            CharacterSkillsPanel.Children.Add(box);
+        }
+
+    }
+
+    private void BuildCharacterTraitEditors(string? characterId)
+    {
+        _traitEditors.Clear();
+        CharacterTraitsPanel.Children.Clear();
+        if (_designer is null || _characterStore is null) return;
+        var assigned = _characterStore.GetCharacterTraits(characterId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var trait in _designer.TraitDefinitions().Where(t => t.IsActive))
+        {
+            var box = new CheckBox
+            {
+                Content = trait.Name, ToolTip = $"{trait.Key}: {trait.Description}",
+                IsChecked = assigned.Contains(trait.Key),
+                Foreground = System.Windows.Media.Brushes.White,
+                Margin = new Thickness(0, 3, 14, 7)
+            };
+            box.Checked += CharacterTrait_Changed;
+            box.Unchecked += CharacterTrait_Changed;
+            CharacterTraitsPanel.Children.Add(box);
+            _traitEditors.Add(trait.Key, box);
+        }
+    }
+    private void CharacterTrait_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_characterLoading || _characterStore is null) return;
+        _characterDirty = true;
+        CharacterStatus.Text = "Unsaved character trait changes — click Save character, skills and traits.";
+    }
+    private void ManagePersonalityTraits_Click(object sender, RoutedEventArgs e)
+    {
+        if (_designer is null || !CharactersCanSwitch()) return;
+        new PersonalityTraitsWindow(_designer) { Owner = this }.ShowDialog();
+        _characterLoading = true;
+        try { BuildCharacterTraitEditors(_activeCharacter?.Id); }
+        finally { _characterLoading = false; }
+    }
+
+    private void ManageCharacterSkills_Click(object sender, RoutedEventArgs e)
+    {
+        if(_designer is null || !CharactersCanSwitch()) return;
+        var window=new CharacterSkillsWindow(_designer){Owner=this};
+        window.ShowDialog();
+        RefreshCharacters(_activeCharacter?.Id);
     }
 
     private void RefreshCharacterReactions(string? selectedKey = null)
@@ -204,18 +274,19 @@ public partial class MainWindow
         {
             var item = new Character(CharacterIdBox.Text, CharacterNameBox.Text, CharDefaultImageBox.Text,
                 CharWinImageBox.Text, CharLoseImageBox.Text);
-            var stats = new Personality(
-                CharacterStat(CharPersuasionBox, "Persuasion"),
-                CharacterStat(CharIntimidationBox, "Intimidation"),
-                CharacterStat(CharDeceptionBox, "Deception"),
-                CharacterStat(CharCharmBox, "Charm"),
-                CharacterStat(CharInsightBox, "Insight"),
-                CharacterStat(CharResolveBox, "Resolve"));
-            _characterStore.SaveCharacter(item, stats, _activeCharacter?.Id);
+            var skills = new Dictionary<string,int>(StringComparer.OrdinalIgnoreCase);
+            foreach(var (key,box) in _skillEditors)
+            {
+                if(!int.TryParse(box.Text,NumberStyles.Integer,CultureInfo.InvariantCulture,out int value))
+                    throw new InvalidOperationException($"{key} must be a whole number.");
+                skills.Add(key,value);
+            }
+            _characterStore.SaveCharacter(item, skills, _activeCharacter?.Id,
+                _traitEditors.Where(x => x.Value.IsChecked == true).Select(x => x.Key).ToArray());
             _characterDirty = false;
             RefreshCharacters(item.Id.Trim().ToUpperInvariant());
             RefreshDesignerCharacterChoices();
-            CharacterStatus.Text = "Character and personality saved. SQLite backup created. Reopen the Godot interaction scene to load changes.";
+            CharacterStatus.Text = "Character, skills and traits saved. Reopen Godot to load changes.";
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Save character failed", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
@@ -237,8 +308,8 @@ public partial class MainWindow
     private void DeleteCharacter_Click(object sender, RoutedEventArgs e)
     {
         if (_characterStore is null || _activeCharacter is null || !CharactersCanSwitch()) return;
-        if (MessageBox.Show(this, $"Delete {_activeCharacter.Name} ({_activeCharacter.Id}) and their portrait/personality records?\n\n" +
-            "Dialogue references will block deletion. Files on disk will NOT be deleted. A backup is created first.",
+        if (MessageBox.Show(this, $"Delete {_activeCharacter.Name} ({_activeCharacter.Id}) and their portrait/skill records?\n\n" +
+            "Dialogue references will block deletion. Files on disk will NOT be deleted. No automatic backup will be created.",
             "Delete character?", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         try
         {
@@ -276,7 +347,7 @@ public partial class MainWindow
             _characterStore.SaveReaction(_activeCharacter.Id, key, ReactionPathBox.Text, _activeReaction is not null);
             _reactionDirty = false;
             RefreshCharacterReactions(key);
-            CharacterStatus.Text = "Reaction saved. SQLite backup created.";
+            CharacterStatus.Text = "Reaction saved.";
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Save reaction failed", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
@@ -436,7 +507,7 @@ public partial class MainWindow
             string id = _activeCharacter.Id;
             RefreshCharacters(id);
             CharacterStatus.Text = $"Generated {changed} character/reaction database record update(s) for {id}. " +
-                "A SQLite backup was created; check portrait previews for missing PNGs.";
+                "Check portrait previews for missing PNGs. No automatic backup was created.";
         }
         catch (Exception ex)
         {
@@ -589,3 +660,4 @@ public partial class MainWindow
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Image import failed", MessageBoxButton.OK, MessageBoxImage.Error); }
     }
 }
+

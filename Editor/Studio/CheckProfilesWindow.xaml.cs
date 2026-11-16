@@ -17,9 +17,9 @@ public partial class CheckProfilesWindow : Window
         InitializeComponent();
         _store = store;
         DirectionBox.ItemsSource = Directions;
-        AttributeBox.ItemsSource = RelationshipAttributes;
+        AttributeBox.ItemsSource = _store.RelationshipAttributes;
         DirectionBox.SelectedItem = "PARTNER_TO_ACTOR";
-        AttributeBox.SelectedItem = "Trust";
+        AttributeBox.SelectedItem = "TRUST";
         FactorBox.Text = "0.10";
         ReloadProfiles("STANDARD");
     }
@@ -105,7 +105,7 @@ public partial class CheckProfilesWindow : Window
             TermList.SelectedItem = null;
             _selectedTerm = null;
             DirectionBox.SelectedItem = "PARTNER_TO_ACTOR";
-            AttributeBox.SelectedItem = "Trust";
+            AttributeBox.SelectedItem = "TRUST";
             FactorBox.Text = "0.10";
         }
         finally { _loading = false; }

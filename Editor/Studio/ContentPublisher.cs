@@ -63,12 +63,10 @@ public static class ContentPublisher
     private static readonly Regex VersionPattern = new("^[A-Za-z0-9][A-Za-z0-9._-]{0,48}$", RegexOptions.Compiled);
     private static readonly string[] RequiredTables =
     [
-        "Characters", "ReactionTypes", "ReactionImages", "Personalities", "Interactions", "Nodes", "Options",
+        "Characters", "ReactionTypes", "ReactionImages", "CharacterSkills", "CharacterSkillValues", "PersonalityTraits", "PersonalityTraitModifiers", "CharacterTraits", "Interactions", "Nodes", "Options",
         "Requirements", "ChanceModifiers", "Effects", "Lines", "SkillChecks", "NodeIntroductions",
-        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles"
+        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles", "RelationshipAttributes"
     ];
-    private static readonly HashSet<string> Abilities = new(StringComparer.OrdinalIgnoreCase)
-    { "Persuasion", "Intimidation", "Deception", "Charm", "Insight", "Resolve" };
 
     private sealed record CharacterRow(string Id, string Name, string DefaultImage, string WinImage, string LoseImage);
     private sealed record InteractionRow(long Id, string Key, string Title, string Start);
@@ -328,19 +326,77 @@ public static class ContentPublisher
             CheckAsset(report, root, reaction.ImagePath, $"{reaction.CharacterId} / {reaction.ReactionKey}");
         }
 
-        var personality = Read(db,
-            "SELECT CharacterId, Persuasion, Intimidation, Deception, Charm, Insight, Resolve FROM Personalities",
-            r => (CharacterId: r.GetString(0), Stats: Enumerable.Range(1, 6).Select(i => r.GetInt64(i)).ToArray()));
-        var withPersonality = personality.Select(x => x.CharacterId).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        if (withPersonality.Count != personality.Count)
-            report.Error("Personalities", "Duplicate character personality rows differing only by letter case.");
-        foreach (var p in personality)
+        var skillDefs = Read(db,
+            "SELECT Key,Name,MinValue,MaxValue,DefaultValue,IsActive FROM CharacterSkills",
+            r => (Key:r.GetString(0), Name:r.GetString(1), Min:r.GetInt32(2), Max:r.GetInt32(3),
+                Default:r.GetInt32(4), Active:r.GetInt32(5)==1));
+        var skillKeys=skillDefs.Select(x=>x.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var activeSkills=skillDefs.Where(x=>x.Active).Select(x=>x.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if(activeSkills.Count==0) report.Error("CharacterSkills","At least one active skill is required.");
+        if(skillKeys.Count!=skillDefs.Count) report.Error("CharacterSkills","Duplicate skill keys (case-insensitive).");
+        foreach(var def in skillDefs)
         {
-            if (!characterIds.Contains(p.CharacterId)) report.Error("Personalities", $"Unknown character {p.CharacterId}.");
-            if (p.Stats.Any(x => x is < 0 or > 100)) report.Error("Personalities", $"Stats for {p.CharacterId} must be 0–100.");
+            if(string.IsNullOrWhiteSpace(def.Key) || string.IsNullOrWhiteSpace(def.Name))
+                report.Error("CharacterSkills","Skills require a permanent key and display name.");
+            if(def.Min>=def.Max || def.Default<def.Min || def.Default>def.Max)
+                report.Error("CharacterSkills",$"Invalid range/default for skill {def.Key}.");
         }
-        foreach (var ch in characters.Where(x => !withPersonality.Contains(x.Id)))
-            report.Warn("Personalities", $"{ch.Id} has no personality row; Godot will use the engine defaults.");
+        // Preserve a validation report even for malformed duplicate keys; do not throw
+        // from ToDictionary before the editor can explain the problem.
+        var skillsByKey=skillDefs.GroupBy(x=>x.Key,StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group=>group.Key,group=>group.First(),StringComparer.OrdinalIgnoreCase);
+        var assignedSkills=Read(db,"SELECT CharacterId,SkillKey,Value FROM CharacterSkillValues",
+            r => (CharacterId:r.GetString(0),SkillKey:r.GetString(1),Value:r.GetInt32(2)));
+        foreach(var stat in assignedSkills)
+        {
+            if(!characterIds.Contains(stat.CharacterId))
+                report.Error("CharacterSkillValues",$"Unknown character {stat.CharacterId}.");
+            if(!skillsByKey.TryGetValue(stat.SkillKey,out var def))
+                report.Error("CharacterSkillValues",$"Unknown skill {stat.SkillKey}.");
+            else if(stat.Value<def.Min || stat.Value>def.Max)
+                report.Error("CharacterSkillValues",$"{stat.CharacterId}: {stat.SkillKey}={stat.Value} outside configured range.");
+        }
+
+        // Personality traits are authored content and must be valid in a published snapshot.
+        var traitDefs=Read(db,"SELECT Key,Name,IsActive FROM PersonalityTraits",
+            r => (Key:r.GetString(0),Name:r.GetString(1),Active:r.GetInt32(2)==1));
+        var traitKeys=traitDefs.Select(x=>x.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (traitKeys.Count!=traitDefs.Count)
+            report.Error("PersonalityTraits","Duplicate case-insensitive trait keys.");
+        var traitMap=traitDefs.GroupBy(x=>x.Key,StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g=>g.Key,g=>g.First(),StringComparer.OrdinalIgnoreCase);
+        foreach (var trait in traitDefs)
+            if (string.IsNullOrWhiteSpace(trait.Key) || string.IsNullOrWhiteSpace(trait.Name))
+                report.Error("PersonalityTraits","Trait key and name are required.");
+        var assignments=Read(db,"SELECT CharacterId,TraitKey FROM CharacterTraits",
+            r => (CharacterId:r.GetString(0),TraitKey:r.GetString(1)));
+        foreach (var tag in assignments)
+        {
+            if (!characterIds.Contains(tag.CharacterId))
+                report.Error("CharacterTraits",$"Unknown character {tag.CharacterId}.");
+            if (!traitMap.TryGetValue(tag.TraitKey,out var trait))
+                report.Error("CharacterTraits",$"Unknown personality trait {tag.TraitKey}.");
+            else if (!trait.Active)
+                report.Warn("CharacterTraits",$"{tag.CharacterId} has inactive trait {tag.TraitKey}; its effects will not apply.");
+        }
+        var knownAttributes=Read(db,"SELECT Key,IsActive FROM RelationshipAttributes",
+            r => (Key:r.GetString(0),Active:r.GetInt32(1)==1))
+            .GroupBy(x=>x.Key,StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g=>g.Key,g=>g.First(),StringComparer.OrdinalIgnoreCase);
+        var traitMods=Read(db,"SELECT TraitKey,AttributeKey,Outcome,Change,Factor FROM PersonalityTraitModifiers",
+            r => (TraitKey:r.GetString(0),Attribute:r.GetString(1),Outcome:r.GetString(2),Change:r.GetString(3),Factor:r.GetDouble(4)));
+        foreach (var m in traitMods)
+        {
+            if (!traitMap.ContainsKey(m.TraitKey)) report.Error("PersonalityTraitModifiers",$"Unknown trait {m.TraitKey}.");
+            if (!knownAttributes.TryGetValue(m.Attribute,out var attr))
+                report.Error("PersonalityTraitModifiers",$"Unknown relationship attribute {m.Attribute}.");
+            else if (!attr.Active)
+                report.Error("PersonalityTraitModifiers",$"Inactive relationship attribute {m.Attribute} is referenced.");
+            if (m.Outcome is not ("BOTH" or "SUCCESS" or "FAILURE") ||
+                m.Change is not ("BOTH" or "GAIN" or "LOSS") ||
+                double.IsNaN(m.Factor) || double.IsInfinity(m.Factor) || m.Factor<0 || m.Factor>3)
+                report.Error("PersonalityTraitModifiers",$"Invalid modifier {m.TraitKey}/{m.Attribute}.");
+        }
 
         // Phase 6C: character associations are per encounter, not per interaction definition.
         var interactions = Read(db, "SELECT Id, Key, Title, StartNodeKey FROM Interactions", r =>
@@ -452,7 +508,21 @@ public static class ContentPublisher
             Min:r.IsDBNull(4)?(long?)null:r.GetInt64(4),
             Max:r.IsDBNull(5)?(long?)null:r.GetInt64(5)));
         string[] allowedDirections = ["ACTOR_TO_PARTNER","PARTNER_TO_ACTOR"];
-        string[] allowedAttributes = ["Love","Fear","Allyship","Respect","Trust","Romance"];
+        var attributeRows = Read(db,@"SELECT Key,Name,MinValue,MaxValue,DefaultValue,IconPath,IsActive
+            FROM RelationshipAttributes ORDER BY SortOrder",r=>(Key:Safe(r,0),Name:Safe(r,1),
+                Min:r.GetInt64(2),Max:r.GetInt64(3),Default:r.GetInt64(4),Icon:Safe(r,5),Active:r.GetInt64(6)==1));
+        var attributeBounds = attributeRows.ToDictionary(a=>a.Key,a=>(a.Min,a.Max,a.Default,a.Active),
+            StringComparer.OrdinalIgnoreCase);
+        if (attributeRows.Count==0 || !attributeRows.Any(a=>a.Active))
+            report.Error("RelationshipAttributes","At least one active relationship attribute is required.");
+        foreach (var a in attributeRows)
+        {
+            if (string.IsNullOrWhiteSpace(a.Name) || a.Min>=a.Max || a.Default<a.Min || a.Default>a.Max)
+                report.Error("RelationshipAttributes",$"Invalid definition for {a.Key}.");
+            if (a.Active && !string.IsNullOrWhiteSpace(a.Icon))
+                CheckAsset(report,root,a.Icon,$"Relationship icon {a.Key}");
+        }
+        var allowedAttributes = attributeRows.Where(a=>a.Active).Select(a=>a.Key).ToArray();
         foreach (var v in variants)
         {
             string location = $"Conditional variant {v.Id}";
@@ -478,10 +548,9 @@ public static class ContentPublisher
             if (!variantIds.Contains(c.VariantId))report.Error(location,"Unknown variant.");
             if (!allowedDirections.Contains(c.Direction,StringComparer.OrdinalIgnoreCase))report.Error(location,"Invalid direction.");
             if (!allowedAttributes.Contains(c.Attribute,StringComparer.OrdinalIgnoreCase))report.Error(location,"Invalid attribute.");
-            long lower = c.Attribute.Equals("Fear",StringComparison.OrdinalIgnoreCase) ||
-                         c.Attribute.Equals("Romance",StringComparison.OrdinalIgnoreCase) ? 0 : -100;
-            if (c.Min is null && c.Max is null || c.Min is long lo && (lo < lower || lo > 100) ||
-                c.Max is long hi && (hi < lower || hi > 100) ||
+            var bounds = attributeBounds.TryGetValue(c.Attribute,out var found) ? found : (Min:0L,Max:0L,Default:0L,Active:false);
+            if (c.Min is null && c.Max is null || c.Min is long lo && (lo < bounds.Min || lo > bounds.Max) ||
+                c.Max is long hi && (hi < bounds.Min || hi > bounds.Max) ||
                 c.Min is long a && c.Max is long b && a>b)
                 report.Error(location,"Invalid minimum/maximum bounds.");
         }
@@ -495,7 +564,7 @@ public static class ContentPublisher
         // Phase 6: the dialogue engine reads these tables as game rules, so
         // validate records authored in either the friendly editor OR Advanced Tables.
         var validDirections = new[] { "ACTOR_TO_PARTNER", "PARTNER_TO_ACTOR" };
-        var validAttributes = new[] { "Love", "Fear", "Allyship", "Respect", "Trust", "Romance" };
+        var validAttributes = allowedAttributes;
         var requirements = Read(db,
             "SELECT Id, OptionId, Direction, Attribute, Minimum, Maximum FROM Requirements",
             r => (Id: r.GetInt64(0), OptionId: r.GetInt64(1), Direction: Safe(r, 2),
@@ -511,10 +580,9 @@ public static class ContentPublisher
                 report.Error("Requirements", $"Requirement {requirement.Id} has unknown attribute '{requirement.Attribute}'.");
             if (requirement.Min is null && requirement.Max is null)
                 report.Error("Requirements", $"Requirement {requirement.Id} has no bounds.");
-            long minValue = requirement.Attribute.Equals("Fear", StringComparison.OrdinalIgnoreCase) ||
-                            requirement.Attribute.Equals("Romance", StringComparison.OrdinalIgnoreCase) ? 0 : -100;
-            if (requirement.Min is long min && (min < minValue || min > 100) ||
-                requirement.Max is long max && (max < minValue || max > 100) ||
+            var bounds = attributeBounds.TryGetValue(requirement.Attribute,out var values) ? values : (Min:0L,Max:0L,Default:0L,Active:false);
+            if (requirement.Min is long min && (min < bounds.Min || min > bounds.Max) ||
+                requirement.Max is long max && (max < bounds.Min || max > bounds.Max) ||
                 requirement.Min is long lower && requirement.Max is long upper && lower > upper)
                 report.Error("Requirements", $"Requirement {requirement.Id} has inconsistent relationship bounds.");
         }
@@ -569,7 +637,7 @@ public static class ContentPublisher
             if (!knownProfiles.Contains(term.Profile)) report.Error("CheckProfileModifiers", $"Unknown profile '{term.Profile}'.");
             if (!new[]{"PARTNER_TO_ACTOR","ACTOR_TO_PARTNER"}.Contains(term.Direction,StringComparer.OrdinalIgnoreCase))
                 report.Error("CheckProfileModifiers", $"Unknown direction '{term.Direction}'.");
-            if (!new[]{"Love","Fear","Allyship","Respect","Trust","Romance"}.Contains(term.Attribute,StringComparer.OrdinalIgnoreCase))
+            if (!validAttributes.Contains(term.Attribute,StringComparer.OrdinalIgnoreCase))
                 report.Error("CheckProfileModifiers", $"Unknown attribute '{term.Attribute}'.");
             if (!double.IsFinite(term.Factor) || term.Factor < -10 || term.Factor > 10)
                 report.Error("CheckProfileModifiers", $"Non-finite/out-of-range factor for {term.Profile}.{term.Attribute}.");
@@ -591,8 +659,8 @@ public static class ContentPublisher
         foreach (var skill in skillChecks)
         {
             if (!optionIds.Contains(skill.OptionId)) report.Error("SkillChecks", $"Unknown choice {skill.OptionId}.");
-            if (!Abilities.Contains(skill.Actor) || !Abilities.Contains(skill.Defender))
-                report.Error("SkillChecks", $"Unknown ability on choice {skill.OptionId}.");
+            if (!activeSkills.Contains(skill.Actor) || !activeSkills.Contains(skill.Defender))
+                report.Error("SkillChecks", $"Unknown or inactive skill on choice {skill.OptionId}.");
             if (!knownProfiles.Contains(skill.Mode))
                 report.Error("SkillChecks", $"Unknown check profile '{skill.Mode}' on choice {skill.OptionId}.");
             if (!double.IsFinite(skill.ActorFactor) || !double.IsFinite(skill.DefenderFactor))

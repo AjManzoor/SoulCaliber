@@ -7,10 +7,7 @@ namespace SoulCaliberStudio;
 public partial class InteractionSimulatorWindow : Window
 {
     private readonly SimulationData _data;
-    private readonly List<SimulationStatRow> _stats =
-    [
-        new("Love"), new("Fear"), new("Allyship"), new("Respect"), new("Trust"), new("Romance")
-    ];
+    private readonly List<SimulationStatRow> _stats;
     private readonly Random _random = new();
     private SimInteraction? _interaction;
     private SimNode? _node;
@@ -19,11 +16,18 @@ public partial class InteractionSimulatorWindow : Window
     private string _partner = "";
     private bool _awaitingContinue;
     private bool _finished;
+    private readonly InteractionAuditService _auditService;
+    private readonly List<SimulationTraitRow> _actorTraits = [];
+    private readonly List<SimulationTraitRow> _partnerTraits = [];
+    private string? _lastAuditSnapshot;
+    private bool _loadingTraits;
 
     public InteractionSimulatorWindow(string databasePath)
     {
         InitializeComponent();
         _data = new SimulationData(databasePath);
+        _auditService = new InteractionAuditService(_data);
+        _stats = _data.Attributes.Where(a => a.IsActive).Select(a => new SimulationStatRow(a)).ToList();
         Closed += (_, _) => _data.Dispose();
         ActorBox.ItemsSource = _data.Characters;
         PartnerBox.ItemsSource = _data.Characters;
@@ -35,6 +39,8 @@ public partial class InteractionSimulatorWindow : Window
         OutcomeText.Text = "Choose two characters and an interaction, then click Start / restart.\n" +
             "You can edit relationship values directly in the left-hand table.";
         InspectorText.Text = "The inspector will show matched and rejected conditional dialogue candidates.";
+        MechanicsText.Text = "Start an interaction, select a choice, then inspect all six stages.\n" +
+            "Use the Personality sandbox tab to temporarily toggle traits.";
         UpdateButtons();
     }
 
@@ -48,14 +54,18 @@ public partial class InteractionSimulatorWindow : Window
             throw new InvalidOperationException("Select an initiator, a recipient, and an interaction.");
         if (actor.Id.Equals(partner.Id, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Choose two different characters.");
+        bool pairChanged = !_actor.Equals(actor.Id, StringComparison.OrdinalIgnoreCase) ||
+                           !_partner.Equals(partner.Id, StringComparison.OrdinalIgnoreCase);
         _actor = actor.Id;
         _partner = partner.Id;
+        if (pairChanged || _actorTraits.Count == 0) RestoreOriginalTraits();
         _interaction = interaction;
         _node = interaction.Nodes.FirstOrDefault(n => n.Key.Equals(interaction.StartNodeKey, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"Starting node '{interaction.StartNodeKey}' does not exist.");
         _awaitingContinue = false;
         _finished = false;
         _nextNode = null;
+        _lastAuditSnapshot = null;
         OutcomeText.Text = "New test started. No real savegame was read or changed.";
         RenderNode();
     });
@@ -63,7 +73,7 @@ public partial class InteractionSimulatorWindow : Window
     private void ResetValues_Click(object sender, RoutedEventArgs e) => Safely(() =>
     {
         CommitStats();
-        foreach (var stat in _stats) { stat.ActorToPartner = 0; stat.PartnerToActor = 0; }
+        foreach (var stat in _stats) { stat.ActorToPartner = stat.Default; stat.PartnerToActor = stat.Default; }
         StatsGrid.Items.Refresh();
         if (_node is not null && !_awaitingContinue) RenderNode();
     });
@@ -77,7 +87,91 @@ public partial class InteractionSimulatorWindow : Window
         if (_node is not null) RenderNode();
     });
 
-    private void ChoiceList_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateButtons();
+    // A focused TabItem may request that the outer workspace ScrollViewer
+    // scroll its entire 840px panel into view. Prevent that automatic jump when
+    // switching tabs, while retaining normal user-driven scrolling.
+    private void PreventTabAutoScroll_RequestBringIntoView(object sender, RequestBringIntoViewEventArgs e)
+    {
+        e.Handled = true;
+    }
+
+    private void ChoiceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateButtons();
+        if (!_awaitingContinue) Safely(RefreshMechanicsAudit);
+    }
+
+    private void CopyAudit_Click(object sender, RoutedEventArgs e) => Safely(() =>
+    {
+        if (!string.IsNullOrWhiteSpace(MechanicsText.Text)) Clipboard.SetText(MechanicsText.Text);
+    });
+
+    private void RestoreTraits_Click(object sender, RoutedEventArgs e) => Safely(() =>
+    {
+        if (string.IsNullOrWhiteSpace(_actor) || string.IsNullOrWhiteSpace(_partner))
+            throw new InvalidOperationException("Start an interaction before editing simulated personality traits.");
+        RestoreOriginalTraits();
+        RefreshMechanicsAudit();
+    });
+
+    private void RestoreOriginalTraits()
+    {
+        _loadingTraits = true;
+        try
+        {
+            _actorTraits.Clear();
+            _partnerTraits.Clear();
+            var actorAssigned = _data.AssignedTraits(_actor);
+            var partnerAssigned = _data.AssignedTraits(_partner);
+            foreach (var trait in _data.Traits)
+            {
+                _actorTraits.Add(new SimulationTraitRow(trait.Key, trait.Name, actorAssigned.Contains(trait.Key)));
+                _partnerTraits.Add(new SimulationTraitRow(trait.Key, trait.Name, partnerAssigned.Contains(trait.Key)));
+            }
+            ActorTraitsList.ItemsSource = null;
+            PartnerTraitsList.ItemsSource = null;
+            ActorTraitsList.ItemsSource = _actorTraits;
+            PartnerTraitsList.ItemsSource = _partnerTraits;
+            ActorTraitLabel.Text = _data.Name(_actor) + " — initiator";
+            PartnerTraitLabel.Text = _data.Name(_partner) + " — recipient";
+        }
+        finally { _loadingTraits = false; }
+    }
+
+    private void TraitSelection_Changed(object sender, RoutedEventArgs e)
+    {
+        // Explicitly sync the row before calculating: WPF Checked/Unchecked can
+        // arrive before a TwoWay binding has finished updating its source.
+        if (sender is CheckBox box && box.DataContext is SimulationTraitRow trait)
+            trait.IsSelected = box.IsChecked == true;
+        if (!_loadingTraits && _node is not null && !_awaitingContinue)
+            Safely(RefreshMechanicsAudit);
+    }
+
+    private PersonalityEffectRules SimulatedTraitRules() => _data.CreateSandboxTraitRules(
+        _actorTraits.Where(t => t.IsSelected).Select(t => (_actor, t.Key))
+        .Concat(_partnerTraits.Where(t => t.IsSelected).Select(t => (_partner, t.Key))));
+
+    private InteractionChoiceAudit BuildAudit(SimChoice choice) =>
+        _auditService.Build(choice, _actor, _partner, Values(), SimulatedTraitRules());
+
+    private void RefreshMechanicsAudit()
+    {
+        if (_awaitingContinue && _lastAuditSnapshot is not null)
+        {
+            MechanicsText.Text = _lastAuditSnapshot;
+            return;
+        }
+        if (_node is null || ChoiceList.SelectedItem is not SimulationChoiceDisplay selected)
+        {
+            MechanicsText.Text = _finished ? "Interaction complete. Restart to test another choice." :
+                "Start an interaction and select a dialogue choice to see its complete mechanics.";
+            return;
+        }
+        // Refresh from current in-memory relationship and trait inputs, not from any game save.
+        var current = ChoiceStatus(selected.Choice);
+        MechanicsText.Text = current.Audit.Describe(current.LockReason);
+    }
     private void ForceSuccess_Click(object sender, RoutedEventArgs e) => Safely(() => ExecuteChoice(true, 1, "FORCED SUCCESS"));
     private void ForceFailure_Click(object sender, RoutedEventArgs e) => Safely(() => ExecuteChoice(false, 100, "FORCED FAILURE"));
     private void RandomRoll_Click(object sender, RoutedEventArgs e) => Safely(() =>
@@ -101,22 +195,25 @@ public partial class InteractionSimulatorWindow : Window
         var actorLine = _data.Line(choice, _actor, _partner, succeeded, before, choice.GenericActorLine);
         var partnerLine = _data.Line(choice, _partner, _actor, succeeded, before,
             succeeded ? choice.GenericHostSuccess : choice.GenericHostFailure);
+        // Use the same audit projection for both preview and actual application.
+        // It was calculated against pre-effect relationships, exactly as Godot does.
+        var audit = selected.Audit;
+        var projected = succeeded ? audit.Success : audit.Failure;
         var changes = new List<string>();
-        foreach (var effect in _data.Effects(choice.Id, succeeded))
+        foreach (var effect in projected.Effects)
         {
-            var row = _stats.FirstOrDefault(s => s.Attribute.Equals(effect.Attribute, StringComparison.OrdinalIgnoreCase))
-                ?? throw new InvalidOperationException($"Unknown relationship attribute: {effect.Attribute}");
-            bool actorToPartner = effect.Direction.Equals("ACTOR_TO_PARTNER", StringComparison.OrdinalIgnoreCase);
-            if (!actorToPartner && !effect.Direction.Equals("PARTNER_TO_ACTOR", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException($"Unknown effect direction: {effect.Direction}");
-            int original = actorToPartner ? row.ActorToPartner : row.PartnerToActor;
-            int lower = row.Attribute is "Fear" or "Romance" ? 0 : -100;
-            int updated = Math.Clamp(original + effect.Delta, lower, 100);
-            if (actorToPartner) row.ActorToPartner = updated;
-            else row.PartnerToActor = updated;
-            changes.Add($"{(actorToPartner ? _data.Name(_actor) + " → " + _data.Name(_partner) : _data.Name(_partner) + " → " + _data.Name(_actor))} " +
-                $"{row.Attribute}: {original} → {updated} ({updated - original:+#;-#;0})");
+            var row = _stats.First(s => s.Attribute.Equals(effect.Attribute, StringComparison.OrdinalIgnoreCase));
+            if (effect.Direction.Equals("ACTOR_TO_PARTNER", StringComparison.OrdinalIgnoreCase))
+                row.ActorToPartner = effect.After;
+            else row.PartnerToActor = effect.After;
+            changes.Add($"{_data.Name(effect.ReceiverId)}'s {row.Attribute}: " +
+                $"{effect.Before} → {effect.After} ({effect.AppliedDelta:+#;-#;0})" +
+                $" | authored {effect.BaseDelta:+#;-#;0}, traits ×{effect.Multiplier:0.##}" +
+                $" → {effect.AdjustedDelta:+#;-#;0} ({effect.TraitExplanation})" +
+                (effect.WasClamped ? " [range limit]" : ""));
         }
+        _lastAuditSnapshot = audit.Describe(null, succeeded, roll, testMode);
+        MechanicsText.Text = _lastAuditSnapshot;
         StatsGrid.Items.Refresh();
         _nextNode = succeeded ? choice.SuccessNext : choice.FailureNext;
         _awaitingContinue = true;
@@ -147,6 +244,7 @@ public partial class InteractionSimulatorWindow : Window
             IntroductionText.Text = "Start another test to replay the interaction with the current simulated relationship values.";
             IntroductionSource.Text = "The previous outcome is shown on the right.";
             UpdateButtons();
+            RefreshMechanicsAudit();
             return;
         }
         _node = _interaction.Nodes.FirstOrDefault(n => n.Key.Equals(_nextNode, StringComparison.OrdinalIgnoreCase))
@@ -167,6 +265,7 @@ public partial class InteractionSimulatorWindow : Window
         ChoiceList.ItemsSource = _node.Options.Select(ChoiceStatus).ToList();
         ChoiceList.SelectedIndex = _node.Options.Count > 0 ? 0 : -1;
         UpdateButtons();
+        RefreshMechanicsAudit();
     }
 
     private SimulationChoiceDisplay ChoiceStatus(SimChoice choice)
@@ -180,25 +279,8 @@ public partial class InteractionSimulatorWindow : Window
             if (requirement.Maximum is int max && current > max)
             { lockReason = $"{requirement.Direction} {requirement.Attribute} ≤ {max}"; break; }
         }
-        var (chance, breakdown) = CalculateChance(choice);
-        return new SimulationChoiceDisplay(choice, chance, lockReason, breakdown);
-    }
-
-    private (int chance, string breakdown) CalculateChance(SimChoice option)
-    {
-        // Identical ChanceFormula source and profile terms as Godot. Simulated relationship
-        // values remain manually editable and never read from a real savegame.
-        var skill = _data.Skill(option.Id);
-        string profileKey = _data.ProfileForOption(option.Id);
-        int? actorScore = skill is null ? null : _data.Personality(_actor).Get(skill.ActorSkill);
-        int? defenderScore = skill is null ? null : _data.Personality(_partner).Get(skill.DefenderSkill);
-        var result = ChanceFormula.Calculate(option.BaseChance,
-            actorScore, defenderScore, skill?.ActorFactor ?? 0, skill?.DefenderFactor ?? 0,
-            _data.Profile(profileKey),
-            _data.Modifiers(option.Id).Select(m => new ChanceFactor(m.Direction,m.Attribute,m.Factor)),
-            GetValue);
-        return (result.FinalChance, ChanceFormula.Explain(result, option.BaseChance, profileKey,
-            actorScore, defenderScore, skill?.ActorFactor ?? 0, skill?.DefenderFactor ?? 0));
+        var audit = BuildAudit(choice);
+        return new SimulationChoiceDisplay(choice, audit.Chance.FinalChance, lockReason, audit.ChanceBreakdown, audit);
     }
 
     private SimulationChoiceDisplay SelectedChoice()
@@ -233,10 +315,9 @@ public partial class InteractionSimulatorWindow : Window
     {
         foreach (var stat in _stats)
         {
-            int lower = stat.Attribute is "Fear" or "Romance" ? 0 : -100;
-            if (stat.ActorToPartner < lower || stat.ActorToPartner > 100 ||
-                stat.PartnerToActor < lower || stat.PartnerToActor > 100)
-                throw new InvalidOperationException($"{stat.Attribute} must be in the range {lower} to 100.");
+            if (stat.ActorToPartner < stat.Minimum || stat.ActorToPartner > stat.Maximum ||
+                stat.PartnerToActor < stat.Minimum || stat.PartnerToActor > stat.Maximum)
+                throw new InvalidOperationException($"{stat.Attribute} must be in the range {stat.Minimum} to {stat.Maximum}.");
         }
     }
     private string Expand(string text) => text.Replace("{actor}", _data.Name(_actor), StringComparison.OrdinalIgnoreCase)
@@ -265,15 +346,27 @@ public partial class InteractionSimulatorWindow : Window
     }
 }
 
-public sealed class SimulationStatRow(string attribute)
+public sealed class SimulationStatRow(RelationshipAttributeDefinition definition)
 {
-    public string Attribute { get; } = attribute;
-    public int ActorToPartner { get; set; }
-    public int PartnerToActor { get; set; }
+    public string Attribute { get; } = definition.Key;
+    public string Name { get; } = definition.Name;
+    public int Minimum { get; } = definition.Minimum;
+    public int Maximum { get; } = definition.Maximum;
+    public int Default { get; } = definition.Default;
+    public int ActorToPartner { get; set; } = definition.Default;
+    public int PartnerToActor { get; set; } = definition.Default;
 }
-public sealed record SimulationChoiceDisplay(SimChoice Choice, int Chance, string? LockReason, string Breakdown)
+public sealed record SimulationChoiceDisplay(SimChoice Choice, int Chance, string? LockReason,
+    string Breakdown, InteractionChoiceAudit Audit)
 {
     public bool IsLocked => LockReason is not null;
     public override string ToString() => IsLocked ? $"{Choice.Label} [LOCKED: {LockReason}]" :
         $"{Choice.Label} ({Chance}% success)";
+}
+
+public sealed class SimulationTraitRow(string key, string name, bool isSelected)
+{
+    public string Key { get; } = key;
+    public string Name { get; } = name;
+    public bool IsSelected { get; set; } = isSelected;
 }

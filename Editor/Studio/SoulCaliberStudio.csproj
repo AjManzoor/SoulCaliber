@@ -14,5 +14,8 @@
     <EmbeddedResource Include="..\Migrations\003_ConditionalDialogue.sql" LogicalName="SoulCaliberStudio.Migrations.003_ConditionalDialogue.sql" />
     <EmbeddedResource Include="..\Migrations\004_UniversalConditionalDialogue.sql" LogicalName="SoulCaliberStudio.Migrations.004_UniversalConditionalDialogue.sql" />
     <EmbeddedResource Include="Migrations\005_CheckProfiles.sql" LogicalName="SoulCaliberStudio.Migrations.005_CheckProfiles.sql" />
+    <EmbeddedResource Include="Migrations\006_DynamicRelationships.sql" LogicalName="SoulCaliberStudio.Migrations.006_DynamicRelationships.sql" />
+    <EmbeddedResource Include="Migrations\007_DynamicSkills.sql" LogicalName="SoulCaliberStudio.Migrations.007_DynamicSkills.sql" />
+    <EmbeddedResource Include="Migrations\008_PersonalityTraits.sql" LogicalName="SoulCaliberStudio.Migrations.008_PersonalityTraits.sql" />
   </ItemGroup>
 </Project>

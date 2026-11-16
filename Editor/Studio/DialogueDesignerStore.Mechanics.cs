@@ -6,14 +6,8 @@ namespace SoulCaliberStudio;
 // There is deliberately no schema migration or new gameplay logic here.
 public sealed partial class DialogueDesignerStore
 {
-    public static readonly string[] RelationshipAttributes =
-        ["Love", "Fear", "Allyship", "Respect", "Trust", "Romance"];
-
     public static readonly string[] Directions =
         ["PARTNER_TO_ACTOR", "ACTOR_TO_PARTNER"];
-
-    public static readonly string[] Abilities =
-        ["Persuasion", "Intimidation", "Deception", "Charm", "Insight", "Resolve"];
 
 
     public sealed record RelationshipEffectRow(int Id, int OptionId, string Outcome,
@@ -55,11 +49,11 @@ public sealed partial class DialogueDesignerStore
         return direction;
     }
 
-    private static string CheckAttribute(string attribute)
+    private string CheckAttribute(string attribute)
     {
-        var canonical = RelationshipAttributes.FirstOrDefault(x =>
-            string.Equals(x, attribute, StringComparison.OrdinalIgnoreCase));
-        return canonical ?? throw new InvalidOperationException("Select a valid relationship attribute.");
+        var definition = GetAttribute(attribute);
+        if (!definition.IsActive) throw new InvalidOperationException($"Relationship attribute {attribute} is inactive.");
+        return definition.Key;
     }
 
     private static string CheckOutcome(string outcome)
@@ -143,10 +137,12 @@ public sealed partial class DialogueDesignerStore
         string attribute = CheckAttribute(item.Attribute);
         if (item.Minimum is null && item.Maximum is null)
             throw new InvalidOperationException("Set at least a minimum or maximum relationship value.");
-        int lowerBound = attribute is "Fear" or "Romance" ? 0 : -100;
-        if (item.Minimum is int min && (min < lowerBound || min > 100) ||
-            item.Maximum is int max && (max < lowerBound || max > 100))
-            throw new InvalidOperationException($"{attribute} must be between {lowerBound} and 100.");
+        var definition = GetAttribute(attribute);
+        int lowerBound = definition.Minimum;
+        int upperBound = definition.Maximum;
+        if (item.Minimum is int min && (min < lowerBound || min > upperBound) ||
+            item.Maximum is int max && (max < lowerBound || max > upperBound))
+            throw new InvalidOperationException($"{attribute} must be between {lowerBound} and {upperBound}.");
         if (item.Minimum is int lo && item.Maximum is int hi && lo > hi)
             throw new InvalidOperationException("Minimum cannot exceed maximum.");
         int id = item.Id;
@@ -219,9 +215,9 @@ public sealed partial class DialogueDesignerStore
     public void SaveSkillCheck(SkillCheckRow item)
     {
         CheckOptionId(item.OptionId);
-        string actor = Abilities.FirstOrDefault(x => string.Equals(x, item.ActorSkill, StringComparison.OrdinalIgnoreCase))
+        string actor = SkillKeys.FirstOrDefault(x => string.Equals(x, item.ActorSkill, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException("Select an initiator skill.");
-        string defender = Abilities.FirstOrDefault(x => string.Equals(x, item.DefenderSkill, StringComparison.OrdinalIgnoreCase))
+        string defender = SkillKeys.FirstOrDefault(x => string.Equals(x, item.DefenderSkill, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException("Select a recipient skill.");
         if (!CheckProfileKeys().Contains(item.CheckMode, StringComparer.OrdinalIgnoreCase))
             throw new InvalidOperationException("Select an existing check profile.");

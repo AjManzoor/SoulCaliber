@@ -26,6 +26,9 @@ public sealed partial class DialogueDesignerStore : IDisposable
         EnsureConditionalDialogueSchema();
         EnsureUniversalConditionalDialogueSchema();
         EnsureCheckProfilesSchema();
+        EnsureDynamicRelationshipsSchema();
+        EnsureDynamicSkillsSchema();
+        EnsurePersonalityTraitsSchema();
     }
 
     private void EnsureIntroductionSchema()
@@ -134,8 +137,7 @@ public sealed partial class DialogueDesignerStore : IDisposable
     }
     private void Write(Action<SqliteTransaction> work)
     {
-        // Snapshot before writes, including any WAL data; the backup is independent of this transaction.
-        _backupSource.Backup();
+        // Routine changes use SQLite transactions without creating backup files.
         using var tx = _db.BeginTransaction();
         try { work(tx); tx.Commit(); }
         catch { tx.Rollback(); throw; }

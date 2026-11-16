@@ -9,9 +9,15 @@ namespace SoulCaliberStudio;
 public sealed class SimulationData : IDisposable
 {
     private readonly SqliteConnection _db;
+    public IReadOnlyList<RelationshipAttributeDefinition> Attributes { get; }
     public IReadOnlyList<SimCharacter> Characters { get; }
     public IReadOnlyList<SimInteraction> Interactions { get; }
     private readonly Dictionary<string, SimPersonality> _personalities;
+    private readonly Dictionary<string,int> _skillDefaults = new(StringComparer.OrdinalIgnoreCase);
+    private readonly PersonalityEffectRules _traitRules;
+    private readonly List<(string CharacterId, string TraitKey)> _originalTraitAssignments;
+    private readonly List<PersonalityModifierRule> _traitModifiers;
+    public IReadOnlyList<SimTraitDefinition> Traits { get; }
     private readonly Dictionary<int, SimSkillCheck> _checks;
     private readonly Dictionary<int, string> _optionProfiles;
     private readonly Dictionary<string, IReadOnlyList<ChanceFactor>> _profiles;
@@ -33,11 +39,32 @@ public sealed class SimulationData : IDisposable
         _db.Open();
         using (var cmd = new SqliteCommand("PRAGMA query_only=ON;", _db)) cmd.ExecuteNonQuery();
 
+        Attributes = Read(@"SELECT Key,Name,Description,MinValue,MaxValue,DefaultValue,IconPath,Color,SortOrder,IsActive
+            FROM RelationshipAttributes ORDER BY SortOrder,Name,Key", r => new RelationshipAttributeDefinition(
+                r.GetString(0),r.GetString(1),r.GetString(2),r.GetInt32(3),r.GetInt32(4),r.GetInt32(5),
+                r.GetString(6),r.GetString(7),r.GetInt32(8),r.GetInt32(9) == 1));
+        Traits = Read("SELECT Key,Name FROM PersonalityTraits WHERE IsActive=1 ORDER BY SortOrder,Name,Key",
+            r => new SimTraitDefinition(r.GetString(0), r.GetString(1)));
+        var assignedTraits = Read(@"SELECT ct.CharacterId,ct.TraitKey FROM CharacterTraits ct
+            JOIN PersonalityTraits t ON t.Key=ct.TraitKey WHERE t.IsActive=1",
+            r => (CharacterId:r.GetString(0), TraitKey:r.GetString(1)));
+        var traitModifiers = Read(@"SELECT m.TraitKey,m.AttributeKey,m.Outcome,m.Change,m.Factor
+            FROM PersonalityTraitModifiers m JOIN PersonalityTraits t ON t.Key=m.TraitKey WHERE t.IsActive=1",
+            r => new PersonalityModifierRule(r.GetString(0),r.GetString(1),r.GetString(2),r.GetString(3),r.GetDouble(4)));
+        _originalTraitAssignments = assignedTraits;
+        _traitModifiers = traitModifiers;
+        _traitRules = new PersonalityEffectRules(assignedTraits,traitModifiers);
         Characters = Read("SELECT Id, Name FROM Characters ORDER BY Name",
             r => new SimCharacter(r.GetString(0), r.GetString(1)));
-        var personalities = Read("SELECT CharacterId, Persuasion, Intimidation, Deception, Charm, Insight, Resolve FROM Personalities",
-            r => (Id: r.GetString(0), Value: new SimPersonality(r.GetInt32(1), r.GetInt32(2), r.GetInt32(3), r.GetInt32(4), r.GetInt32(5), r.GetInt32(6))));
-        _personalities = personalities.ToDictionary(x => x.Id, x => x.Value, StringComparer.OrdinalIgnoreCase);
+        var definitions = Read("SELECT Key,DefaultValue FROM CharacterSkills WHERE IsActive=1",
+            r => (Key:r.GetString(0), Default:r.GetInt32(1)));
+        foreach(var definition in definitions) _skillDefaults[definition.Key] = definition.Default;
+        var skillValues=Read("SELECT CharacterId,SkillKey,Value FROM CharacterSkillValues",
+            r => (CharacterId:r.GetString(0),Key:r.GetString(1),Value:r.GetInt32(2)));
+        _personalities = Characters.ToDictionary(c=>c.Id,
+            c=>new SimPersonality(_skillDefaults, skillValues.Where(x=>x.CharacterId.Equals(c.Id,StringComparison.OrdinalIgnoreCase))
+                .ToDictionary(x=>x.Key,x=>x.Value,StringComparer.OrdinalIgnoreCase)),
+            StringComparer.OrdinalIgnoreCase);
 
         var interactions = Read("SELECT Id, Key, Title, StartNodeKey FROM Interactions ORDER BY Title",
             r => new SimInteraction(r.GetInt32(0), r.GetString(1), r.GetString(2), r.GetString(3)));
@@ -119,7 +146,7 @@ public sealed class SimulationData : IDisposable
     }
 
     public SimPersonality Personality(string characterId) =>
-        _personalities.TryGetValue(characterId, out var value) ? value : SimPersonality.Average;
+        _personalities.TryGetValue(characterId, out var value) ? value : new SimPersonality(_skillDefaults, new Dictionary<string,int>());
     public List<SimRequirement> Requirements(int optionId) => _requirements.GetValueOrDefault(optionId) ?? [];
     public List<SimModifier> Modifiers(int optionId) => _modifiers.GetValueOrDefault(optionId) ?? [];
     public List<SimEffect> Effects(int optionId, bool success) =>
@@ -137,6 +164,16 @@ public sealed class SimulationData : IDisposable
                 x.Speaker, x.Other, null, 0, x.Text, "", false, Array.Empty<DialogueClause>()))
             .Concat(_variants.Where(x => x.NodeId == node.Id).Select(x => x.Candidate)),
             speaker, other, null, stats, node.GenericIntroduction, "Generic node introduction");
+
+    public IReadOnlySet<string> AssignedTraits(string characterId) =>
+        _originalTraitAssignments.Where(a => a.CharacterId.Equals(characterId,StringComparison.OrdinalIgnoreCase))
+            .Select(a => a.TraitKey).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    public PersonalityEffectRules CreateSandboxTraitRules(IEnumerable<(string CharacterId,string TraitKey)> assignments) =>
+        new(assignments, _traitModifiers);
+
+    public PersonalityAdjustment AdjustRelationshipEffect(string receiverId,string attribute,
+        int baseDelta,bool succeeded) => _traitRules.Adjust(receiverId,attribute,baseDelta,succeeded);
 
     public SimulationLine Line(SimChoice choice, string speaker, string other, bool success,
         IReadOnlyDictionary<string, int> stats, string fallback) =>
@@ -218,9 +255,12 @@ public sealed class SimulationData : IDisposable
                 warnings.Add($"WARNING: Conditional variant #{variant.Candidate.Id} has no conditions.");
             foreach (var group in variant.Candidate.Clauses.GroupBy(x => ConditionalDialogueRules.StatKey(x.Direction, x.Attribute)))
             {
-                int lower = group.Key.EndsWith(":FEAR", StringComparison.OrdinalIgnoreCase) || group.Key.EndsWith(":ROMANCE", StringComparison.OrdinalIgnoreCase) ? 0 : -100;
-                int min = group.Max(x => x.Minimum ?? lower);
-                int max = group.Min(x => x.Maximum ?? 100);
+                var definition = Attributes.FirstOrDefault(a =>
+                    a.Key.Equals(group.First().Attribute,StringComparison.OrdinalIgnoreCase));
+                if (definition is null)
+                { warnings.Add($"ERROR: Unknown relationship attribute in {group.Key}."); continue; }
+                int min = group.Max(x => x.Minimum ?? definition.Minimum);
+                int max = group.Min(x => x.Maximum ?? definition.Maximum);
                 if (min > max) warnings.Add($"ERROR: Conditional variant #{variant.Candidate.Id} has contradictory {group.Key} bounds ({min}..{max}).");
             }
         }
@@ -245,9 +285,12 @@ public sealed class SimulationData : IDisposable
         {
             foreach (var group in Requirements(choice.Id).GroupBy(x => x.Direction.ToUpperInvariant() + ":" + x.Attribute.ToUpperInvariant()))
             {
-                int floor = group.Key.EndsWith(":FEAR") || group.Key.EndsWith(":ROMANCE") ? 0 : -100;
-                int min = group.Max(x => x.Minimum ?? floor);
-                int max = group.Min(x => x.Maximum ?? 100);
+                var definition = Attributes.FirstOrDefault(a =>
+                    a.Key.Equals(group.First().Attribute,StringComparison.OrdinalIgnoreCase));
+                if (definition is null)
+                { warnings.Add($"ERROR: Unknown relationship attribute in {group.Key}."); continue; }
+                int min = group.Max(x => x.Minimum ?? definition.Minimum);
+                int max = group.Min(x => x.Maximum ?? definition.Maximum);
                 if (min > max)
                     warnings.Add($"ERROR: Choice {node.Key}/{choice.Key} can never unlock: {group.Key} requires {min}..{max}.");
             }
@@ -263,16 +306,17 @@ public sealed record SimCharacter(string Id, string Name)
 {
     public override string ToString() => $"{Name} [{Id}]";
 }
-public sealed record SimPersonality(int Persuasion, int Intimidation, int Deception, int Charm, int Insight, int Resolve)
+public sealed class SimPersonality
 {
-    public static SimPersonality Average { get; } = new(50, 50, 50, 50, 50, 50);
-    public int Get(string key) => key.ToUpperInvariant() switch
-    {
-        "PERSUASION" => Persuasion, "INTIMIDATION" => Intimidation, "DECEPTION" => Deception,
-        "CHARM" => Charm, "INSIGHT" => Insight, "RESOLVE" => Resolve,
-        _ => throw new InvalidOperationException($"Unknown personality skill '{key}'.")
-    };
+    private readonly IReadOnlyDictionary<string,int> _defaults;
+    private readonly IReadOnlyDictionary<string,int> _values;
+    public SimPersonality(IReadOnlyDictionary<string,int> defaults,IReadOnlyDictionary<string,int> values)
+    { _defaults=defaults;_values=values; }
+    public int Get(string key) => _values.TryGetValue(key,out var value) ? value :
+        _defaults.TryGetValue(key,out var fallback) ? fallback :
+        throw new InvalidOperationException($"Undefined skill '{key}'.");
 }
+
 public sealed class SimInteraction(int id, string key, string title, string startNodeKey)
 {
     public int Id { get; } = id;
@@ -302,3 +346,5 @@ public sealed record SimIntroduction(int Id, int NodeId, string Speaker, string?
 public sealed record SimPhrase(int Id, int OptionId, string Speaker, string? Other, string? Outcome, string Text, string ImagePath);
 public sealed record SimVariant(int? NodeId, int? OptionId, DialogueCandidate Candidate);
 public sealed record SimulationLine(string Text, string Source, string ImagePath, string Inspector);
+
+public sealed record SimTraitDefinition(string Key, string Name);
