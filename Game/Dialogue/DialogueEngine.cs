@@ -13,6 +13,8 @@ public sealed class DialogueEngine
 {
     private readonly DialogueRepository _data;
     private readonly IRelationshipStore _relationships;
+    private readonly IRelationshipStatusStore? _statuses;
+    private readonly IInteractionEffectStore? _effectStore;
     private readonly Random _random = new();
     private readonly Dictionary<string, DialogueNode> _nodes;
 
@@ -22,6 +24,8 @@ public sealed class DialogueEngine
     public DialogueNode CurrentNode { get; private set; }
 
     public RelationshipStats ActorToPartner => _relationships.Get(Visitor.Id, Host.Id);
+    public string ActorToPartnerStatus => _statuses?.Get(Visitor.Id, Host.Id) ?? "NEUTRAL";
+    public string PartnerToActorStatus => _statuses?.Get(Host.Id, Visitor.Id) ?? "NEUTRAL";
     public RelationshipStats PartnerToActor => _relationships.Get(Host.Id, Visitor.Id);
     public PersonalityStats ActorPersonality => _data.Personality(Visitor.Id);
     public PersonalityStats PartnerPersonality => _data.Personality(Host.Id);
@@ -29,7 +33,9 @@ public sealed class DialogueEngine
     // All three IDs are supplied by the caller. No participant is stored on an
     // interaction definition, and no fallback to the legacy HostCharacterId exists.
     public DialogueEngine(DialogueRepository data, IRelationshipStore relationships,
-        string interactionKey, string actorCharacterId, string partnerCharacterId)
+        string interactionKey, string actorCharacterId, string partnerCharacterId,
+        IRelationshipStatusStore? statusStore = null,
+        IInteractionEffectStore? effectStore = null)
     {
         if (string.IsNullOrWhiteSpace(interactionKey))
             throw new ArgumentException("Interaction key is required.", nameof(interactionKey));
@@ -40,6 +46,8 @@ public sealed class DialogueEngine
 
         _data = data;
         _relationships = relationships;
+        _statuses = statusStore;
+        _effectStore = effectStore;
         Definition = data.Interaction(interactionKey.Trim());
         Visitor = data.Character(actorCharacterId.Trim());
         Host = data.Character(partnerCharacterId.Trim());
@@ -55,8 +63,14 @@ public sealed class DialogueEngine
         .Select(option =>
         {
             string lockReason = LockReason(option);
-            return new AvailableOption(option, Chance(option), lockReason.Length != 0, lockReason);
-        }).ToList();
+            bool locked = lockReason.Length != 0;
+            // A hidden choice is absent from both the UI and the engine's selectable list.
+            if (locked && option.HideWhenRequirementsUnmet) return null;
+            return new AvailableOption(option, Chance(option), locked, lockReason);
+        })
+        .Where(option => option is not null)
+        .Select(option => option!)
+        .ToList();
 
     public DialogueResolution Choose(string optionKey)
     {
@@ -85,7 +99,31 @@ public sealed class DialogueEngine
                 Direction = effect.Direction, Attribute = effect.Attribute, Delta = adjustment.AdjustedDelta
             };
         }).ToList();
-        var changes = _relationships.Apply(Visitor.Id, Host.Id, adjustedEffects);
+        // Distinct discrete status changes are NOT personality-adjusted and do not
+        // influence the roll. Author them per SUCCESS or FAILURE in Studio.
+        var statusEffects = succeeded ? option.SuccessStatusEffects : option.FailureStatusEffects;
+        if (statusEffects.Count > 0 && _statuses is null)
+            throw new InvalidOperationException("Relationship status effects require an IRelationshipStatusStore.");
+        IReadOnlyList<AppliedRelationshipChange> changes;
+        IReadOnlyList<AppliedRelationshipStatusChange> statusChanges;
+        if (_effectStore is not null)
+        {
+            // The savegame implementation commits both effect families together.
+            var committed = _effectStore.Apply(Visitor.Id, Host.Id, adjustedEffects, statusEffects);
+            changes = committed.RelationshipChanges;
+            statusChanges = committed.StatusChanges;
+        }
+        else
+        {
+            // Preserve compatibility with non-SQLite consumers of this pure rules engine,
+            // but never silently perform a partially-committable mixed outcome.
+            if (adjustedEffects.Count > 0 && statusEffects.Count > 0)
+                throw new InvalidOperationException(
+                    "Mixed numeric and status effects require an atomic IInteractionEffectStore.");
+            changes = _relationships.Apply(Visitor.Id, Host.Id, adjustedEffects);
+            statusChanges = _statuses?.Apply(Visitor.Id, Host.Id, statusEffects)
+                ?? Array.Empty<AppliedRelationshipStatusChange>();
+        }
 
         string targetReaction = succeeded
             ? option.SuccessTargetReaction
@@ -94,7 +132,7 @@ public sealed class DialogueEngine
             targetReaction = succeeded ? "RECEPTIVE" : "DISMISSIVE";
 
         return new DialogueResolution(option, actorLine, partnerLine,
-            succeeded, roll, available.Chance, changes,
+            succeeded, roll, available.Chance, changes, statusChanges,
             succeeded ? option.SuccessNextNodeKey : option.FailureNextNodeKey,
             targetReaction);
     }
@@ -120,6 +158,30 @@ public sealed class DialogueEngine
                 return $"{req.Attribute} ≥ {min}";
             if (req.Maximum is int max && value > max)
                 return $"{req.Attribute} ≤ {max}";
+        }
+        foreach (var req in option.StatusRequirements)
+        {
+            if (_statuses is null)
+                return "Relationship status unavailable"; // Fail closed; never accidentally unlock.
+            string expected = req.StatusKey;
+            switch (req.Direction.ToUpperInvariant())
+            {
+                case "ACTOR_TO_PARTNER":
+                    if (!string.Equals(ActorToPartnerStatus, expected, StringComparison.OrdinalIgnoreCase))
+                        return $"{Visitor.Name} → {Host.Name} must be {expected}";
+                    break;
+                case "PARTNER_TO_ACTOR":
+                    if (!string.Equals(PartnerToActorStatus, expected, StringComparison.OrdinalIgnoreCase))
+                        return $"{Host.Name} → {Visitor.Name} must be {expected}";
+                    break;
+                case "BOTH":
+                    if (!string.Equals(ActorToPartnerStatus, expected, StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(PartnerToActorStatus, expected, StringComparison.OrdinalIgnoreCase))
+                        return $"Both directions must be {expected}";
+                    break;
+                default:
+                    throw new InvalidOperationException($"Invalid status-requirement direction '{req.Direction}'.");
+            }
         }
         return "";
     }

@@ -61,6 +61,26 @@ public sealed class DialogueRepository
 		var interactions = db.Interactions.AsNoTracking().ToList();
 		var nodes = db.Nodes.AsNoTracking().ToList();
 		var options = db.Options.AsNoTracking().ToList();
+        // Read the optional presentation column separately: older published databases
+        // remain compatible and retain the original SHOW AS LOCKED behaviour.
+        var hideWhenUnmet = new HashSet<int>();
+        using (var visibilityDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePaths.Content, Mode = SqliteOpenMode.ReadOnly,
+            ForeignKeys = true, Pooling = false
+        }.ToString()))
+        {
+            visibilityDb.Open();
+            using var exists = visibilityDb.CreateCommand();
+            exists.CommandText = "SELECT 1 FROM pragma_table_info('Options') WHERE name='UnmetRequirementBehaviour'";
+            if (exists.ExecuteScalar() is not null)
+            {
+                using var cmd = visibilityDb.CreateCommand();
+                cmd.CommandText = "SELECT Id FROM Options WHERE UnmetRequirementBehaviour='HIDE'";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read()) hideWhenUnmet.Add(reader.GetInt32(0));
+            }
+        }
 		var requirements = db.Requirements.AsNoTracking().ToList();
 		var modifiers = db.ChanceModifiers.AsNoTracking().ToList();
 		var effects = db.Effects.AsNoTracking().ToList();
@@ -92,6 +112,7 @@ public sealed class DialogueRepository
 						Key = option.Key,
 						Label = option.Label,
 						BaseSuccessChance = option.BaseSuccessChance,
+                        HideWhenRequirementsUnmet = hideWhenUnmet.Contains(option.Id),
 						SuccessNextNodeKey = option.SuccessNextNodeKey,
 						FailureNextNodeKey = option.FailureNextNodeKey,
 						DefaultPlayerLine = option.DefaultPlayerLine,
@@ -274,6 +295,62 @@ public sealed class DialogueRepository
                 if (!_profiles.ContainsKey(profileKey))
                     throw new InvalidOperationException($"Unknown check profile '{profileKey}' assigned to a choice.");
                 _optionProfiles.Add(CompositeKey(reader.GetString(0),reader.GetString(1),reader.GetString(2)),profileKey);
+            }
+        }
+
+        // Phase 12C: discrete status effects are authored by Studio in their own
+        // table. Populate each option in-memory without changing numeric Effects.
+        using (var statusDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePaths.Content, Mode = SqliteOpenMode.ReadOnly,
+            ForeignKeys = true, Pooling = false
+        }.ToString()))
+        {
+            statusDb.Open();
+            using var cmd = statusDb.CreateCommand();
+            cmd.CommandText = @"SELECT OptionId,Outcome,Direction,StatusKey
+                FROM OptionStatusEffects ORDER BY Id";
+            using var r=cmd.ExecuteReader();
+            while(r.Read())
+            {
+                if (!optionLookup.TryGetValue(r.GetInt32(0),out var optionRow))
+                    throw new InvalidOperationException("A status effect references an unknown option.");
+                var nodeRow=nodeLookup[optionRow.NodeId];
+                var interactionRow=interactionLookup[nodeRow.InteractionId];
+                var dialogueOption=_interactions[interactionRow.Key].Nodes
+                    .Single(n => Eq(n.Key,nodeRow.Key)).Options
+                    .Single(o => Eq(o.Key,optionRow.Key));
+                var effect=new RelationshipStatusEffect(r.GetString(2),r.GetString(3));
+                switch(r.GetString(1))
+                {
+                    case "SUCCESS":dialogueOption.SuccessStatusEffects.Add(effect);break;
+                    case "FAILURE":dialogueOption.FailureStatusEffects.Add(effect);break;
+                    default:throw new InvalidOperationException("Unknown status effect outcome.");
+                }
+            }
+        }
+
+        // Phase 12D: authored gates use the current status store when an option is
+        // evaluated. They are independent of numeric requirements and success chance.
+        using (var requirementsDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePaths.Content, Mode = SqliteOpenMode.ReadOnly,
+            ForeignKeys = true, Pooling = false
+        }.ToString()))
+        {
+            requirementsDb.Open();
+            using var cmd = requirementsDb.CreateCommand();
+            cmd.CommandText = "SELECT OptionId,Direction,StatusKey FROM OptionStatusRequirements ORDER BY Id";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                if (!optionLookup.TryGetValue(reader.GetInt32(0), out var optionRow))
+                    throw new InvalidOperationException("A status requirement references an unknown dialogue choice.");
+                var nodeRow = nodeLookup[optionRow.NodeId];
+                var interactionRow = interactionLookup[nodeRow.InteractionId];
+                _interactions[interactionRow.Key].Nodes.Single(n => Eq(n.Key, nodeRow.Key))
+                    .Options.Single(o => Eq(o.Key, optionRow.Key))
+                    .StatusRequirements.Add(new RelationshipStatusRequirement(reader.GetString(1), reader.GetString(2)));
             }
         }
 

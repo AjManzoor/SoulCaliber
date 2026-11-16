@@ -17,6 +17,7 @@ public partial class InteractionScene : Control
 	private enum DisplayStage { Choices, PlayerSpeaking, HostSpeaking, Finished }
 
 	private DialogueEngine _engine = null!;
+	private SqliteRelationshipStatusStore _statusStore = null!;
 	private DialogueResolution? _lastResult;
 	private readonly SqliteInteractionHistoryStore _historyStore = new();
 	private DisplayStage _stage;
@@ -32,6 +33,7 @@ public partial class InteractionScene : Control
 	private Label _leftPlaceholder = null!;
 	private Label _rightPlaceholder = null!;
 	private Label _sceneTitle = null!;
+	private Label _choiceTitle = null!;
 	private Label _footer = null!;
 	private Panel _leftFrame = null!;
 	private Panel _rightFrame = null!;
@@ -43,6 +45,10 @@ public partial class InteractionScene : Control
 
 	private Label _leftStatsTitle = null!;
 	private Label _rightStatsTitle = null!;
+	private Label _leftStatusLabel = null!;
+	private TextureRect _leftStatusIcon = null!;
+	private Label _rightStatusLabel = null!;
+	private TextureRect _rightStatusIcon = null!;
 	private readonly Dictionary<string, Label> _leftStatLabels = new();
 	private readonly Dictionary<string, Label> _rightStatLabels = new();
 	private readonly Dictionary<string, Control> _leftStatChips = new();
@@ -65,10 +71,19 @@ public partial class InteractionScene : Control
 		_leftName = GetNode<Label>("LeftName");
 		_rightName = GetNode<Label>("RightName");
 		_sceneTitle = GetNode<Label>("SceneTitle");
+		_choiceTitle = GetNode<Label>("ChoiceTitle");
+		_choiceTitle.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+		_choiceTitle.VerticalAlignment = VerticalAlignment.Center;
 		_footer = GetNode<Label>("Footer");
 
-		_engine = new DialogueEngine(new DialogueRepository(), new SqliteRelationshipStore(),
-			InteractionKey, VisitorCharacterId, PartnerCharacterId);
+		_statusStore = new SqliteRelationshipStatusStore();
+		// The prototype begins a fresh game on process launch, not every scene open.
+		// A future Load Game action can call RelationshipStatusSession.KeepSavedStatusesForLoad().
+		RelationshipStatusSession.EnsureFreshPrototypeSession(_statusStore);
+		var numericStore = new SqliteRelationshipStore();
+		_engine = new DialogueEngine(new DialogueRepository(), numericStore,
+			InteractionKey, VisitorCharacterId, PartnerCharacterId, _statusStore,
+			new SqliteInteractionEffectStore(numericStore, _statusStore));
 
 		// Respect existing Inspector textures if no data image is present.
 		_defaultLeftTexture = LoadImage(_engine.Visitor.DefaultImage) ?? _leftPortrait.Texture;
@@ -101,6 +116,9 @@ public partial class InteractionScene : Control
 	{
 		_stage = DisplayStage.Choices;
 		_lastResult = null;
+		_choiceTitle.Text = "CHOOSE YOUR RESPONSE";
+		_choiceTitle.AddThemeColorOverride("font_color", new Color(0.72f, 0.71f, 0.78f));
+		_choiceTitle.TooltipText = "";
 		_sceneTitle.Text = $"{_engine.Definition.Title.ToUpperInvariant()}  •  ROUND {_engine.CurrentNode.Round}/{_engine.Definition.Nodes.Max(n => n.Round)}";
 		Speak(_engine.Host.Id, _engine.Introduction());
 		_choicesScroll.Visible = true;
@@ -113,8 +131,20 @@ public partial class InteractionScene : Control
 			child.QueueFree();
 		}
 
+		var availableChoices = _engine.GetOptions();
+		if (availableChoices.Count == 0)
+		{
+			// Avoid an unexplained empty response area if every authored choice is hidden.
+			var message = new Label
+			{
+				Text = "No responses are currently available.",
+				HorizontalAlignment = HorizontalAlignment.Center,
+				AutowrapMode = TextServer.AutowrapMode.WordSmart
+			};
+			_choicesContainer.AddChild(message);
+		}
 		int index = 0;
-		foreach (AvailableOption choice in _engine.GetOptions())
+		foreach (AvailableOption choice in availableChoices)
 		{
 			index++;
 			string key = choice.Definition.Key;
@@ -162,13 +192,15 @@ public partial class InteractionScene : Control
 
 		Speak(_engine.Visitor.Id, _lastResult.PlayerLine.Text);
 		UpdateRelationshipPanels(_lastResult.Changes);
+		ShowStatusChangeFeedback(_lastResult.StatusChanges);
 		string skill = _engine.SkillLabel(_lastResult.Choice);
 		_footer.Text = $"Chance {_lastResult.Chance}%" +
 			(string.IsNullOrEmpty(skill) ? "" : $" ({skill})") +
 			$"  •  Rolled {_lastResult.Roll}/100  •  " +
 			$"{_engine.Visitor.Name}: " + (_lastResult.Succeeded ? "Success" : "Failure") +
 			$"  •  {_engine.Host.Name}: {ReactionLabel(_lastResult.TargetReaction)}" +
-			$"  •  {_lastResult.Changes.Count} stat change(s)";
+			$"  •  {_lastResult.Changes.Count} stat change(s)" +
+			$"  •  {_lastResult.StatusChanges.Count} status change(s)";
 	}
 
 	private void ContinueConversation()
@@ -305,13 +337,13 @@ public partial class InteractionScene : Control
 	{
 		// Responsive icon panels sit above the portraits; they wrap onto additional
 		// rows rather than requiring horizontal scrolling.
-		_leftStatsTitle = AddStatsStrip("ActorRelationships", 0.025f, 0.26f,
+		(_leftStatsTitle, _leftStatusIcon, _leftStatusLabel) = AddStatsStrip("ActorRelationships", 0.025f, 0.26f,
 			_leftStatLabels, _leftStatChips);
-		_rightStatsTitle = AddStatsStrip("PartnerRelationships", 0.74f, 0.975f,
+		(_rightStatsTitle, _rightStatusIcon, _rightStatusLabel) = AddStatsStrip("PartnerRelationships", 0.74f, 0.975f,
 			_rightStatLabels, _rightStatChips);
 	}
 
-	private Label AddStatsStrip(string name, float left, float right,
+	private (Label Title, TextureRect StatusIcon, Label Status) AddStatsStrip(string name, float left, float right,
 		Dictionary<string, Label> values, Dictionary<string, Control> chips)
 	{
 		// Flow layout displays every registered attribute; no horizontal scrolling.
@@ -343,10 +375,32 @@ public partial class InteractionScene : Control
 		var stack = new VBoxContainer();
 		stack.AddThemeConstantOverride("separation",2);
 		margin.AddChild(stack);
-		var title = new Label { HorizontalAlignment=HorizontalAlignment.Center, ClipText=true };
+		// Status sits on the SAME line as the directional heading; portrait and
+		// numerical attribute rows keep exactly their existing positions.
+		var heading = new HBoxContainer
+		{
+			Alignment = BoxContainer.AlignmentMode.Center,
+			SizeFlagsHorizontal = SizeFlags.ExpandFill,
+			MouseFilter = MouseFilterEnum.Pass
+		};
+		heading.AddThemeConstantOverride("separation", 7);
+		stack.AddChild(heading);
+		var title = new Label { ClipText=true, MouseFilter=MouseFilterEnum.Ignore };
 		title.AddThemeFontSizeOverride("font_size",12);
 		title.AddThemeColorOverride("font_color",new Color(0.92f,0.81f,0.66f));
-		stack.AddChild(title);
+		heading.AddChild(title);
+		var statusIcon = new TextureRect
+		{
+			CustomMinimumSize = new Vector2(15, 15),
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+			MouseFilter = MouseFilterEnum.Ignore,
+			Visible = false
+		};
+		heading.AddChild(statusIcon);
+		var status = new Label { MouseFilter=MouseFilterEnum.Pass };
+		status.AddThemeFontSizeOverride("font_size",12);
+		heading.AddChild(status);
 
 		var flow = new HFlowContainer
 		{
@@ -406,7 +460,7 @@ public partial class InteractionScene : Control
 			values[attribute.Key]=label;
 			chips[attribute.Key]=chip;
 		}
-		return title;
+		return (title, statusIcon, status);
 	}
 
 	private void UpdateRelationshipPanels(IReadOnlyList<AppliedRelationshipChange>? changes = null)
@@ -415,6 +469,8 @@ public partial class InteractionScene : Control
 		var partnerView = _engine.PartnerToActor;
 		_leftStatsTitle.Text = $"{_engine.Visitor.Name} → {_engine.Host.Name}";
 		_rightStatsTitle.Text = $"{_engine.Host.Name} → {_engine.Visitor.Name}";
+		UpdateStatusLabel(_leftStatusIcon, _leftStatusLabel, _engine.ActorToPartnerStatus);
+		UpdateStatusLabel(_rightStatusIcon, _rightStatusLabel, _engine.PartnerToActorStatus);
 
 		FillStats(_leftStatLabels, _leftStatChips, actorView,
 			_engine.Visitor.Id, _engine.Host.Id,
@@ -423,6 +479,45 @@ public partial class InteractionScene : Control
 			_engine.Host.Id, _engine.Visitor.Id,
 			_engine.Host.Name, _engine.Visitor.Name, changes);
 	}
+
+	private void UpdateStatusLabel(TextureRect icon, Label label, string statusKey)
+	{
+		string displayName = _statusStore.GetDisplayName(statusKey);
+		string iconPath = _statusStore.GetIconPath(statusKey);
+		string hexColor = _statusStore.GetColorHex(statusKey);
+		Color colour = new Color(hexColor);
+		Texture2D? texture = LoadImage(iconPath);
+		icon.Texture = texture;
+		icon.Modulate = colour;
+		icon.Visible = texture is not null;
+		// An authored icon replaces the old dot; a missing/empty icon retains it.
+		label.Text = texture is null ? $"• {displayName}" : displayName;
+		label.TooltipText = $"Current status: {displayName} ({statusKey})";
+		label.AddThemeColorOverride("font_color", colour);
+	}
+
+	private void ShowStatusChangeFeedback(IReadOnlyList<AppliedRelationshipStatusChange> changes)
+	{
+		if (changes.Count == 0)
+		{
+			_choiceTitle.Text = "RESPONSE RECORDED";
+			return;
+		}
+
+		string[] lines = changes.Select(change =>
+			$"STATUS  •  {DisplayCharacter(change.FromId)} → {DisplayCharacter(change.ToId)}: " +
+			$"{_statusStore.GetDisplayName(change.Before)} → {_statusStore.GetDisplayName(change.After)}")
+			.ToArray();
+		_choiceTitle.Text = string.Join("\n", lines);
+		_choiceTitle.TooltipText = string.Join("\n", lines);
+		_choiceTitle.AddThemeColorOverride("font_color", new Color(0.93f, 0.83f, 0.66f));
+	}
+
+	private string DisplayCharacter(string id) =>
+		string.Equals(id, _engine.Visitor.Id, StringComparison.OrdinalIgnoreCase)
+			? _engine.Visitor.Name
+			: string.Equals(id, _engine.Host.Id, StringComparison.OrdinalIgnoreCase)
+				? _engine.Host.Name : id;
 
 	private static void FillStats(Dictionary<string, Label> labels,
 		Dictionary<string, Control> chips, RelationshipStats stats,

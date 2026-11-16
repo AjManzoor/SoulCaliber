@@ -47,6 +47,7 @@
                   <TextBox x:Name="EffectDeltaBox" TextChanged="Editor_Changed"/>
                 </StackPanel>
               </WrapPanel>
+              <Button Content="Edit Ally / Enemy status changes..." Click="EditStatusEffects_Click" Margin="0,0,0,8"/>
               <TextBlock Text="Example: SUCCESS · Recipient → Initiator · Fear · +15 means a successful threat makes its target fear the initiator more."
                          TextWrapping="Wrap" Foreground="#B9C9E4" FontSize="11" Margin="0,1,0,7"/>
               <WrapPanel>
@@ -117,8 +118,24 @@
         <Grid Margin="12">
           <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
           <DockPanel Grid.Row="0">
-            <TextBlock DockPanel.Dock="Top" Text="A choice becomes locked if ANY requirement fails. Requirements examine current directional relationship values before the player acts."
-                       TextWrapping="Wrap" Foreground="#B9C9E4" Margin="0,0,0,8"/>
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+              <TextBlock Text="All numeric and status requirements must pass before a choice can be selected. Set below whether an unmet choice remains visibly locked or disappears entirely."
+                         TextWrapping="Wrap" Foreground="#B9C9E4" Margin="0,0,0,6"/>
+              <Button Content="Edit Ally / Enemy / custom status requirements..." Click="EditStatusRequirements_Click"
+                      HorizontalAlignment="Left"/>
+              <Border Background="#242C39" CornerRadius="6" Padding="10" Margin="0,10,0,8">
+                <StackPanel>
+                  <TextBlock Text="WHEN ANY REQUIREMENT IS NOT MET" FontWeight="Bold" Margin="0,0,0,5"/>
+                  <WrapPanel>
+                    <ComboBox x:Name="UnmetBehaviourBox" MinWidth="220" Width="250" Margin="0,0,10,0"
+                              SelectionChanged="UnmetBehaviour_Changed"/>
+                    <Button Content="Save choice visibility" Click="SaveChoiceVisibility_Click"/>
+                  </WrapPanel>
+                  <TextBlock Text="Show as locked is the default. Hide completely removes only this choice from the response list until its requirements are met. Applies to numeric and status requirements."
+                             Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                </StackPanel>
+              </Border>
+            </StackPanel>
             <ListBox x:Name="RequirementList" SelectionChanged="RequirementList_SelectionChanged"/>
           </DockPanel>
           <Border Grid.Row="1" Background="#242C39" CornerRadius="6" Padding="12" Margin="0,10,0,0">

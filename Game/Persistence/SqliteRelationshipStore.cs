@@ -43,36 +43,52 @@ public sealed class SqliteRelationshipStore : IRelationshipStore
     }
 
     public IReadOnlyList<AppliedRelationshipChange> Apply(
-        string actorId,string partnerId,IReadOnlyList<RelationshipEffect> effects)
+        string actorId, string partnerId, IReadOnlyList<RelationshipEffect> effects)
     {
         if (effects.Count == 0) return Array.Empty<AppliedRelationshipChange>();
         using var db = new SaveDbContext();
         using var tx = db.Database.BeginTransaction();
+        var changes = ApplyInTransaction(db, actorId, partnerId, effects);
+        tx.Commit();
+        return changes;
+    }
+
+    /// <summary>
+    /// Applies numerical changes within a caller-owned transaction. Does not commit.
+    /// Used by the combined dialogue-effect writer to avoid partial outcomes.
+    /// </summary>
+    internal IReadOnlyList<AppliedRelationshipChange> ApplyInTransaction(
+        SaveDbContext db, string actorId, string partnerId,
+        IReadOnlyList<RelationshipEffect> effects)
+    {
         var changes = new List<AppliedRelationshipChange>();
         foreach (var effect in effects)
         {
-            var (fromId,toId) = RelationshipDirection.Resolve(effect.Direction,actorId,partnerId);
-            string from=fromId.ToUpperInvariant(),to=toId.ToUpperInvariant();
+            var (fromId, toId) = RelationshipDirection.Resolve(effect.Direction, actorId, partnerId);
+            string from = fromId.ToUpperInvariant(), to = toId.ToUpperInvariant();
             var definition = _catalogue.Get(effect.Attribute);
             if (!definition.IsActive)
                 throw new InvalidOperationException($"Inactive relationship attribute used by an effect: {definition.Key}");
             var row = db.RelationshipValues.Local.FirstOrDefault(x =>
-                x.FromCharacterId==from && x.ToCharacterId==to && x.AttributeKey==definition.Key)
-                ?? db.RelationshipValues.Find(from,to,definition.Key);
+                x.FromCharacterId == from && x.ToCharacterId == to && x.AttributeKey == definition.Key)
+                ?? db.RelationshipValues.Find(from, to, definition.Key);
             if (row is null)
             {
-                row = new SavedRelationshipValue { FromCharacterId=from,
-                    ToCharacterId=to, AttributeKey=definition.Key, Value=definition.Default };
+                row = new SavedRelationshipValue
+                {
+                    FromCharacterId = from, ToCharacterId = to,
+                    AttributeKey = definition.Key, Value = definition.Default
+                };
                 db.RelationshipValues.Add(row);
             }
-            int before = Math.Clamp(row.Value,definition.Minimum,definition.Maximum);
+            int before = Math.Clamp(row.Value, definition.Minimum, definition.Maximum);
             int after = Math.Clamp((int)Math.Clamp((long)before + effect.Delta,
-                definition.Minimum,definition.Maximum), definition.Minimum,definition.Maximum);
+                definition.Minimum, definition.Maximum), definition.Minimum, definition.Maximum);
             row.Value = after;
-            changes.Add(new AppliedRelationshipChange(from,to,definition.Key,before,after));
+            changes.Add(new AppliedRelationshipChange(from, to, definition.Key, before, after));
         }
-        db.SaveChanges();
-        tx.Commit();
+        if (changes.Count > 0)
+            db.SaveChanges(); // Flush within the caller's transaction, never commit here.
         return changes;
     }
 }
@@ -96,6 +112,12 @@ public sealed class SqliteInteractionHistoryStore
             {
                 FromCharacterId=change.FromId, ToCharacterId=change.ToId,
                 Attribute=change.Attribute, Before=change.Before, After=change.After
+            });
+        foreach (var change in result.StatusChanges)
+            row.StatusChanges.Add(new SavedInteractionStatusChange
+            {
+                FromCharacterId=change.FromId, ToCharacterId=change.ToId,
+                Before=change.Before, After=change.After
             });
         db.InteractionHistory.Add(row);
         db.SaveChanges();

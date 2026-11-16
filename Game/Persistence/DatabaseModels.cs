@@ -213,6 +213,7 @@ public sealed class SavedInteraction
     public int Roll { get; set; }
     public string TargetReaction { get; set; } = "";
     public List<SavedRelationshipChange> Changes { get; set; } = new();
+    public List<SavedInteractionStatusChange> StatusChanges { get; set; } = new();
 }
 public sealed class SavedRelationshipChange
 {
@@ -224,11 +225,21 @@ public sealed class SavedRelationshipChange
     public int Before { get; set; }
     public int After { get; set; }
 }
+public sealed class SavedInteractionStatusChange
+{
+    public long Id { get; set; }
+    public long SavedInteractionId { get; set; }
+    public string FromCharacterId { get; set; } = "";
+    public string ToCharacterId { get; set; } = "";
+    public string Before { get; set; } = "";
+    public string After { get; set; } = "";
+}
 public sealed class SaveDbContext : DbContext
 {
     public DbSet<SavedRelationshipValue> RelationshipValues => Set<SavedRelationshipValue>();
     public DbSet<SavedInteraction> InteractionHistory => Set<SavedInteraction>();
     public DbSet<SavedRelationshipChange> RelationshipChanges => Set<SavedRelationshipChange>();
+    public DbSet<SavedInteractionStatusChange> InteractionStatusChanges => Set<SavedInteractionStatusChange>();
 
     protected override void OnConfiguring(DbContextOptionsBuilder builder) =>
         builder.UseSqlite(DatabasePaths.ConnectionString(DatabasePaths.Save));
@@ -241,5 +252,9 @@ public sealed class SaveDbContext : DbContext
         builder.Entity<SavedInteraction>().HasMany(x => x.Changes).WithOne()
             .HasForeignKey(x => x.SavedInteractionId).OnDelete(DeleteBehavior.Cascade);
         builder.Entity<SavedInteraction>().HasIndex(x => x.OccurredUtc);
+        builder.Entity<SavedInteractionStatusChange>().ToTable("SavedInteractionStatusChanges");
+        builder.Entity<SavedInteractionStatusChange>().HasKey(x => x.Id);
+        builder.Entity<SavedInteraction>().HasMany(x => x.StatusChanges).WithOne()
+            .HasForeignKey(x => x.SavedInteractionId).OnDelete(DeleteBehavior.Cascade);
     }
 }

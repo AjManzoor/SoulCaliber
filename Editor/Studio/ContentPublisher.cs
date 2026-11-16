@@ -65,7 +65,7 @@ public static class ContentPublisher
     [
         "Characters", "ReactionTypes", "ReactionImages", "CharacterSkills", "CharacterSkillValues", "PersonalityTraits", "PersonalityTraitModifiers", "CharacterTraits", "Interactions", "Nodes", "Options",
         "Requirements", "ChanceModifiers", "Effects", "Lines", "SkillChecks", "NodeIntroductions",
-        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles", "RelationshipAttributes"
+        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles", "RelationshipAttributes", "RelationshipStatuses", "CharacterDefaultStatuses", "OptionStatusEffects", "OptionStatusRequirements"
     ];
 
     private sealed record CharacterRow(string Id, string Name, string DefaultImage, string WinImage, string LoseImage);
@@ -302,6 +302,87 @@ public static class ContentPublisher
             CheckAsset(report, root, ch.LoseImage, $"{ch.Id} failure portrait");
         }
 
+        // Phase 12A/12D catalogue and appearance travel with every published content snapshot.
+        var statuses = Read(db, "SELECT Key,Name,IsActive,IsDefault,IconPath,Color FROM RelationshipStatuses",
+            r => (Key:r.GetString(0), Name:r.GetString(1),
+                  Active:r.GetInt32(2)==1, Default:r.GetInt32(3)==1,
+                  Icon:Safe(r,4), Color:Safe(r,5)));
+        if (statuses.Count(s => s.Default) != 1 ||
+            !statuses.Any(s => s.Key.Equals("NEUTRAL", StringComparison.OrdinalIgnoreCase) && s.Default && s.Active))
+            report.Error("RelationshipStatuses", "NEUTRAL must be the sole active default status.");
+        if (statuses.Select(s => s.Key).Distinct(StringComparer.OrdinalIgnoreCase).Count() != statuses.Count)
+            report.Error("RelationshipStatuses", "Duplicate case-insensitive status keys.");
+        foreach (var status in statuses)
+        {
+            if (string.IsNullOrWhiteSpace(status.Key) || string.IsNullOrWhiteSpace(status.Name))
+                report.Error("RelationshipStatuses", "Status key and name are required.");
+            if (!Regex.IsMatch(status.Color, "^#[0-9A-Fa-f]{6}$"))
+                report.Error($"Relationship status {status.Key}", "Colour must be #RRGGBB.");
+            if (status.Active && !string.IsNullOrWhiteSpace(status.Icon))
+                CheckAsset(report, root, status.Icon, $"Relationship status icon {status.Key}");
+        }
+
+        // Phase 12B: explicit directional starting statuses. Missing pairs are NEUTRAL.
+        // No gameplay status overrides should ever be written into the content master.
+        var defaults = Read(db, "SELECT SourceCharacterId,TargetCharacterId,StatusKey FROM CharacterDefaultStatuses",
+            r => (Source:r.GetString(0), Target:r.GetString(1), Status:r.GetString(2)));
+        var activeStatusKeys = statuses.Where(s => s.Active).Select(s => s.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var pair in defaults)
+        {
+            if (!characterIds.Contains(pair.Source) || !characterIds.Contains(pair.Target))
+                report.Error("CharacterDefaultStatuses", $"Starting status {pair.Source} -> {pair.Target} refers to a missing character.");
+            if (pair.Source.Equals(pair.Target, StringComparison.OrdinalIgnoreCase))
+                report.Error("CharacterDefaultStatuses", $"Character {pair.Source} cannot have a starting status towards themselves.");
+            if (!activeStatusKeys.Contains(pair.Status) || pair.Status.Equals("NEUTRAL", StringComparison.OrdinalIgnoreCase))
+                report.Error("CharacterDefaultStatuses", $"Invalid or inactive starting status {pair.Status} for {pair.Source} -> {pair.Target}.");
+        }
+
+        // 12C authored status outcomes must reference existing choices and ACTIVE statuses.
+        var statusEffects = Read(db,
+            "SELECT Id,OptionId,Outcome,Direction,StatusKey FROM OptionStatusEffects",
+            r => (Id:r.GetInt64(0),OptionId:r.GetInt64(1),Outcome:r.GetString(2),
+                  Direction:r.GetString(3),Status:r.GetString(4)));
+        // Choices are validated later, but simple lookup avoids a forward dependency.
+        var validStatusOptionIds = Read(db,"SELECT Id FROM Options",r=>r.GetInt64(0))
+            .ToHashSet();
+        foreach(var effect in statusEffects)
+        {
+            string location=$"OptionStatusEffects #{effect.Id}";
+            if(!validStatusOptionIds.Contains(effect.OptionId)) report.Error(location,"Unknown dialogue choice.");
+            if(effect.Outcome is not ("SUCCESS" or "FAILURE")) report.Error(location,"Invalid outcome.");
+            if(effect.Direction is not ("ACTOR_TO_PARTNER" or "PARTNER_TO_ACTOR" or "BOTH"))
+                report.Error(location,"Invalid direction.");
+            if(!activeStatusKeys.Contains(effect.Status)) report.Error(location,$"Unknown or inactive status: {effect.Status}.");
+        }
+        foreach(var group in statusEffects.GroupBy(e=>(e.OptionId,e.Outcome)))
+        {
+            if(group.GroupBy(e=>e.Direction,StringComparer.OrdinalIgnoreCase).Any(g=>g.Count()>1) ||
+               group.Any(e=>e.Direction=="BOTH") && group.Count()>1)
+                report.Error("OptionStatusEffects",$"Conflicting directions for choice {group.Key.OptionId}/{group.Key.Outcome}.");
+        }
+
+        // Phase 12D: every status requirement must reference a real option and an active
+        // catalogue status. A BOTH requirement cannot overlap with either single direction.
+        var statusRequirements = Read(db,
+            "SELECT Id,OptionId,Direction,StatusKey FROM OptionStatusRequirements",
+            r => (Id:r.GetInt64(0), OptionId:r.GetInt64(1), Direction:r.GetString(2), Status:r.GetString(3)));
+        foreach (var requirement in statusRequirements)
+        {
+            string location = $"OptionStatusRequirements #{requirement.Id}";
+            if (!validStatusOptionIds.Contains(requirement.OptionId)) report.Error(location, "Unknown dialogue choice.");
+            if (requirement.Direction is not ("ACTOR_TO_PARTNER" or "PARTNER_TO_ACTOR" or "BOTH"))
+                report.Error(location, "Invalid relationship direction.");
+            if (!activeStatusKeys.Contains(requirement.Status))
+                report.Error(location, $"Unknown or inactive required status: {requirement.Status}.");
+        }
+        foreach (var group in statusRequirements.GroupBy(x => x.OptionId))
+        {
+            if (group.GroupBy(x => x.Direction, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1) ||
+                group.Any(x => x.Direction == "BOTH") && group.Count() > 1)
+                report.Error("OptionStatusRequirements", $"Overlapping status requirements for choice {group.Key}.");
+        }
+
         var reactionTypes = Read(db, "SELECT Key, DisplayName, SortOrder FROM ReactionTypes", r =>
             (Key: r.GetString(0), Name: r.GetString(1), SortOrder: r.GetInt64(2)));
         var validReactions = reactionTypes.Select(x => x.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -411,6 +492,15 @@ public static class ContentPublisher
             report.Error("Interactions", "Duplicate interaction keys differing only by letter case.");
         var interactionIds = interactions.Select(x => x.Id).ToHashSet();
         var nodeLookup = nodes.ToDictionary(x => x.Id);
+        // Phase 12D follow-up: hide vs lock is an authored choice-level presentation rule.
+        // Fail publishing if the master contains an invalid behaviour (including raw SQL edits).
+        foreach (var presentation in Read(db,
+            "SELECT Id, UnmetRequirementBehaviour FROM Options",
+            r => (Id: r.GetInt64(0), Behaviour: r.GetString(1))))
+        {
+            if (presentation.Behaviour is not ("LOCK" or "HIDE"))
+                report.Error("Options", $"Choice {presentation.Id} has invalid unmet-requirement behaviour '{presentation.Behaviour}'.");
+        }
         var optionIds = options.Select(x => x.Id).ToHashSet();
         foreach (var inter in interactions)
         {

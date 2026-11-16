@@ -15,6 +15,7 @@ public partial class ChoiceMechanicsWindow : Window
     private ChanceModifierRow? _activeModifier;
     private bool _loading;
     private bool _dirty;
+    private bool _visibilityDirty;
     private bool _revertingTab;
     private int _previousTab;
 
@@ -38,11 +39,13 @@ public partial class ChoiceMechanicsWindow : Window
             SkillActorBox.ItemsSource = _store.SkillKeys;
             SkillDefenderBox.ItemsSource = _store.SkillKeys;
             SkillModeBox.ItemsSource = _store.CheckProfileKeys();
+            UnmetBehaviourBox.ItemsSource = new[] { "Show as locked", "Hide completely" };
         }
         finally { _loading = false; }
 
         ReloadEffects();
         ReloadRequirements();
+        ReloadChoiceVisibility();
         ReloadModifiers();
         ReloadSkill();
     }
@@ -101,6 +104,31 @@ public partial class ChoiceMechanicsWindow : Window
         }
         finally { _loading = false; }
     }
+
+    private void ReloadChoiceVisibility()
+    {
+        _loading = true;
+        try
+        {
+            UnmetBehaviourBox.SelectedIndex =
+                _store.ChoiceRequirementVisibility(_option.Id) == "HIDE" ? 1 : 0;
+            _visibilityDirty = false;
+        }
+        finally { _loading = false; }
+    }
+
+    private void UnmetBehaviour_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading) return;
+        _visibilityDirty = true;
+        StatusText.Text = "Unsaved choice visibility. Select Save choice visibility before leaving.";
+    }
+
+    private void SaveChoiceVisibility_Click(object sender, RoutedEventArgs e) => RunMechanicsAction(() =>
+    {
+        _store.SaveChoiceRequirementVisibility(_option.Id, UnmetBehaviourBox.SelectedIndex == 1 ? "HIDE" : "LOCK");
+        ReloadChoiceVisibility();
+    }, "Choice visibility saved. Existing numeric and status requirements remain unchanged.");
 
     private void PopulateRequirement(RelationshipRequirementRow? row)
     {
@@ -198,11 +226,13 @@ public partial class ChoiceMechanicsWindow : Window
 
     private bool CanSwitch()
     {
-        if (!_dirty) return true;
-        if (MessageBox.Show(this, "Discard unsaved mechanics edits?", "Unsaved changes",
+        if (!_dirty && !_visibilityDirty) return true;
+        if (MessageBox.Show(this, "Discard unsaved mechanics or visibility edits?", "Unsaved changes",
                 MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
             return false;
         _dirty = false;
+        _visibilityDirty = false;
+        ReloadChoiceVisibility(); // Restore the saved selection if the author discarded it.
         return true;
     }
 
@@ -215,7 +245,7 @@ public partial class ChoiceMechanicsWindow : Window
             {
                 case 0: PopulateEffect(_activeEffect); break;
                 case 1: ReloadSkill(); break;
-                case 2: PopulateRequirement(_activeRequirement); break;
+                case 2: PopulateRequirement(_activeRequirement); ReloadChoiceVisibility(); break;
                 case 3: PopulateModifier(_activeModifier); break;
             }
         }
@@ -319,6 +349,34 @@ public partial class ChoiceMechanicsWindow : Window
     private bool ConfirmDelete(string label) =>
         MessageBox.Show(this, $"Delete the selected {label}? No automatic backup will be created.",
             "Confirm deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+
+    private void EditStatusRequirements_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CanSwitch()) return;
+        try
+        {
+            new StatusRequirementsWindow(_store, _option.Id) { Owner = this }.ShowDialog();
+            StatusText.Text = "Dialogue status requirements saved. Unmet choices are locked or hidden as configured.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Relationship status requirements", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void EditStatusEffects_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CanSwitch()) return;
+        try
+        {
+            new StatusEffectsWindow(_store, _option.Id) { Owner = this }.ShowDialog();
+            StatusText.Text = "Discrete relationship-status outcomes configured separately from numeric effects.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Relationship status effects", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
 
     private void NewEffect_Click(object sender, RoutedEventArgs e)
     {

@@ -69,9 +69,14 @@ public sealed class DialogueOption
 
 	// Rules and effects are DATA. Add or remove attributes without adding scene code.
 	public List<RelationshipRequirement> Requirements { get; set; } = new();
+	public List<RelationshipStatusRequirement> StatusRequirements { get; set; } = new();
+    // An unmet choice is normally shown disabled; HIDE removes it from the offered list.
+    public bool HideWhenRequirementsUnmet { get; set; }
 	public List<ChanceModifier> ChanceModifiers { get; set; } = new();
 	public List<RelationshipEffect> SuccessEffects { get; set; } = new();
 	public List<RelationshipEffect> FailureEffects { get; set; } = new();
+	public List<RelationshipStatusEffect> SuccessStatusEffects { get; set; } = new();
+	public List<RelationshipStatusEffect> FailureStatusEffects { get; set; } = new();
 
 	public string? SuccessNextNodeKey { get; set; }
 	public string? FailureNextNodeKey { get; set; }
@@ -117,5 +122,6 @@ public sealed record DialogueResolution(
 	int Roll,
 	int Chance,
 	IReadOnlyList<AppliedRelationshipChange> Changes,
+	IReadOnlyList<AppliedRelationshipStatusChange> StatusChanges,
 	string? NextNodeKey,
 	string TargetReaction);

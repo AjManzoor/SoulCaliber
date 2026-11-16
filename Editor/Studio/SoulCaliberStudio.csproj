@@ -17,5 +17,11 @@
     <EmbeddedResource Include="Migrations\006_DynamicRelationships.sql" LogicalName="SoulCaliberStudio.Migrations.006_DynamicRelationships.sql" />
     <EmbeddedResource Include="Migrations\007_DynamicSkills.sql" LogicalName="SoulCaliberStudio.Migrations.007_DynamicSkills.sql" />
     <EmbeddedResource Include="Migrations\008_PersonalityTraits.sql" LogicalName="SoulCaliberStudio.Migrations.008_PersonalityTraits.sql" />
+    <EmbeddedResource Include="Migrations\009_RelationshipStatuses.sql" LogicalName="SoulCaliberStudio.Migrations.009_RelationshipStatuses.sql" />
+    <EmbeddedResource Include="Migrations\010_CharacterDefaultStatuses.sql" LogicalName="SoulCaliberStudio.Migrations.010_CharacterDefaultStatuses.sql" />
+    <EmbeddedResource Include="Migrations\011_OptionStatusEffects.sql" LogicalName="SoulCaliberStudio.Migrations.011_OptionStatusEffects.sql" />
+    <EmbeddedResource Include="Migrations\012_StatusAppearance.sql" LogicalName="SoulCaliberStudio.Migrations.012_StatusAppearance.sql" />
+    <EmbeddedResource Include="Migrations\013_OptionStatusRequirements.sql" LogicalName="SoulCaliberStudio.Migrations.013_OptionStatusRequirements.sql" />
+    <EmbeddedResource Include="Migrations\014_ChoiceRequirementVisibility.sql" LogicalName="SoulCaliberStudio.Migrations.014_ChoiceRequirementVisibility.sql" />
   </ItemGroup>
 </Project>

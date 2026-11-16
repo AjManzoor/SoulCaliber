@@ -40,7 +40,8 @@ public partial class InteractionSimulatorWindow : Window
             "You can edit relationship values directly in the left-hand table.";
         InspectorText.Text = "The inspector will show matched and rejected conditional dialogue candidates.";
         MechanicsText.Text = "Start an interaction, select a choice, then inspect all six stages.\n" +
-            "Use the Personality sandbox tab to temporarily toggle traits.";
+            "Use the Personality and Status sandbox tabs for temporary tests.";
+        InitialiseStatusControls();
         UpdateButtons();
     }
 
@@ -59,6 +60,7 @@ public partial class InteractionSimulatorWindow : Window
         _actor = actor.Id;
         _partner = partner.Id;
         if (pairChanged || _actorTraits.Count == 0) RestoreOriginalTraits();
+        InitialiseStatusPair(pairChanged);
         _interaction = interaction;
         _node = interaction.Nodes.FirstOrDefault(n => n.Key.Equals(interaction.StartNodeKey, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"Starting node '{interaction.StartNodeKey}' does not exist.");
@@ -170,7 +172,7 @@ public partial class InteractionSimulatorWindow : Window
         }
         // Refresh from current in-memory relationship and trait inputs, not from any game save.
         var current = ChoiceStatus(selected.Choice);
-        MechanicsText.Text = current.Audit.Describe(current.LockReason);
+        MechanicsText.Text = current.Audit.Describe(current.LockReason) + FormatStatusPreview(selected.Choice);
     }
     private void ForceSuccess_Click(object sender, RoutedEventArgs e) => Safely(() => ExecuteChoice(true, 1, "FORCED SUCCESS"));
     private void ForceFailure_Click(object sender, RoutedEventArgs e) => Safely(() => ExecuteChoice(false, 100, "FORCED FAILURE"));
@@ -199,6 +201,10 @@ public partial class InteractionSimulatorWindow : Window
         // It was calculated against pre-effect relationships, exactly as Godot does.
         var audit = selected.Audit;
         var projected = succeeded ? audit.Success : audit.Failure;
+        // Validate all discrete effects before modifying the sandbox, then
+        // apply them after numeric effects just like Godot does.
+        var simulatedStatusChanges = PreviewStatusChanges(choice, succeeded);
+        var statusAudit = FormatStatusPreview(choice);
         var changes = new List<string>();
         foreach (var effect in projected.Effects)
         {
@@ -212,19 +218,25 @@ public partial class InteractionSimulatorWindow : Window
                 $" → {effect.AdjustedDelta:+#;-#;0} ({effect.TraitExplanation})" +
                 (effect.WasClamped ? " [range limit]" : ""));
         }
-        _lastAuditSnapshot = audit.Describe(null, succeeded, roll, testMode);
+        ApplySimulatedStatusChanges(simulatedStatusChanges);
+        _lastAuditSnapshot = audit.Describe(null, succeeded, roll, testMode) + statusAudit;
         MechanicsText.Text = _lastAuditSnapshot;
         StatsGrid.Items.Refresh();
         _nextNode = succeeded ? choice.SuccessNext : choice.FailureNext;
         _awaitingContinue = true;
         _finished = false;
         var reaction = succeeded ? choice.SuccessReaction : choice.FailureReaction;
+        string statusChangesText = simulatedStatusChanges.Count == 0
+            ? "No status changes."
+            : string.Join("\n", simulatedStatusChanges.Select(c =>
+                $"{DirectionLabel(c.Direction)}: {_data.StatusName(c.Before)} → {_data.StatusName(c.After)}"));
         OutcomeText.Text = $"{testMode} | {choice.Label}\n" +
             $"Chance: {selected.Chance}% | Test roll: {roll}/100 | {(succeeded ? "SUCCESS" : "FAILURE")}\n" +
             $"Target reaction: {reaction}\n\n" +
             $"{_data.Name(_actor)}: {actorLine.Text}\nSource: {actorLine.Source}\n\n" +
             $"{_data.Name(_partner)}: {partnerLine.Text}\nSource: {partnerLine.Source}\n\n" +
             $"RELATIONSHIP EFFECTS\n{(changes.Count == 0 ? "No effects configured." : string.Join("\n", changes))}\n\n" +
+            $"STATUS CHANGES\n{statusChangesText}\n\n" +
             $"Next node: {(string.IsNullOrWhiteSpace(_nextNode) ? "END" : _nextNode)}";
         InspectorText.Text = $"ACTOR PHRASE\n{actorLine.Inspector}\n\nRECIPIENT PHRASE\n{partnerLine.Inspector}\n\n" +
                              "Skill/chance calculation:\n" + selected.Breakdown;
@@ -240,6 +252,7 @@ public partial class InteractionSimulatorWindow : Window
             _finished = true;
             _node = null;
             ChoiceList.ItemsSource = null;
+            ChoiceAvailabilityText.Text = "Conversation complete. Restart to test further choices with the current sandbox state.";
             NodeLabel.Text = "Conversation complete";
             IntroductionText.Text = "Start another test to replay the interaction with the current simulated relationship values.";
             IntroductionSource.Text = "The previous outcome is shown on the right.";
@@ -262,25 +275,16 @@ public partial class InteractionSimulatorWindow : Window
         IntroductionText.Text = Expand(intro.Text);
         InspectorText.Text = $"INTRODUCTION\n{intro.Inspector}\n\n" +
                              "Conditional lines are resolved using CURRENT in-memory stats.";
-        ChoiceList.ItemsSource = _node.Options.Select(ChoiceStatus).ToList();
-        ChoiceList.SelectedIndex = _node.Options.Count > 0 ? 0 : -1;
-        UpdateButtons();
-        RefreshMechanicsAudit();
+        RefreshChoiceAvailability();
     }
 
     private SimulationChoiceDisplay ChoiceStatus(SimChoice choice)
     {
-        string? lockReason = null;
-        foreach (var requirement in _data.Requirements(choice.Id))
-        {
-            int current = GetValue(requirement.Direction, requirement.Attribute);
-            if (requirement.Minimum is int min && current < min)
-            { lockReason = $"{requirement.Direction} {requirement.Attribute} ≥ {min}"; break; }
-            if (requirement.Maximum is int max && current > max)
-            { lockReason = $"{requirement.Direction} {requirement.Attribute} ≤ {max}"; break; }
-        }
+        var checks = GetRequirementChecks(choice);
+        var lockReason = checks.FirstOrDefault(x => !x.Passed)?.Description;
         var audit = BuildAudit(choice);
-        return new SimulationChoiceDisplay(choice, audit.Chance.FinalChance, lockReason, audit.ChanceBreakdown, audit);
+        return new SimulationChoiceDisplay(choice, audit.Chance.FinalChance, lockReason,
+            audit.ChanceBreakdown, audit, _data.HideWhenUnmet(choice.Id), checks);
     }
 
     private SimulationChoiceDisplay SelectedChoice()
@@ -289,7 +293,8 @@ public partial class InteractionSimulatorWindow : Window
             throw new InvalidOperationException("Start an interaction and choose an available option.");
         if (chosen.IsLocked) throw new InvalidOperationException($"This choice is locked: {chosen.LockReason}");
         var current = ChoiceStatus(chosen.Choice);
-        if (current.IsLocked) throw new InvalidOperationException($"This choice is locked: {current.LockReason}");
+        if (current.IsLocked) throw new InvalidOperationException(
+            $"This choice is {(current.IsHidden ? "hidden" : "locked")}: {current.LockReason}");
         return current;
     }
 
@@ -357,9 +362,11 @@ public sealed class SimulationStatRow(RelationshipAttributeDefinition definition
     public int PartnerToActor { get; set; } = definition.Default;
 }
 public sealed record SimulationChoiceDisplay(SimChoice Choice, int Chance, string? LockReason,
-    string Breakdown, InteractionChoiceAudit Audit)
+    string Breakdown, InteractionChoiceAudit Audit, bool HideWhenUnmet,
+    IReadOnlyList<SimulationRequirementCheck> RequirementChecks)
 {
     public bool IsLocked => LockReason is not null;
+    public bool IsHidden => IsLocked && HideWhenUnmet;
     public override string ToString() => IsLocked ? $"{Choice.Label} [LOCKED: {LockReason}]" :
         $"{Choice.Label} ({Chance}% success)";
 }

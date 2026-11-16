@@ -6,7 +6,7 @@ namespace SoulCaliberStudio;
 
 // Read-only, self-contained projection of the SAME content tables used by Godot.
 // No connection to soulcaliber_savegame.db and no write commands anywhere in this class.
-public sealed class SimulationData : IDisposable
+public sealed partial class SimulationData : IDisposable
 {
     private readonly SqliteConnection _db;
     public IReadOnlyList<RelationshipAttributeDefinition> Attributes { get; }
@@ -126,6 +126,10 @@ public sealed class SimulationData : IDisposable
                 return new SimVariant(N(r, 1), N(r, 2), candidate);
             });
         }
+
+        // Phase 12E: master defaults, status requirements/effects and choice visibility.
+        // Read-only like the rest of the Interaction Test Lab projection.
+        LoadStatusSimulationData();
     }
 
     private static string? S(SqliteDataReader r, int index) => r.IsDBNull(index) ? null : r.GetString(index);

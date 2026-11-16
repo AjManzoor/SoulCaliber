@@ -1,0 +1,79 @@
+<Window x:Class="SoulCaliberStudio.RelationshipStatusesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Relationship Status Catalogue" Height="790" Width="1010" MinWidth="800" MinHeight="600"
+        WindowStartupLocation="CenterOwner" Background="#151A25" Foreground="#F5F7FD">
+  <Window.Resources>
+    <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+    <Style TargetType="Button">
+      <Setter Property="Margin" Value="0,3,8,3"/>
+      <Setter Property="Padding" Value="12,9"/>
+      <Setter Property="Background" Value="#354E70"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderBrush" Value="#57749D"/>
+    </Style>
+    <Style TargetType="TextBox">
+      <Setter Property="Padding" Value="8"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="Margin" Value="0,3,8,10"/>
+    </Style>
+  </Window.Resources>
+  <DockPanel Margin="18">
+    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+      <TextBlock Text="RELATIONSHIP STATUSES" FontSize="25" FontWeight="Bold"/>
+      <TextBlock Text="Define Ally, Neutral, Enemy and additional statuses independently of numerical relationship attributes. Status keys are permanent."
+                 Foreground="#AFCAE7" FontSize="13" Margin="0,7,0,0"/>
+    </StackPanel>
+    <TextBlock DockPanel.Dock="Bottom" x:Name="StatusText" Text="Choose a status or create a new one."
+               Foreground="#9CC8FA" Margin="0,9,0,2"/>
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="340"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <DockPanel Grid.Column="0" Margin="0,0,14,0">
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,9,0,0">
+          <Button Content="New relationship status" Click="New_Click"/>
+          <Button Content="Delete selected status" Click="Delete_Click"/>
+        </StackPanel>
+        <ListBox x:Name="StatusList" Background="#202939" Foreground="White" BorderBrush="#597090"
+                 SelectionChanged="StatusList_SelectionChanged" FontSize="15" Padding="6"/>
+      </DockPanel>
+      <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="6,0,6,0">
+          <TextBlock Text="EDIT STATUS" FontSize="19" FontWeight="Bold" Margin="0,0,0,10"/>
+          <TextBlock Text="Stable key (cannot change after saving)" Foreground="#B9C9E4"/>
+          <TextBox x:Name="KeyBox"/>
+          <TextBlock Text="Display name" Foreground="#B9C9E4"/>
+          <TextBox x:Name="NameBox"/>
+          <TextBlock Text="Description" Foreground="#B9C9E4"/>
+          <TextBox x:Name="DescriptionBox" Height="88" AcceptsReturn="True" TextWrapping="Wrap"/>
+          <TextBlock Text="Godot icon resource path (res://... or blank for coloured dot)" Foreground="#B9C9E4"/>
+          <TextBox x:Name="IconBox"/>
+          <WrapPanel Margin="0,0,0,6">
+            <Button Content="Ally icon" Click="AllyIcon_Click" Padding="8,5"/>
+            <Button Content="Neutral icon" Click="NeutralIcon_Click" Padding="8,5"/>
+            <Button Content="Enemy icon" Click="EnemyIcon_Click" Padding="8,5"/>
+          </WrapPanel>
+          <TextBlock Text="Select a preset icon and colour, or enter your own Godot res:// icon file. Icons are tinted with the status colour."
+                     Foreground="#AFC5E4" FontSize="12" Margin="0,0,0,9"/>
+          <TextBlock Text="Display colour (#RRGGBB)" Foreground="#B9C9E4"/>
+          <StackPanel Orientation="Horizontal" Margin="0,3,8,9" VerticalAlignment="Center">
+            <TextBox x:Name="ColorBox" Width="155" Margin="0,0,10,0"/>
+            <Border x:Name="ColorPreview" Width="31" Height="27" BorderBrush="#C5D3E6" BorderThickness="1"
+                    CornerRadius="4" Margin="0,0,10,0"/>
+            <TextBlock x:Name="ColorPreviewText" Foreground="#AFC5E4" VerticalAlignment="Center" FontSize="12"/>
+          </StackPanel>
+          <TextBlock Text="Sort order" Foreground="#B9C9E4"/>
+          <TextBox x:Name="OrderBox"/>
+          <CheckBox x:Name="ActiveBox" Content="Active (available to assign in later phases)"
+                    IsChecked="True" Margin="0,6,0,10"/>
+          <TextBlock x:Name="DefaultDescription" Foreground="#AFC5E4" Margin="0,5,0,12"/>
+          <TextBlock Text="NEUTRAL remains the fallback for unconfigured character pairs. Appearance changes affect presentation only; they do not alter authored defaults or gameplay status effects."
+                     FontSize="12" Foreground="#AFC5E4" Margin="0,5,0,14"/>
+          <Button Content="Save relationship status" HorizontalAlignment="Left" FontWeight="Bold" Click="Save_Click"/>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</Window>

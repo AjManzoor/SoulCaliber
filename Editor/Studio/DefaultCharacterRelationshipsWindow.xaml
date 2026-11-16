@@ -1,0 +1,96 @@
+<Window x:Class="SoulCaliberStudio.DefaultCharacterRelationshipsWindow"
+        x:Name="Root"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Starting Character Relationships" Width="1150" Height="760"
+        MinWidth="850" MinHeight="540" WindowStartupLocation="CenterOwner"
+        Background="#151A25" Foreground="#F5F7FD" FontFamily="Segoe UI" FontSize="13">
+  <Window.Resources>
+    <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+    <Style TargetType="Button">
+      <Setter Property="Margin" Value="0,3,8,3"/>
+      <Setter Property="Padding" Value="12,8"/>
+      <Setter Property="Background" Value="#354E70"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderBrush" Value="#57749D"/>
+      <Setter Property="MinHeight" Value="32"/>
+    </Style>
+  </Window.Resources>
+  <DockPanel Margin="20">
+    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,13">
+      <TextBlock Text="STARTING CHARACTER RELATIONSHIPS" FontSize="23" FontWeight="Bold"/>
+      <TextBlock Text="Author default statuses in the master content database. These do not change when a player gains or loses allies during gameplay."
+                 Foreground="#AFCAE7" Margin="0,5,0,12"/>
+      <DockPanel LastChildFill="True">
+        <TextBlock DockPanel.Dock="Left" Text="Edit relationships for" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <ComboBox x:Name="SelectedCharacterBox" DockPanel.Dock="Left" Width="285" Height="33" Margin="0,0,18,0"
+                  Background="White" Foreground="#172033"
+                  SelectionChanged="SelectedCharacter_SelectionChanged"/>
+        <CheckBox x:Name="MirrorChangesBox" Content="Set both directions when changing a status"
+                  VerticalAlignment="Center" Foreground="#DAE6F8"/>
+      </DockPanel>
+      <TextBlock Text="Each row represents a different character. Edit either direction independently, or use 'Set both' to copy the first status into the reverse direction."
+                 Foreground="#AFC5E4" Margin="0,10,0,0"/>
+      <TextBlock Text="Unconfigured relationships are Neutral. Changing an entry to Neutral removes its explicit default; other characters' relationships are preserved."
+                 Foreground="#AFC5E4" FontSize="12" Margin="0,4,0,0"/>
+    </StackPanel>
+    <DockPanel DockPanel.Dock="Bottom" LastChildFill="False" Margin="0,10,0,0">
+      <TextBlock x:Name="StatusText" DockPanel.Dock="Left" Foreground="#9CC8FA"
+                 VerticalAlignment="Center" Text="Choose a character to begin."/>
+      <Button DockPanel.Dock="Right" Content="Close" Click="Close_Click"/>
+      <Button DockPanel.Dock="Right" Content="Save starting relationships" Click="Save_Click" FontWeight="Bold"/>
+    </DockPanel>
+    <DataGrid x:Name="PairGrid" AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+              EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True"
+              VirtualizingPanel.VirtualizationMode="Recycling"
+              Background="White" Foreground="#172033" RowBackground="#FFFFFF"
+              AlternatingRowBackground="#EDF2F8" AlternationCount="2" BorderBrush="#57749D"
+              HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+              SelectionMode="Single" SelectionUnit="FullRow" RowHeight="47" ColumnHeaderHeight="43">
+      <DataGrid.Resources>
+        <Style TargetType="DataGridColumnHeader">
+          <Setter Property="Background" Value="#334662"/>
+          <Setter Property="Foreground" Value="White"/>
+          <Setter Property="FontWeight" Value="SemiBold"/>
+          <Setter Property="Padding" Value="10,8"/>
+        </Style>
+        <Style TargetType="DataGridCell">
+          <Setter Property="Foreground" Value="#172033"/>
+          <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+      </DataGrid.Resources>
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Other character" Binding="{Binding DisplayName}" IsReadOnly="True" Width="2*"/>
+        <DataGridTemplateColumn Header="Selected → Other" Width="2*">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <ComboBox ItemsSource="{Binding AvailableStatuses, RelativeSource={RelativeSource AncestorType=Window}}"
+                        SelectedValuePath="Key"
+                        SelectedValue="{Binding OutgoingKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Background="White" Foreground="#172033" Padding="5,3" Margin="6,2"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Other → Selected" Width="2*">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <ComboBox ItemsSource="{Binding AvailableStatuses, RelativeSource={RelativeSource AncestorType=Window}}"
+                        SelectedValuePath="Key"
+                        SelectedValue="{Binding IncomingKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Background="White" Foreground="#172033" Padding="5,3" Margin="6,2"/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Copy" Width="105">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate>
+              <Button Content="Set both" Click="SetBoth_Click" Margin="3" Padding="5,5"
+                      ToolTip="Copy Selected → Other to Other → Selected. Save to commit."/>
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+        </DataGridTemplateColumn>
+      </DataGrid.Columns>
+    </DataGrid>
+  </DockPanel>
+</Window>

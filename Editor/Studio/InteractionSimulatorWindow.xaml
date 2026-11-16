@@ -122,6 +122,23 @@
                 </DataGrid>
               </DockPanel>
             </TabItem>
+            <TabItem Header="Status sandbox">
+              <StackPanel Margin="10,12,10,12">
+                <TextBlock Text="Temporarily change directional Ally / Enemy / custom statuses. This never changes starting relationships or any savegame."
+                           Foreground="#C4D7F3" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,15"/>
+                <TextBlock x:Name="ActorStatusLabel" Text="Initiator → Recipient" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                <ComboBox x:Name="ActorStatusBox" DisplayMemberPath="Name" SelectedValuePath="Key" Height="32"
+                          SelectionChanged="StatusSelection_Changed" Margin="0,0,0,15"/>
+                <TextBlock x:Name="PartnerStatusLabel" Text="Recipient → Initiator" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                <ComboBox x:Name="PartnerStatusBox" DisplayMemberPath="Name" SelectedValuePath="Key" Height="32"
+                          SelectionChanged="StatusSelection_Changed" Margin="0,0,0,15"/>
+                <TextBlock x:Name="StatusDefaultsText" Foreground="#C4D7F3" FontSize="11"
+                           TextWrapping="Wrap" Margin="0,0,0,12"/>
+                <Button Content="Restore starting statuses" Click="RestoreStatuses_Click"/>
+                <TextBlock Text="Changes take effect immediately in the choice list. Status effects from simulated outcomes carry over to subsequent rounds."
+                           Foreground="#C4D7F3" FontSize="11" TextWrapping="Wrap" Margin="0,12,0,0"/>
+              </StackPanel>
+            </TabItem>
             <TabItem Header="Personality sandbox">
               <DockPanel Margin="9,8,9,9">
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
@@ -180,7 +197,7 @@
           <DockPanel>
             <StackPanel DockPanel.Dock="Top">
               <TextBlock Text="AVAILABLE CHOICES" FontSize="15" FontWeight="Bold"/>
-              <TextBlock Text="Locked choices remain visible. Select a choice, then force the outcome or roll normally."
+              <TextBlock Text="Choices with unmet requirements are locked or hidden, as authored. The Choice gates tab lists all hidden choices."
                          FontSize="11" Foreground="#C4D7F3" TextWrapping="Wrap" Margin="0,4,0,6"/>
             </StackPanel>
             <ListBox x:Name="ChoiceList" SelectionChanged="ChoiceList_SelectionChanged"/>
@@ -206,6 +223,15 @@
                 <TextBlock DockPanel.Dock="Top" Text="ROLLED OUTCOME &amp; APPLIED CHANGES" FontSize="13" FontWeight="Bold" Margin="0,0,0,6"/>
                 <TextBox x:Name="OutcomeText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
                          VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"/>
+              </DockPanel>
+            </TabItem>
+            <TabItem Header="Choice gates">
+              <DockPanel Margin="6,6,6,6">
+                <TextBlock DockPanel.Dock="Top" Text="ALL CHOICES — REQUIREMENT CHECKS / HIDDEN OPTIONS"
+                           FontSize="13" FontWeight="Bold" Margin="0,0,0,6"/>
+                <TextBox x:Name="ChoiceAvailabilityText" IsReadOnly="True" TextWrapping="Wrap"
+                         AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                         FontFamily="Consolas" FontSize="11"/>
               </DockPanel>
             </TabItem>
             <TabItem Header="Dialogue inspector">
