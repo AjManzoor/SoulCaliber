@@ -15,8 +15,23 @@ public sealed class DialogueEngine
     private readonly IRelationshipStore _relationships;
     private readonly IRelationshipStatusStore? _statuses;
     private readonly IInteractionEffectStore? _effectStore;
+    private readonly SqliteMemoryStore? _memories;
     private readonly Random _random = new();
     private readonly Dictionary<string, DialogueNode> _nodes;
+    private readonly ChoiceResolutionGuard<PreparedChoice, DialogueResolution> _choiceExecution = new();
+
+    // This is the resolved fact of an attempted choice; it is calculated ONCE,
+    // before any SQLite write. A failed commit retries this same prepared result.
+    private sealed record PreparedChoice(
+        DialogueOption Option, CharacterLine ActorLine, CharacterLine RecipientLine,
+        bool Succeeded, int Roll, int Chance,
+        IReadOnlyList<RelationshipEffect> RelationshipEffects,
+        IReadOnlyList<RelationshipStatusEffect> StatusEffects,
+        IReadOnlyList<ResolvedMemoryEffect> MemoryEffects,
+        string TargetReaction, string? NextNodeKey);
+
+    public string? PendingChoiceKey => _choiceExecution.PendingOptionKey;
+    public bool HasCommittedChoice => _choiceExecution.HasCommittedChoice;
 
     public InteractionDefinition Definition { get; }
     public CharacterDefinition Visitor { get; }  // left / actor / makes choices
@@ -35,7 +50,8 @@ public sealed class DialogueEngine
     public DialogueEngine(DialogueRepository data, IRelationshipStore relationships,
         string interactionKey, string actorCharacterId, string partnerCharacterId,
         IRelationshipStatusStore? statusStore = null,
-        IInteractionEffectStore? effectStore = null)
+        IInteractionEffectStore? effectStore = null,
+        SqliteMemoryStore? memoryStore = null)
     {
         if (string.IsNullOrWhiteSpace(interactionKey))
             throw new ArgumentException("Interaction key is required.", nameof(interactionKey));
@@ -48,6 +64,7 @@ public sealed class DialogueEngine
         _relationships = relationships;
         _statuses = statusStore;
         _effectStore = effectStore;
+        _memories = memoryStore;
         Definition = data.Interaction(interactionKey.Trim());
         Visitor = data.Character(actorCharacterId.Trim());
         Host = data.Character(partnerCharacterId.Trim());
@@ -57,7 +74,11 @@ public sealed class DialogueEngine
         CurrentNode = _nodes[Definition.StartNodeKey];
     }
 
-    public void Restart() => CurrentNode = _nodes[Definition.StartNodeKey];
+    public void Restart()
+    {
+        _choiceExecution.Clear();
+        CurrentNode = _nodes[Definition.StartNodeKey];
+    }
 
     public IReadOnlyList<AvailableOption> GetOptions() => CurrentNode.Options
         .Select(option =>
@@ -72,7 +93,11 @@ public sealed class DialogueEngine
         .Select(option => option!)
         .ToList();
 
-    public DialogueResolution Choose(string optionKey)
+    public DialogueResolution Choose(string optionKey) =>
+        _choiceExecution.Execute(CurrentNode.Key, optionKey,
+            () => PrepareChoice(optionKey), CommitChoice);
+
+    private PreparedChoice PrepareChoice(string optionKey)
     {
         var available = GetOptions().FirstOrDefault(o =>
             string.Equals(o.Definition.Key, optionKey, StringComparison.OrdinalIgnoreCase));
@@ -104,25 +129,28 @@ public sealed class DialogueEngine
         var statusEffects = succeeded ? option.SuccessStatusEffects : option.FailureStatusEffects;
         if (statusEffects.Count > 0 && _statuses is null)
             throw new InvalidOperationException("Relationship status effects require an IRelationshipStatusStore.");
-        IReadOnlyList<AppliedRelationshipChange> changes;
-        IReadOnlyList<AppliedRelationshipStatusChange> statusChanges;
-        if (_effectStore is not null)
+        // Resolve memory targets and triggers BEFORE writing anything. The unit of
+        // work saves every fired occurrence after status changes in one transaction.
+        var memoryEffects = new List<ResolvedMemoryEffect>();
+        foreach (var memory in option.MemoryEffects)
         {
-            // The savegame implementation commits both effect families together.
-            var committed = _effectStore.Apply(Visitor.Id, Host.Id, adjustedEffects, statusEffects);
-            changes = committed.RelationshipChanges;
-            statusChanges = committed.StatusChanges;
-        }
-        else
-        {
-            // Preserve compatibility with non-SQLite consumers of this pure rules engine,
-            // but never silently perform a partially-committable mixed outcome.
-            if (adjustedEffects.Count > 0 && statusEffects.Count > 0)
-                throw new InvalidOperationException(
-                    "Mixed numeric and status effects require an atomic IInteractionEffectStore.");
-            changes = _relationships.Apply(Visitor.Id, Host.Id, adjustedEffects);
-            statusChanges = _statuses?.Apply(Visitor.Id, Host.Id, statusEffects)
-                ?? Array.Empty<AppliedRelationshipStatusChange>();
+            bool fires = memory.Trigger switch
+            {
+                "SELECTED" or "BOTH" => true,
+                "SUCCESS" => succeeded,
+                "FAILURE" => !succeeded,
+                _ => throw new InvalidOperationException($"Invalid memory trigger '{memory.Trigger}'.")
+            };
+            if (!fires) continue;
+            string[] affected = memory.Affected switch
+            {
+                "ACTOR" => new[] { Visitor.Id },
+                "PARTNER" => new[] { Host.Id },
+                "BOTH" => new[] { Visitor.Id, Host.Id },
+                _ => throw new InvalidOperationException($"Invalid affected target '{memory.Affected}'.")
+            };
+            memoryEffects.Add(new ResolvedMemoryEffect(memory.MemoryKey, affected,
+                memory.SeverityOverride, memory.KnowledgeOverride));
         }
 
         string targetReaction = succeeded
@@ -131,16 +159,59 @@ public sealed class DialogueEngine
         if (string.IsNullOrWhiteSpace(targetReaction))
             targetReaction = succeeded ? "RECEPTIVE" : "DISMISSIVE";
 
-        return new DialogueResolution(option, actorLine, partnerLine,
-            succeeded, roll, available.Chance, changes, statusChanges,
-            succeeded ? option.SuccessNextNodeKey : option.FailureNextNodeKey,
-            targetReaction);
+        return new PreparedChoice(option, actorLine, partnerLine, succeeded, roll,
+            available.Chance, adjustedEffects, statusEffects.ToList(), memoryEffects,
+            targetReaction, succeeded ? option.SuccessNextNodeKey : option.FailureNextNodeKey);
+    }
+
+    private DialogueResolution CommitChoice(PreparedChoice prepared)
+    {
+        IReadOnlyList<AppliedRelationshipChange> changes;
+        IReadOnlyList<AppliedRelationshipStatusChange> statusChanges;
+        if (_effectStore is IInteractionOutcomeStore outcomeStore)
+        {
+            // Includes interaction history even when the option has no effects.
+            var committed = outcomeStore.CommitResolvedChoice(new ResolvedChoiceCommit(
+                Definition.Key, CurrentNode.Key, prepared.Option.Key,
+                Visitor.Id, Host.Id, prepared.Succeeded, prepared.Roll, prepared.Chance, prepared.TargetReaction,
+                prepared.RelationshipEffects, prepared.StatusEffects, prepared.MemoryEffects));
+            changes = committed.RelationshipChanges;
+            statusChanges = committed.StatusChanges;
+        }
+        else
+        {
+            // Preserve pure/non-SQLite consumer support without permitting partially
+            // committed memories or mixed numeric/status effects.
+            if (prepared.MemoryEffects.Count > 0)
+                throw new InvalidOperationException("Memory effects require an atomic IInteractionOutcomeStore.");
+            if (_effectStore is not null)
+            {
+                var committed = _effectStore.Apply(Visitor.Id, Host.Id, prepared.RelationshipEffects, prepared.StatusEffects);
+                changes = committed.RelationshipChanges;
+                statusChanges = committed.StatusChanges;
+            }
+            else
+            {
+                if (prepared.RelationshipEffects.Count > 0 && prepared.StatusEffects.Count > 0)
+                    throw new InvalidOperationException(
+                        "Mixed numeric and status effects require an atomic IInteractionEffectStore.");
+                changes = _relationships.Apply(Visitor.Id, Host.Id, prepared.RelationshipEffects);
+                statusChanges = _statuses?.Apply(Visitor.Id, Host.Id, prepared.StatusEffects)
+                    ?? Array.Empty<AppliedRelationshipStatusChange>();
+            }
+        }
+
+        return new DialogueResolution(prepared.Option, prepared.ActorLine, prepared.RecipientLine,
+            prepared.Succeeded, prepared.Roll, prepared.Chance, changes, statusChanges,
+            prepared.NextNodeKey, prepared.TargetReaction);
     }
 
     public bool Advance(string? nextNodeKey)
     {
         if (string.IsNullOrWhiteSpace(nextNodeKey)) return false;
-        CurrentNode = _nodes[nextNodeKey];
+        var nextNode = _nodes[nextNodeKey];
+        _choiceExecution.Clear();
+        CurrentNode = nextNode;
         return true;
     }
 
@@ -182,6 +253,20 @@ public sealed class DialogueEngine
                 default:
                     throw new InvalidOperationException($"Invalid status-requirement direction '{req.Direction}'.");
             }
+        }
+        if (option.MemoryRequirements is not null)
+        {
+            // A missing service must fail closed, including NOT checks: otherwise
+            // missing memory history could accidentally unlock a secret choice.
+            if (_memories is null && MemoryConditionRules.ContainsKind(option.MemoryRequirements, "MEMORY"))
+                return "Memory history unavailable";
+            if (_statuses is null && MemoryConditionRules.ContainsKind(option.MemoryRequirements, "STATUS"))
+                return "Relationship status unavailable";
+            if (!MemoryConditionRules.Evaluate(option.MemoryRequirements, Visitor.Id, Host.Id,
+                (memory, actor, affected, knower) => _memories!.Count(memory, actor, affected, knower),
+                (from, to) => _statuses!.Get(from, to),
+                out string conditionFailure))
+                return conditionFailure;
         }
         return "";
     }

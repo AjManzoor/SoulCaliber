@@ -272,7 +272,7 @@ public partial class ConditionalDialogueWindow : Window
                 SpeakerBox.SelectedItem as string ?? "",OtherBox.SelectedItem as string,
                 outcome,priority,PhraseBox.Text,IsIntro?"":ImageBox.Text,_conditions.ToArray()));
             Refresh(id);
-            Status.Text="Saved to the master database.";
+            Status.Text="Saved to the master database; a backup was created.";
         }
         catch(Exception ex){ MessageBox.Show(this,ex.Message,"Unable to save conditional dialogue",MessageBoxButton.OK,MessageBoxImage.Error); }
     }
@@ -308,8 +308,8 @@ public partial class ConditionalDialogueWindow : Window
                     var player=_store.PreviewConditionalReply(_option.Id,actor,partner,success,stats,_option.DefaultPlayerLine);
                     var host=_store.PreviewConditionalReply(_option.Id,partner,actor,success,stats,
                         success?_option.DefaultHostSuccessLine:_option.DefaultHostFailureLine);
-                    result+=$"{state} — ACTOR: {player.Source}\n{player.Candidate?.Text}\n{player.Explanation}\n" +
-                        $"{state} — PARTNER: {host.Source}\n{host.Candidate?.Text}\n{host.Explanation}\n\n";
+                    result+=$"{state} — INITIATOR: {player.Source}\n{player.Candidate?.Text}\n{player.Explanation}\n" +
+                        $"{state} — RECIPIENT: {host.Source}\n{host.Candidate?.Text}\n{host.Explanation}\n\n";
                 }
             }
             PreviewResult.Text=result.Replace("{actor}",_store.CharacterName(actor),StringComparison.OrdinalIgnoreCase)

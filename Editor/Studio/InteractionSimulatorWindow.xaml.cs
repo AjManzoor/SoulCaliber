@@ -42,10 +42,13 @@ public partial class InteractionSimulatorWindow : Window
         MechanicsText.Text = "Start an interaction, select a choice, then inspect all six stages.\n" +
             "Use the Personality and Status sandbox tabs for temporary tests.";
         InitialiseStatusControls();
+        InitialiseMemoryAndEncounterControls();
         UpdateButtons();
     }
 
-    private void Start_Click(object sender, RoutedEventArgs e) => Safely(() =>
+    private void Start_Click(object sender, RoutedEventArgs e) => Safely(() => StartSimulation(null));
+
+    private void StartSimulation(SimulationConversationEntry? selectedConversation)
     {
         CommitStats();
         ValidateStats();
@@ -62,6 +65,7 @@ public partial class InteractionSimulatorWindow : Window
         if (pairChanged || _actorTraits.Count == 0) RestoreOriginalTraits();
         InitialiseStatusPair(pairChanged);
         _interaction = interaction;
+        _activeConversation = selectedConversation;
         _node = interaction.Nodes.FirstOrDefault(n => n.Key.Equals(interaction.StartNodeKey, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"Starting node '{interaction.StartNodeKey}' does not exist.");
         _awaitingContinue = false;
@@ -70,7 +74,8 @@ public partial class InteractionSimulatorWindow : Window
         _lastAuditSnapshot = null;
         OutcomeText.Text = "New test started. No real savegame was read or changed.";
         RenderNode();
-    });
+        RefreshEncounterDiagnostics();
+    }
 
     private void ResetValues_Click(object sender, RoutedEventArgs e) => Safely(() =>
     {
@@ -172,7 +177,7 @@ public partial class InteractionSimulatorWindow : Window
         }
         // Refresh from current in-memory relationship and trait inputs, not from any game save.
         var current = ChoiceStatus(selected.Choice);
-        MechanicsText.Text = current.Audit.Describe(current.LockReason) + FormatStatusPreview(selected.Choice);
+        MechanicsText.Text = current.Audit.Describe(current.LockReason) + FormatStatusPreview(selected.Choice) + MemoryEffectPreview(selected.Choice);
     }
     private void ForceSuccess_Click(object sender, RoutedEventArgs e) => Safely(() => ExecuteChoice(true, 1, "FORCED SUCCESS"));
     private void ForceFailure_Click(object sender, RoutedEventArgs e) => Safely(() => ExecuteChoice(false, 100, "FORCED FAILURE"));
@@ -219,7 +224,8 @@ public partial class InteractionSimulatorWindow : Window
                 (effect.WasClamped ? " [range limit]" : ""));
         }
         ApplySimulatedStatusChanges(simulatedStatusChanges);
-        _lastAuditSnapshot = audit.Describe(null, succeeded, roll, testMode) + statusAudit;
+        var createdMemories = ApplySimulatedMemoryEffects(choice, succeeded);
+        _lastAuditSnapshot = audit.Describe(null, succeeded, roll, testMode) + statusAudit + MemoryEffectPreview(choice);
         MechanicsText.Text = _lastAuditSnapshot;
         StatsGrid.Items.Refresh();
         _nextNode = succeeded ? choice.SuccessNext : choice.FailureNext;
@@ -237,8 +243,9 @@ public partial class InteractionSimulatorWindow : Window
             $"{_data.Name(_partner)}: {partnerLine.Text}\nSource: {partnerLine.Source}\n\n" +
             $"RELATIONSHIP EFFECTS\n{(changes.Count == 0 ? "No effects configured." : string.Join("\n", changes))}\n\n" +
             $"STATUS CHANGES\n{statusChangesText}\n\n" +
+            $"MEMORIES CREATED\n{(createdMemories.Count == 0 ? "None" : string.Join("\n", createdMemories.Select(m => m.ToString())))}\n\n" +
             $"Next node: {(string.IsNullOrWhiteSpace(_nextNode) ? "END" : _nextNode)}";
-        InspectorText.Text = $"ACTOR PHRASE\n{actorLine.Inspector}\n\nRECIPIENT PHRASE\n{partnerLine.Inspector}\n\n" +
+        InspectorText.Text = $"INITIATOR PHRASE\n{actorLine.Inspector}\n\nRECIPIENT PHRASE\n{partnerLine.Inspector}\n\n" +
                              "Skill/chance calculation:\n" + selected.Breakdown;
         UpdateButtons();
     }
@@ -250,6 +257,10 @@ public partial class InteractionSimulatorWindow : Window
         if (string.IsNullOrWhiteSpace(_nextNode))
         {
             _finished = true;
+            if (_activeConversation?.Encounter is not null)
+                _memoryRuntime.Complete(_activeConversation, _actor, _partner);
+            _activeConversation = null;
+            RefreshEncounterDiagnostics();
             _node = null;
             ChoiceList.ItemsSource = null;
             ChoiceAvailabilityText.Text = "Conversation complete. Restart to test further choices with the current sandbox state.";

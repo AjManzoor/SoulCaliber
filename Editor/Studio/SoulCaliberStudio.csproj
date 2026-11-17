@@ -23,5 +23,11 @@
     <EmbeddedResource Include="Migrations\012_StatusAppearance.sql" LogicalName="SoulCaliberStudio.Migrations.012_StatusAppearance.sql" />
     <EmbeddedResource Include="Migrations\013_OptionStatusRequirements.sql" LogicalName="SoulCaliberStudio.Migrations.013_OptionStatusRequirements.sql" />
     <EmbeddedResource Include="Migrations\014_ChoiceRequirementVisibility.sql" LogicalName="SoulCaliberStudio.Migrations.014_ChoiceRequirementVisibility.sql" />
+    <EmbeddedResource Include="Migrations\016_OptionMemoryEffects.sql" LogicalName="SoulCaliberStudio.Migrations.016_OptionMemoryEffects.sql" />
+    <EmbeddedResource Include="Migrations\017_OptionMemoryRequirements.sql" LogicalName="SoulCaliberStudio.Migrations.017_OptionMemoryRequirements.sql" />
+    <EmbeddedResource Include="Migrations\018_SpecialEncounters.sql" LogicalName="SoulCaliberStudio.Migrations.018_SpecialEncounters.sql" />
+    <EmbeddedResource Include="Migrations\019_SpecialEncounterAnyRecipient.sql" LogicalName="SoulCaliberStudio.Migrations.019_SpecialEncounterAnyRecipient.sql" />
+    <EmbeddedResource Include="Migrations\020_ConversationAvailability.sql" LogicalName="SoulCaliberStudio.Migrations.020_ConversationAvailability.sql" />
+    <EmbeddedResource Include="Migrations\015_MemoryCatalogue.sql" LogicalName="SoulCaliberStudio.Migrations.015_MemoryCatalogue.sql" />
   </ItemGroup>
 </Project>

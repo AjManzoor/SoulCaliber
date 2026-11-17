@@ -104,7 +104,7 @@ public sealed partial class DialogueDesignerStore : IDisposable
     public sealed record Introduction(int Id, int NodeId, string CharacterId, string? VisitorId, string Text)
     {
         public override string ToString() => $"{CharacterId}" +
-            (VisitorId is null ? " (any visitor)" : $" with {VisitorId}") + $": {Text}";
+            (VisitorId is null ? " (any initiator)" : $" with {VisitorId}") + $": {Text}";
     }
     public sealed record IntroPreview(string Text, string Source);
 
@@ -137,7 +137,8 @@ public sealed partial class DialogueDesignerStore : IDisposable
     }
     private void Write(Action<SqliteTransaction> work)
     {
-        // Routine changes use SQLite transactions without creating backup files.
+        // Snapshot before writes, including any WAL data; the backup is independent of this transaction.
+        _backupSource.Backup();
         using var tx = _db.BeginTransaction();
         try { work(tx); tx.Commit(); }
         catch { tx.Rollback(); throw; }

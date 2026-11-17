@@ -330,6 +330,30 @@ public sealed class DialogueRepository
             }
         }
 
+        // Phase 13C: memory creation effects attached to dialogue choices.
+        using (var memoryDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource=DatabasePaths.Content, Mode=SqliteOpenMode.ReadOnly,
+            ForeignKeys=true, Pooling=false
+        }.ToString()))
+        {
+            memoryDb.Open();
+            using var cmd=memoryDb.CreateCommand();
+            cmd.CommandText="SELECT OptionId,MemoryKey,Trigger,Affected,SeverityOverride,KnowledgeOverride FROM OptionMemoryEffects ORDER BY Id";
+            using var r=cmd.ExecuteReader();
+            while(r.Read())
+            {
+                if(!optionLookup.TryGetValue(r.GetInt32(0),out var optionRow))
+                    throw new InvalidOperationException("Memory effect references an unknown choice.");
+                var nodeRow=nodeLookup[optionRow.NodeId];
+                var interactionRow=interactionLookup[nodeRow.InteractionId];
+                _interactions[interactionRow.Key].Nodes.Single(n=>Eq(n.Key,nodeRow.Key))
+                    .Options.Single(o=>Eq(o.Key,optionRow.Key)).MemoryEffects.Add(
+                        new DialogueMemoryEffect(r.GetString(1),r.GetString(2),r.GetString(3),
+                            r.IsDBNull(4)?null:r.GetString(4),r.IsDBNull(5)?null:r.GetString(5)));
+            }
+        }
+
         // Phase 12D: authored gates use the current status store when an option is
         // evaluated. They are independent of numeric requirements and success chance.
         using (var requirementsDb = new SqliteConnection(new SqliteConnectionStringBuilder
@@ -351,6 +375,51 @@ public sealed class DialogueRepository
                 _interactions[interactionRow.Key].Nodes.Single(n => Eq(n.Key, nodeRow.Key))
                     .Options.Single(o => Eq(o.Key, optionRow.Key))
                     .StatusRequirements.Add(new RelationshipStatusRequirement(reader.GetString(1), reader.GetString(2)));
+            }
+        }
+
+        // Phase 13D: read and validate authored memory condition trees.
+        using (var memoryRequirementsDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = DatabasePaths.Content, Mode = SqliteOpenMode.ReadOnly,
+            ForeignKeys = true, Pooling = false
+        }.ToString()))
+        {
+            memoryRequirementsDb.Open();
+            using var table = memoryRequirementsDb.CreateCommand();
+            table.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name='OptionMemoryRequirements'";
+            if (table.ExecuteScalar() is not null) // older published content is still loadable
+            {
+                var activeMemoryKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                using (var keys = memoryRequirementsDb.CreateCommand())
+                {
+                    keys.CommandText = "SELECT Key FROM MemoryTypes WHERE IsActive=1";
+                    using var keyReader = keys.ExecuteReader();
+                    while (keyReader.Read()) activeMemoryKeys.Add(keyReader.GetString(0));
+                }
+                var activeStatusKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                using (var statuses = memoryRequirementsDb.CreateCommand())
+                {
+                    statuses.CommandText = "SELECT Key FROM RelationshipStatuses WHERE IsActive=1";
+                    using var statusReader = statuses.ExecuteReader();
+                    while (statusReader.Read()) activeStatusKeys.Add(statusReader.GetString(0));
+                }
+                using var cmd = memoryRequirementsDb.CreateCommand();
+                cmd.CommandText = "SELECT OptionId,ExpressionJson FROM OptionMemoryRequirements ORDER BY OptionId";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    int optionId = reader.GetInt32(0);
+                    if (!optionLookup.TryGetValue(optionId, out var optionRow))
+                        throw new InvalidOperationException("A memory requirement references an unknown dialogue choice.");
+                    var tree = MemoryConditionRules.Read(reader.GetString(1));
+                    MemoryConditionRules.Validate(tree, activeMemoryKeys.Contains, _characters.ContainsKey,
+                        activeStatusKeys.Contains);
+                    var nodeRow = nodeLookup[optionRow.NodeId];
+                    var interactionRow = interactionLookup[nodeRow.InteractionId];
+                    _interactions[interactionRow.Key].Nodes.Single(n => Eq(n.Key, nodeRow.Key))
+                        .Options.Single(o => Eq(o.Key, optionRow.Key)).MemoryRequirements = tree;
+                }
             }
         }
 

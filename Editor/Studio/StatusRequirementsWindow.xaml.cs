@@ -129,6 +129,23 @@ public partial class StatusRequirementsWindow : Window
         }
     }
 
+    private void Advanced_Click(object sender, RoutedEventArgs e)
+    {
+        if (_dirty && MessageBox.Show(this,
+            "Your unsaved edits in this simple requirement window will NOT be included in the advanced conditions. Continue?",
+            "Unsaved simple requirement", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes)
+            return;
+        try
+        {
+            new MemoryRequirementsWindow(_store, _optionId) { Owner = this }.ShowDialog();
+            StatusMessage.Text = "Advanced conditions updated. Simple status requirements also remain in effect (AND).";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Advanced requirements", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
     private void Window_Closing(object? sender, CancelEventArgs e) { if (!MayDiscard()) e.Cancel = true; }
 }

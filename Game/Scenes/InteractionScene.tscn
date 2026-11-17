@@ -35,8 +35,8 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_script")
 VisitorCharacterId = "Law"
-PartnerCharacterId = "Nobunogi"
-InteractionKey = "TEST"
+PartnerCharacterId = "Youri"
+InteractionKey = "test"
 
 [node name="Background" type="ColorRect" parent="." unique_id=987802654]
 layout_mode = 1

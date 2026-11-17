@@ -1,0 +1,1816 @@
+{
+  "format": "soulcaliber.studio.interaction-draft.v1",
+  "interaction_key": "NOBUNOGI_WARRIORS_LOYALTY",
+  "title": "A Warrior’s Loyalty",
+  "intended_host": "NOBUNOGI",
+  "intended_visitor": "LAW",
+  "start_node": "OPENING",
+  "description": "A training-ground conversation about honour, respect, recruitment and fear. The same entrance yields different branches depending on directed status, Fear, Trust, and Respect.",
+  "directions": {
+    "ACTOR_TO_PARTNER": "Law → Nobunogi",
+    "PARTNER_TO_ACTOR": "Nobunogi → Law"
+  },
+  "note": "This is authored sample content; it does not trigger a duel or memory event. The Studio and runtime use the latest relationship/status systems from Phases 9–12.",
+  "nodes": [
+    {
+      "key": "OPENING",
+      "title": "The edge of a conversation",
+      "round": 1,
+      "host_introduction": "Nobunogi runs a cloth along her blade without looking up. \"If you came to watch, find a better seat. If you came to speak, speak.\"",
+      "options": [
+        {
+          "key": "OPEN_TALK",
+          "label": "Ask about her training",
+          "player_line": "You have been at this since dawn.",
+          "host_success_line": "\"And I shall still be at it when you are asleep.\"",
+          "host_failure_line": "\"And I shall still be at it when you are asleep.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "MEASURE",
+          "failure_next": "MEASURE",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "OPEN_RECRUIT",
+          "label": "Ask her to stand with you",
+          "player_line": "I could use a warrior of your ability beside me.",
+          "host_success_line": "\"Then tell me why I should lend you my blade.\"",
+          "host_failure_line": "\"You ask as though I were waiting for an invitation.\"",
+          "success_reaction": "INTERESTED",
+          "failure_reaction": "DISMISSIVE",
+          "success_next": "PROPOSAL",
+          "failure_next": "REBUFF",
+          "base_chance": 70,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "NEUTRAL"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": 4
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": -3
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "OPEN_ALLY",
+          "label": "Discuss your alliance",
+          "player_line": "There is something we should discuss as allies.",
+          "host_success_line": "\"We are allies. That buys you my attention, not my agreement.\"",
+          "host_failure_line": "\"We are allies. That buys you my attention, not my agreement.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "ALLY_COUNCIL",
+          "failure_next": "ALLY_COUNCIL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "OPEN_ENEMY",
+          "label": "Offer to settle the hostility",
+          "player_line": "I did not come to reopen our quarrel.",
+          "host_success_line": "\"Then be careful which wound you touch.\"",
+          "host_failure_line": "\"Then be careful which wound you touch.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "TRUCE",
+          "failure_next": "TRUCE",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ENEMY"
+            }
+          ],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "OPEN_FEARED_ALLY",
+          "label": "Ask why she hesitates around you",
+          "player_line": "You watch your words around me. Why?",
+          "host_success_line": "\"You notice more than I thought.\"",
+          "host_failure_line": "\"You notice more than I thought.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FEAR_COUNCIL",
+          "failure_next": "FEAR_COUNCIL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "min": 90,
+              "max": null
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "OPEN_HONOURED_ALLY",
+          "label": "Ask her what she really thinks of you",
+          "player_line": "I would hear your judgement, without flattery.",
+          "host_success_line": "\"You have earned something better than flattery.\"",
+          "host_failure_line": "\"You have earned something better than flattery.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "RESPECT_COUNCIL",
+          "failure_next": "RESPECT_COUNCIL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "min": 75,
+              "max": null
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "min": null,
+              "max": 30
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "OPEN_LEAVE",
+          "label": "Leave her to her training",
+          "player_line": "I will not interrupt you.",
+          "host_success_line": "\"Good.\"",
+          "host_failure_line": "\"Good.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": null,
+          "failure_next": null,
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "MEASURE",
+      "title": "The measure of strength",
+      "round": 2,
+      "host_introduction": "She tests the edge with her thumb. \"Some people sharpen steel. Others sharpen excuses.\"",
+      "options": [
+        {
+          "key": "MEASURE_PRAISE",
+          "label": "Praise her discipline",
+          "player_line": "Few would train this long without an audience.",
+          "host_success_line": "\"An audience is for performers. But you have noticed the work.\"",
+          "host_failure_line": "\"That sounded perilously close to flattery.\"",
+          "success_reaction": "PLEASED",
+          "failure_reaction": "SUSPICIOUS",
+          "success_next": "COMMON_GROUND",
+          "failure_next": "REBUFF",
+          "base_chance": 65,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": 8
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 4
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "MEASURE_CHALLENGE",
+          "label": "Question whether training is enough",
+          "player_line": "Training means little until someone tests it.",
+          "host_success_line": "\"At last, a sensible question. What would you test?\"",
+          "host_failure_line": "\"You mistake noise for a challenge.\"",
+          "success_reaction": "INTERESTED",
+          "failure_reaction": "UNIMPRESSED",
+          "success_next": "PROOF",
+          "failure_next": "REBUFF",
+          "base_chance": 55,
+          "skill_check": {
+            "actor": "MIGHT",
+            "defender": "FINESSE",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RIVALRY",
+              "delta": 10
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": -4
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "MEASURE_LISTEN",
+          "label": "Ask what she is preparing for",
+          "player_line": "Who are you preparing to face?",
+          "host_success_line": "\"Whoever proves stronger than the last. There must always be someone.\"",
+          "host_failure_line": "\"Whoever proves stronger than the last. There must always be someone.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "COMMON_GROUND",
+          "failure_next": "COMMON_GROUND",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "MEASURE_BACK",
+          "label": "Change the subject",
+          "player_line": "I had something else to ask.",
+          "host_success_line": "\"Then ask it.\"",
+          "host_failure_line": "\"Then ask it.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "OPENING",
+          "failure_next": "OPENING",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "PROPOSAL",
+      "title": "The price of an alliance",
+      "round": 2,
+      "host_introduction": "Nobunogi sheaths the blade. \"I will not follow a name, a banner, or a frightened promise. Give me a reason.\"",
+      "options": [
+        {
+          "key": "PROPOSAL_MIZURI",
+          "label": "Say you intend to confront Mizuri",
+          "player_line": "Mizuri stands above every other warrior. I intend to face her.",
+          "host_success_line": "\"Then our roads may run together. Do not expect me to kneel along the way.\"",
+          "host_failure_line": "\"You speak of the summit. I do not yet believe you can climb.\"",
+          "success_reaction": "IMPRESSED",
+          "failure_reaction": "UNIMPRESSED",
+          "success_next": "OATH",
+          "failure_next": "REBUFF",
+          "base_chance": 62,
+          "skill_check": {
+            "actor": "WILLPOWER",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "NEUTRAL"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": 10
+            },
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "LOYALTY",
+              "delta": 8
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": -5
+            }
+          ],
+          "status_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "PROPOSAL_HONOUR",
+          "label": "Offer an alliance of equals",
+          "player_line": "No obedience. We choose the same fight, and each keeps their honour.",
+          "host_success_line": "\"An equal pact, then. Break it and you answer to me.\"",
+          "host_failure_line": "\"Equality is easily promised when nothing has been risked.\"",
+          "success_reaction": "ACCEPTING",
+          "failure_reaction": "WARY",
+          "success_next": "OATH",
+          "failure_next": "REBUFF",
+          "base_chance": 75,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "COOPERATIVE",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "COOPERATIVE",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "min": 60,
+              "max": null
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "NEUTRAL"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 12
+            },
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": 5
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": -5
+            }
+          ],
+          "status_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "PROPOSAL_THREAT",
+          "label": "Demand her loyalty through fear",
+          "player_line": "You know what I can do. Do not make me prove it.",
+          "host_success_line": "\"I will come. Remember that fear is not fealty.\"",
+          "host_failure_line": "\"A threat is not a victory. You have made an enemy.\"",
+          "success_reaction": "INTIMIDATED",
+          "failure_reaction": "ANGRY",
+          "success_next": "COERCED",
+          "failure_next": "REPRISAL",
+          "base_chance": 70,
+          "skill_check": {
+            "actor": "MIGHT",
+            "defender": "WILLPOWER",
+            "profile": "INTIMIDATION",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "INTIMIDATION",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "min": 70,
+              "max": null
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "NEUTRAL"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "delta": 6
+            },
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": -15
+            },
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 12
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 20
+            }
+          ],
+          "status_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ENEMY"
+            }
+          ],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "PROPOSAL_WITHDRAW",
+          "label": "Let the question rest",
+          "player_line": "You need not answer now.",
+          "host_success_line": "\"Good. Better a question left standing than a promise that falls.\"",
+          "host_failure_line": "\"Good. Better a question left standing than a promise that falls.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "MEASURE",
+          "failure_next": "MEASURE",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "REBUFF",
+      "title": "A badly chosen word",
+      "round": 2,
+      "host_introduction": "Her expression closes. \"If that was your best argument, keep the second one to yourself.\"",
+      "options": [
+        {
+          "key": "REBUFF_APOLOGISE",
+          "label": "Admit you misjudged her",
+          "player_line": "I spoke poorly. That was not what I meant.",
+          "host_success_line": "\"Then say what you mean, and I may listen.\"",
+          "host_failure_line": "\"You are more interested in escaping blame than speaking plainly.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "DISMISSIVE",
+          "success_next": "COMMON_GROUND",
+          "failure_next": "FAREWELL",
+          "base_chance": 65,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 5
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 5
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "REBUFF_INSIST",
+          "label": "Press her harder",
+          "player_line": "You heard me. I will not beg you to understand.",
+          "host_success_line": "\"A stubborn answer. I almost respect it.\"",
+          "host_failure_line": "\"You mistake stubbornness for courage.\"",
+          "success_reaction": "INTERESTED",
+          "failure_reaction": "ANGRY",
+          "success_next": "PROPOSAL",
+          "failure_next": "REPRISAL",
+          "base_chance": 40,
+          "skill_check": {
+            "actor": "MIGHT",
+            "defender": "WILLPOWER",
+            "profile": "INTIMIDATION",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "INTIMIDATION",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "delta": 8
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 10
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "REBUFF_LEAVE",
+          "label": "End the conversation",
+          "player_line": "We have nothing more to say today.",
+          "host_success_line": "\"Then we agree on something.\"",
+          "host_failure_line": "\"Then we agree on something.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "COMMON_GROUND",
+      "title": "A moment without posturing",
+      "round": 3,
+      "host_introduction": "For a moment, she looks past you towards the open ground. \"Most people ask me who I have beaten. Few ask who I want to fight.\"",
+      "options": [
+        {
+          "key": "GROUND_ASK_MIZURI",
+          "label": "Ask what she knows about Mizuri",
+          "player_line": "Have you ever seen Mizuri fight?",
+          "host_success_line": "\"No. But I have heard enough to know rumours are not victories. Listen.\"",
+          "host_failure_line": "\"And I have heard enough people talk as though they have seen the impossible.\"",
+          "success_reaction": "REFLECTIVE",
+          "failure_reaction": "WARY",
+          "success_next": "WARNING",
+          "failure_next": "FAREWELL",
+          "base_chance": 72,
+          "skill_check": {
+            "actor": "INTELLECT",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 6
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 3
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "GROUND_SHARE",
+          "label": "Say what you are fighting for",
+          "player_line": "I do not want to win merely to be called strongest.",
+          "host_success_line": "\"Then decide what you do want before the fight begins.\"",
+          "host_failure_line": "\"Then decide what you do want before the fight begins.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "PROPOSAL",
+          "failure_next": "PROPOSAL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "GROUND_PART",
+          "label": "Leave on better terms",
+          "player_line": "I will think on what you said.",
+          "host_success_line": "\"Thinking is useful. Eventually you must act.\"",
+          "host_failure_line": "\"Thinking is useful. Eventually you must act.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "PROOF",
+      "title": "A test without drawing steel",
+      "round": 3,
+      "host_introduction": "She steps close enough to study your stance. \"Everyone claims to want a worthy opponent. Few recognise one.\"",
+      "options": [
+        {
+          "key": "PROOF_OBSERVE",
+          "label": "Point out a weakness in her stance",
+          "player_line": "You favour your forward foot. A feint could draw you out.",
+          "host_success_line": "\"You have eyes after all. I corrected that habit this morning.\"",
+          "host_failure_line": "\"You saw something. You did not understand it.\"",
+          "success_reaction": "IMPRESSED",
+          "failure_reaction": "UNIMPRESSED",
+          "success_next": "COMMON_GROUND",
+          "failure_next": "REBUFF",
+          "base_chance": 67,
+          "skill_check": {
+            "actor": "INTELLECT",
+            "defender": "CUNNING",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": 9
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": -4
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "PROOF_BOAST",
+          "label": "Claim you could defeat her",
+          "player_line": "Give me one exchange and I will show you the difference.",
+          "host_success_line": "\"Perhaps you will. That is why I am listening.\"",
+          "host_failure_line": "\"Your mouth is faster than your feet.\"",
+          "success_reaction": "AMUSED",
+          "failure_reaction": "DISMISSIVE",
+          "success_next": "PROPOSAL",
+          "failure_next": "REPRISAL",
+          "base_chance": 45,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RIVALRY",
+              "delta": 12
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 7
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "PROOF_DECLINE",
+          "label": "Refuse to turn talk into a contest",
+          "player_line": "We need not make every conversation a contest.",
+          "host_success_line": "\"No. Only the ones that matter.\"",
+          "host_failure_line": "\"No. Only the ones that matter.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "MEASURE",
+          "failure_next": "MEASURE",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "ALLY_COUNCIL",
+      "title": "What allies owe one another",
+      "round": 3,
+      "host_introduction": "She folds her arms. \"If you are about to order me somewhere, choose your words carefully.\"",
+      "options": [
+        {
+          "key": "ALLY_PLAN",
+          "label": "Ask her to plan the fight with you",
+          "player_line": "I want your judgement, not your obedience. How should we approach Mizuri?",
+          "host_success_line": "\"Then you shall have it. First, abandon the idea of a glorious charge.\"",
+          "host_failure_line": "\"You need an answer. I need more than a question.\"",
+          "success_reaction": "IMPRESSED",
+          "failure_reaction": "UNMOVED",
+          "success_next": "WARNING",
+          "failure_next": "FAREWELL",
+          "base_chance": 74,
+          "skill_check": {
+            "actor": "INTELLECT",
+            "defender": "INTELLECT",
+            "profile": "COOPERATIVE",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "COOPERATIVE",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "min": 40,
+              "max": null
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 7
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": -3
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "ALLY_REQUEST",
+          "label": "Ask her to take a risk for you",
+          "player_line": "When the time comes, will you stand in the more dangerous position?",
+          "host_success_line": "\"If it is the right position. Not simply because you asked.\"",
+          "host_failure_line": "\"You have confused an ally with a shield.\"",
+          "success_reaction": "ACCEPTING",
+          "failure_reaction": "OFFENDED",
+          "success_next": "WARNING",
+          "failure_next": "FAREWELL",
+          "base_chance": 55,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "COOPERATIVE",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "COOPERATIVE",
+          "numeric_requirements": [],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "LOYALTY",
+              "delta": 6
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": -8
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "ALLY_RESPECT",
+          "label": "Ask for her private assessment",
+          "player_line": "What do you think of the way I lead?",
+          "host_success_line": "\"I have an answer. Whether you like it is another matter.\"",
+          "host_failure_line": "\"I have an answer. Whether you like it is another matter.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "RESPECT_COUNCIL",
+          "failure_next": "RESPECT_COUNCIL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "min": 75,
+              "max": null
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "min": null,
+              "max": 30
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "ALLY_FEAR",
+          "label": "Ask why she flinches at your orders",
+          "player_line": "You obey, but you go quiet when I speak.",
+          "host_success_line": "\"Some things are easier to say when one is not afraid.\"",
+          "host_failure_line": "\"Some things are easier to say when one is not afraid.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FEAR_COUNCIL",
+          "failure_next": "FEAR_COUNCIL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "min": 90,
+              "max": null
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "ALLY_LEAVE",
+          "label": "Leave the matter for now",
+          "player_line": "We will speak of this again.",
+          "host_success_line": "\"See that we do.\"",
+          "host_failure_line": "\"See that we do.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "FEAR_COUNCIL",
+      "title": "A frightened ally",
+      "round": 4,
+      "host_introduction": "Nobunogi does not step back, but her grip tightens around the scabbard. \"I can follow you. That is not the same as being at ease beside you.\"",
+      "options": [
+        {
+          "key": "FEAR_RELENT",
+          "label": "Promise she will not be punished for honesty",
+          "player_line": "Say what you truly think. You have my word there will be no punishment.",
+          "host_success_line": "\"Then hear this: I will fight beside you, but I will not become your shadow.\"",
+          "host_failure_line": "\"Words cost you nothing. I have learned to count deeds instead.\"",
+          "success_reaction": "RELIEVED",
+          "failure_reaction": "WARY",
+          "success_next": "COMMON_GROUND",
+          "failure_next": "FAREWELL",
+          "base_chance": 62,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "min": 90,
+              "max": null
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "delta": -25
+            },
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 10
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 7
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "FEAR_PRESS",
+          "label": "Tell her that obedience is enough",
+          "player_line": "You need not like me. You need only obey.",
+          "host_success_line": "\"As you wish. But do not mistake silence for peace.\"",
+          "host_failure_line": "\"Then you have made it impossible for us to stand together.\"",
+          "success_reaction": "INTIMIDATED",
+          "failure_reaction": "ANGRY",
+          "success_next": "COERCED",
+          "failure_next": "REPRISAL",
+          "base_chance": 72,
+          "skill_check": {
+            "actor": "MIGHT",
+            "defender": "WILLPOWER",
+            "profile": "INTIMIDATION",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "INTIMIDATION",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "min": 90,
+              "max": null
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": -15
+            },
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 12
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 20
+            }
+          ],
+          "status_effects": [
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ENEMY"
+            }
+          ],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "FEAR_STOP",
+          "label": "Let the subject drop",
+          "player_line": "You have said enough.",
+          "host_success_line": "\"I hope so.\"",
+          "host_failure_line": "\"I hope so.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "TRUCE",
+      "title": "An enemy at arm’s length",
+      "round": 2,
+      "host_introduction": "Her hand is near the hilt. \"You have my attention. Do not waste it trying to pretend we are friends.\"",
+      "options": [
+        {
+          "key": "TRUCE_ADMIT",
+          "label": "Admit you were wrong",
+          "player_line": "I gave you reason to despise me. I know that.",
+          "host_success_line": "\"Then let us try beginning with honesty, not friendship.\"",
+          "host_failure_line": "\"A confession means little when you still expect a reward.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "COLD",
+          "success_next": "COMMON_GROUND",
+          "failure_next": "REPRISAL",
+          "base_chance": 63,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ENEMY"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 8
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 8
+            }
+          ],
+          "status_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "NEUTRAL"
+            }
+          ],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "TRUCE_TRIAL",
+          "label": "Suggest proving your intentions through action",
+          "player_line": "Judge me by what I do next, not what I say now.",
+          "host_success_line": "\"Then show me something worthy of judging.\"",
+          "host_failure_line": "\"I already have. I was not impressed.\"",
+          "success_reaction": "CONSIDERING",
+          "failure_reaction": "DISMISSIVE",
+          "success_next": "PROOF",
+          "failure_next": "REPRISAL",
+          "base_chance": 55,
+          "skill_check": {
+            "actor": "WILLPOWER",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ENEMY"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": 5
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 6
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "TRUCE_END",
+          "label": "Back away",
+          "player_line": "Not today, then.",
+          "host_success_line": "\"Not today.\"",
+          "host_failure_line": "\"Not today.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "RESPECT_COUNCIL",
+      "title": "Words earned, not given",
+      "round": 4,
+      "host_introduction": "For once, Nobunogi smiles without mockery. \"You have fought hard enough to deserve the truth. Do not ask me to soften it.\"",
+      "options": [
+        {
+          "key": "RESPECT_PROMISE",
+          "label": "Ask whether she would follow you into danger",
+          "player_line": "If my judgement fails, will you still stand beside me?",
+          "host_success_line": "\"I will challenge you first. Then, if you listen, I will stand beside you.\"",
+          "host_failure_line": "\"Do not ask me to excuse a foolish command.\"",
+          "success_reaction": "WARM",
+          "failure_reaction": "UNMOVED",
+          "success_next": "WARNING",
+          "failure_next": "FAREWELL",
+          "base_chance": 80,
+          "skill_check": {
+            "actor": "WILLPOWER",
+            "defender": "WILLPOWER",
+            "profile": "COOPERATIVE",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "COOPERATIVE",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "min": 75,
+              "max": null
+            },
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "FEAR",
+              "min": null,
+              "max": 30
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 10
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": -5
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "RESPECT_SHARE",
+          "label": "Invite her to dispute your battle plan",
+          "player_line": "Tell me where I am wrong before we march.",
+          "host_success_line": "\"Good. The first mistake is believing the strongest enemy will oblige your plan.\"",
+          "host_failure_line": "\"You wanted argument, but you were not ready to hear it.\"",
+          "success_reaction": "IMPRESSED",
+          "failure_reaction": "DISMISSIVE",
+          "success_next": "WARNING",
+          "failure_next": "COMMON_GROUND",
+          "base_chance": 78,
+          "skill_check": {
+            "actor": "INTELLECT",
+            "defender": "INTELLECT",
+            "profile": "COOPERATIVE",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "COOPERATIVE",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "LOYALTY",
+              "delta": 9
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": -3
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "RESPECT_PART",
+          "label": "Thank her for speaking plainly",
+          "player_line": "That is more useful than praise. Thank you.",
+          "host_success_line": "\"Then make use of it.\"",
+          "host_failure_line": "\"Then make use of it.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "FAREWELL",
+      "title": "An unfinished account",
+      "round": 5,
+      "host_introduction": "She turns back to her training. \"Whatever we are today, we will learn what that means when steel is drawn.\"",
+      "options": [
+        {
+          "key": "FAREWELL_END",
+          "label": "Take your leave",
+          "player_line": "Until then.",
+          "host_success_line": "\"Until then.\"",
+          "host_failure_line": "\"Until then.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": null,
+          "failure_next": null,
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "OATH",
+      "title": "The oath that is not submission",
+      "round": 3,
+      "host_introduction": "She offers her forearm, not a bowed head. \"Very well. I will fight beside you. I will not fight beneath you.\"",
+      "options": [
+        {
+          "key": "OATH_ACCEPT",
+          "label": "Accept her terms",
+          "player_line": "That is precisely what I asked.",
+          "host_success_line": "\"Then do not forget it.\"",
+          "host_failure_line": "\"Then do not forget it.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "ALLY_COUNCIL",
+          "failure_next": "ALLY_COUNCIL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "OATH_ASK_MORE",
+          "label": "Ask about Mizuri",
+          "player_line": "Then tell me what you know of Mizuri.",
+          "host_success_line": "\"I can tell you what I have heard. Whether it is true is another question.\"",
+          "host_failure_line": "\"I can tell you what I have heard. Whether it is true is another question.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "WARNING",
+          "failure_next": "WARNING",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "OATH_END",
+          "label": "Leave with your agreement",
+          "player_line": "Then we have an agreement.",
+          "host_success_line": "\"We have a beginning.\"",
+          "host_failure_line": "\"We have a beginning.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "COERCED",
+      "title": "An ally made by force",
+      "round": 3,
+      "host_introduction": "She nods once, with the stiff precision of someone counting the exits. \"Call me your ally if it pleases you.\"",
+      "options": [
+        {
+          "key": "COERCED_ASK",
+          "label": "Demand her opinion",
+          "player_line": "Then speak. What do you think?",
+          "host_success_line": "\"I think the best place for a warrior is somewhere she may choose to stand.\"",
+          "host_failure_line": "\"I think the best place for a warrior is somewhere she may choose to stand.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FEAR_COUNCIL",
+          "failure_next": "FEAR_COUNCIL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "COERCED_END",
+          "label": "End the exchange",
+          "player_line": "You have made your decision.",
+          "host_success_line": "\"Have I?\"",
+          "host_failure_line": "\"Have I?\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "REPRISAL",
+      "title": "The line you crossed",
+      "round": 3,
+      "host_introduction": "Nobunogi steps back and finally draws an inch of steel. \"There. Now we understand each other.\"",
+      "options": [
+        {
+          "key": "REPRISAL_RETRACT",
+          "label": "Withdraw the threat",
+          "player_line": "I went too far. Put the blade away.",
+          "host_success_line": "\"You have one chance to show that you meant it.\"",
+          "host_failure_line": "\"Do not mistake my restraint for forgiveness.\"",
+          "success_reaction": "WARY",
+          "failure_reaction": "ANGRY",
+          "success_next": "COMMON_GROUND",
+          "failure_next": "FAREWELL",
+          "base_chance": 38,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 3
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESENTMENT",
+              "delta": 10
+            }
+          ],
+          "status_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "NEUTRAL"
+            }
+          ],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "REPRISAL_WALK",
+          "label": "Leave before it escalates",
+          "player_line": "Then this is where we stop.",
+          "host_success_line": "\"Wise, for once.\"",
+          "host_failure_line": "\"Wise, for once.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    },
+    {
+      "key": "WARNING",
+      "title": "What she knows of Mizuri",
+      "round": 4,
+      "host_introduction": "She lowers her voice. \"They say Mizuri has never needed to prove herself twice to the same challenger. I cannot tell you if that is true. I intend to find out.\"",
+      "options": [
+        {
+          "key": "WARNING_LISTEN",
+          "label": "Ask her to continue",
+          "player_line": "What would you do if she were stronger than you?",
+          "host_success_line": "\"Learn why. Then see whether that reason can be broken.\"",
+          "host_failure_line": "\"If you want certainty, ask a fortune teller.\"",
+          "success_reaction": "REFLECTIVE",
+          "failure_reaction": "UNMOVED",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 70,
+          "skill_check": {
+            "actor": "INTELLECT",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "TRUST",
+              "delta": 5
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": -2
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "WARNING_BOAST",
+          "label": "Say Mizuri will be easy to defeat",
+          "player_line": "Then she will be disappointed when I meet her.",
+          "host_success_line": "\"Confidence is a weapon. Keep its edge sharp.\"",
+          "host_failure_line": "\"That is not confidence. It is carelessness.\"",
+          "success_reaction": "AMUSED",
+          "failure_reaction": "UNIMPRESSED",
+          "success_next": "PROOF",
+          "failure_next": "FAREWELL",
+          "base_chance": 42,
+          "skill_check": {
+            "actor": "CHARISMA",
+            "defender": "WILLPOWER",
+            "profile": "STANDARD",
+            "actor_factor": 0.4,
+            "defender_factor": 0.4
+          },
+          "check_profile": "STANDARD",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [
+            {
+              "outcome": "SUCCESS",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RIVALRY",
+              "delta": 5
+            },
+            {
+              "outcome": "FAILURE",
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "delta": -8
+            }
+          ],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        },
+        {
+          "key": "WARNING_PROMISE",
+          "label": "Promise you will not underestimate her",
+          "player_line": "I will take her strength seriously. And yours.",
+          "host_success_line": "\"Then perhaps we both live long enough to test her.\"",
+          "host_failure_line": "\"Then perhaps we both live long enough to test her.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "attribute": "RESPECT",
+              "min": 70,
+              "max": null
+            }
+          ],
+          "status_requirements": [
+            {
+              "direction": "PARTNER_TO_ACTOR",
+              "status": "ALLY"
+            }
+          ],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "HIDE",
+          "design_intent": ""
+        },
+        {
+          "key": "WARNING_LEAVE",
+          "label": "Thank her and go",
+          "player_line": "That is enough to think about.",
+          "host_success_line": "\"Then think quickly.\"",
+          "host_failure_line": "\"Then think quickly.\"",
+          "success_reaction": "RECEPTIVE",
+          "failure_reaction": "RECEPTIVE",
+          "success_next": "FAREWELL",
+          "failure_next": "FAREWELL",
+          "base_chance": 100,
+          "skill_check": null,
+          "check_profile": "NEUTRAL",
+          "numeric_requirements": [],
+          "status_requirements": [],
+          "numeric_effects": [],
+          "status_effects": [],
+          "unmet_visibility": "LOCK",
+          "design_intent": ""
+        }
+      ]
+    }
+  ]
+}

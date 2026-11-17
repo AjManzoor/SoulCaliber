@@ -16,6 +16,11 @@ public partial class MainWindow
         _designer?.EnsureOptionStatusEffectsSchema();
         _designer?.EnsureOptionStatusRequirementsSchema();
         _designer?.EnsureChoiceRequirementVisibilitySchema();
+        _designer?.EnsureMemoryCatalogueSchema();
+        _designer?.EnsureOptionMemoryEffectsSchema();
+        _designer?.EnsureOptionMemoryRequirementsSchema();
+        _designer?.EnsureSpecialEncountersSchema();
+        _designer?.EnsureConversationAvailabilitySchema();
         _testingDatabasePath = path;
         TestingDatabaseText.Text = path;
     }
@@ -59,6 +64,54 @@ public partial class MainWindow
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Starting relationships", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ManageMemoryCatalogue_Click(object sender, RoutedEventArgs e)
+    {
+        if (_designer is null)
+        { MessageBox.Show(this, "Open the master database first.", "Memory catalogue"); return; }
+        if (!DesignerCanSwitch() || !CharactersCanSwitch() || !CanLeaveTable()) return;
+        try
+        {
+            var window = new MemoryCatalogueWindow(_designer) { Owner = this };
+            window.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Memory catalogue", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ManageSpecialEncounters_Click(object sender, RoutedEventArgs e)
+    {
+        if (_designer is null)
+        { MessageBox.Show(this, "Open the master database first.", "Special encounters"); return; }
+        if (!DesignerCanSwitch() || !CharactersCanSwitch() || !CanLeaveTable()) return;
+        try
+        {
+            var window = new SpecialEncountersWindow(_designer) { Owner = this };
+            window.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Special encounters", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void ManageConversationAvailability_Click(object sender, RoutedEventArgs e)
+    {
+        if (_designer is null)
+        { MessageBox.Show(this, "Open the master database first.", "Normal conversations"); return; }
+        if (!DesignerCanSwitch() || !CharactersCanSwitch() || !CanLeaveTable()) return;
+        try
+        {
+            var window = new ConversationAvailabilityWindow(_designer) { Owner = this };
+            window.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Normal conversations", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

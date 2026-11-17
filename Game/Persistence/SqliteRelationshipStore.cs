@@ -95,6 +95,40 @@ public sealed class SqliteRelationshipStore : IRelationshipStore
 
 public sealed class SqliteInteractionHistoryStore
 {
+    /// <summary>Flush a single resolved choice history entry inside the caller's transaction.</summary>
+    internal void RecordInTransaction(SaveDbContext db, ResolvedChoiceCommit choice,
+        IReadOnlyList<AppliedRelationshipChange> changes,
+        IReadOnlyList<AppliedRelationshipStatusChange> statusChanges)
+    {
+        var row = new SavedInteraction
+        {
+            OccurredUtc = DateTime.UtcNow,
+            InteractionKey = choice.InteractionKey,
+            NodeKey = choice.NodeKey,
+            OptionKey = choice.OptionKey,
+            ActorId = choice.ActorId,
+            PartnerId = choice.PartnerId,
+            Succeeded = choice.Succeeded,
+            Roll = choice.Roll,
+            Chance = choice.Chance,
+            TargetReaction = choice.TargetReaction
+        };
+        foreach (var change in changes)
+            row.Changes.Add(new SavedRelationshipChange
+            {
+                FromCharacterId = change.FromId, ToCharacterId = change.ToId,
+                Attribute = change.Attribute, Before = change.Before, After = change.After
+            });
+        foreach (var change in statusChanges)
+            row.StatusChanges.Add(new SavedInteractionStatusChange
+            {
+                FromCharacterId = change.FromId, ToCharacterId = change.ToId,
+                Before = change.Before, After = change.After
+            });
+        db.InteractionHistory.Add(row);
+        db.SaveChanges(); // Flush only. Caller owns the commit/rollback.
+    }
+
     public void Record(DialogueEngine engine,DialogueResolution result)
     {
         using var db = new SaveDbContext();

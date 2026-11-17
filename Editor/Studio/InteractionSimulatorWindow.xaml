@@ -36,7 +36,10 @@
             <TextBlock Text="Interaction type" Foreground="#C4D7F3"/>
             <ComboBox x:Name="InteractionBox" Height="32"/>
           </StackPanel>
-          <Button Grid.Column="3" Content="Start / restart" Click="Start_Click" VerticalAlignment="Bottom" Height="34"/>
+          <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Bottom">
+            <Button Content="Preview conversations" Click="PreviewConversations_Click" Height="34" Margin="0,0,7,0"/>
+            <Button Content="Start / restart" Click="Start_Click" Height="34"/>
+          </StackPanel>
         </Grid>
       </Border>
     </StackPanel>
@@ -122,7 +125,7 @@
                 </DataGrid>
               </DockPanel>
             </TabItem>
-            <TabItem Header="Status sandbox">
+            <TabItem Header="Statuses">
               <StackPanel Margin="10,12,10,12">
                 <TextBlock Text="Temporarily change directional Ally / Enemy / custom statuses. This never changes starting relationships or any savegame."
                            Foreground="#C4D7F3" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,15"/>
@@ -139,7 +142,35 @@
                            Foreground="#C4D7F3" FontSize="11" TextWrapping="Wrap" Margin="0,12,0,0"/>
               </StackPanel>
             </TabItem>
-            <TabItem Header="Personality sandbox">
+            <TabItem Header="Memories">
+              <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="10,8,10,12">
+                  <TextBlock Text="Historical occurrences are temporary. Quiet / Allies / Global knowledge uses the current simulated statuses."
+                             FontSize="11" Foreground="#C4D7F3" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                  <TextBlock Text="Memory type"/>
+                  <ComboBox x:Name="MemoryTypeBox" DisplayMemberPath="Name" Height="30" Margin="0,3,0,8"/>
+                  <TextBlock Text="Affected character(s)"/>
+                  <ComboBox x:Name="MemoryAffectedBox" Height="30" Margin="0,3,0,8"/>
+                  <TextBlock Text="Severity"/>
+                  <ComboBox x:Name="MemorySeverityBox" Height="30" Margin="0,3,0,8"/>
+                  <TextBlock Text="Initial knowledge"/>
+                  <ComboBox x:Name="MemoryKnowledgeBox" Height="30" Margin="0,3,0,8"/>
+                  <Button Content="Record simulated memory" Click="AddMemory_Click" Margin="0,4,0,8"/>
+                  <TextBlock Text="Recorded memories (select for details)" FontWeight="SemiBold"/>
+                  <ListBox x:Name="MemoryHistoryBox" Height="120" SelectionChanged="MemoryHistory_SelectionChanged" Margin="0,5,0,7"/>
+                  <TextBox x:Name="MemoryDetailsText" Height="105" IsReadOnly="True" TextWrapping="Wrap"
+                           VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11"/>
+                  <TextBlock Text="Grant knowledge to" Margin="0,8,0,2"/>
+                  <ComboBox x:Name="MemoryGrantBox" DisplayMemberPath="Name" Height="30"/>
+                  <Button Content="Teach selected memory" Click="GrantMemoryKnowledge_Click" Margin="0,6,0,0"/>
+                  <Button Content="Remove selected memory" Click="RemoveMemory_Click" Margin="0,5,0,0"/>
+                  <Button Content="Clear memories + encounter completions" Click="ClearMemorySandbox_Click" Margin="0,5,0,0"/>
+                  <TextBlock Text="Global memories are known by everyone. Removing an occurrence also removes its per-occurrence completions."
+                             Foreground="#C4D7F3" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Personality">
               <DockPanel Margin="9,8,9,9">
                 <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
                   <TextBlock Text="Temporarily toggle traits for either character. Changes only affect relationship effects, not success chances."
@@ -232,6 +263,24 @@
                 <TextBox x:Name="ChoiceAvailabilityText" IsReadOnly="True" TextWrapping="Wrap"
                          AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
                          FontFamily="Consolas" FontSize="11"/>
+              </DockPanel>
+            </TabItem>
+            <TabItem Header="Encounters">
+              <DockPanel Margin="6,6,6,6">
+                <StackPanel DockPanel.Dock="Top">
+                  <TextBlock Text="SIMULATED CONVERSATION AVAILABILITY" FontSize="13" FontWeight="Bold" Margin="0,0,0,5"/>
+                  <TextBlock Text="Available / suppressed / ineligible. Select an eligible entry to launch its dialogue or simulate completion."
+                             FontSize="11" Foreground="#C4D7F3" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                  <ListBox x:Name="EncounterList" Height="125" FontSize="11"/>
+                  <WrapPanel Margin="0,4,0,5">
+                    <Button Content="Start selected" Click="StartSelectedConversation_Click"/>
+                    <Button Content="Mark special completed (test)" Click="CompleteSelectedEncounter_Click"/>
+                    <Button Content="Clear completions" Click="ClearEncounterCompletions_Click"/>
+                    <Button Content="Refresh" Click="RefreshEncounters_Click"/>
+                  </WrapPanel>
+                </StackPanel>
+                <TextBox x:Name="EncounterAvailabilityText" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11"/>
               </DockPanel>
             </TabItem>
             <TabItem Header="Dialogue inspector">

@@ -1,0 +1,17 @@
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\bin\Debug\net8.0\ChoiceResolutionGuardTests.exe
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\bin\Debug\net8.0\ChoiceResolutionGuardTests.deps.json
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\bin\Debug\net8.0\ChoiceResolutionGuardTests.runtimeconfig.json
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\bin\Debug\net8.0\ChoiceResolutionGuardTests.runtimeconfig.dev.json
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\bin\Debug\net8.0\ChoiceResolutionGuardTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\bin\Debug\net8.0\ChoiceResolutionGuardTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceResolutionGuardTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceResolutionGuardTests.AssemblyInfoInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceResolutionGuardTests.AssemblyInfo.cs
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceResolutionGuardTests.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceResolutionGuardTests.sourcelink.json
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceResolutionGuardTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\refint\ChoiceResolutionGuardTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceResolutionGuardTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceResolutionGuardTests.genruntimeconfig.cache
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ref\ChoiceResolutionGuardTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\ChoiceResolutionGuardTests\obj\Debug\net8.0\ChoiceRe.93E44C03.Up2Date

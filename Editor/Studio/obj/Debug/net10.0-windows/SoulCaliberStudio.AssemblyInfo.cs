@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SoulCaliberStudio")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+565ce39b56f6056a7a6af3c7e031d1559abd8dd3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+debbff49a88005b9da21f81a7b14a1e20c27e07a")]
 [assembly: System.Reflection.AssemblyProductAttribute("SoulCaliberStudio")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SoulCaliberStudio")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using SoulCaliber.Shared;
 
 namespace SoulCaliberStudio;
 
@@ -65,7 +66,7 @@ public static class ContentPublisher
     [
         "Characters", "ReactionTypes", "ReactionImages", "CharacterSkills", "CharacterSkillValues", "PersonalityTraits", "PersonalityTraitModifiers", "CharacterTraits", "Interactions", "Nodes", "Options",
         "Requirements", "ChanceModifiers", "Effects", "Lines", "SkillChecks", "NodeIntroductions",
-        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles", "RelationshipAttributes", "RelationshipStatuses", "CharacterDefaultStatuses", "OptionStatusEffects", "OptionStatusRequirements"
+        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles", "RelationshipAttributes", "RelationshipStatuses", "CharacterDefaultStatuses", "OptionStatusEffects", "OptionStatusRequirements", "MemoryTypes", "MemoryTypePersonalityRelevance", "OptionMemoryEffects", "OptionMemoryRequirements", "SpecialEncounters", "ConversationAvailability"
     ];
 
     private sealed record CharacterRow(string Id, string Name, string DefaultImage, string WinImage, string LoseImage);
@@ -479,9 +480,205 @@ public static class ContentPublisher
                 report.Error("PersonalityTraitModifiers",$"Invalid modifier {m.TraitKey}/{m.Attribute}.");
         }
 
+        // Phase 13A: memory definitions and personality relevance are authored content.
+        // There are no gameplay memory occurrences in the master content database.
+        var memoryTypes = Read(db, """
+            SELECT Key,Name,DefaultSeverity,DefaultKnowledge,IsActive
+            FROM MemoryTypes
+            """, r => (Key:r.GetString(0),Name:r.GetString(1),
+                Severity:r.GetString(2),Knowledge:r.GetString(3),Active:r.GetInt32(4)==1));
+        if (memoryTypes.Select(m => m.Key).Distinct(StringComparer.OrdinalIgnoreCase).Count() != memoryTypes.Count)
+            report.Error("MemoryTypes", "Duplicate case-insensitive memory keys.");
+        var memoryMap = memoryTypes.GroupBy(m => m.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        foreach (var memory in memoryTypes)
+        {
+            string location = $"Memory type {memory.Key}";
+            if (!Regex.IsMatch(memory.Key, "^[A-Z][A-Z0-9_]{0,47}$") || string.IsNullOrWhiteSpace(memory.Name))
+                report.Error(location, "Invalid memory key or name.");
+            if (memory.Severity is not ("MAJOR" or "MINOR"))
+                report.Error(location, "Severity must be MAJOR or MINOR.");
+            if (memory.Knowledge is not ("QUIET" or "ALLIES" or "GLOBAL"))
+                report.Error(location, "Knowledge must be QUIET, ALLIES or GLOBAL.");
+        }
+        var memoryTraitLinks = Read(db, """
+            SELECT MemoryKey,TraitKey FROM MemoryTypePersonalityRelevance
+            """, r => (Memory:r.GetString(0),Trait:r.GetString(1)));
+        foreach (var link in memoryTraitLinks)
+        {
+            if (!memoryMap.ContainsKey(link.Memory))
+                report.Error("MemoryTypePersonalityRelevance", $"Unknown memory type: {link.Memory}.");
+            if (!traitMap.TryGetValue(link.Trait, out var trait))
+                report.Error("MemoryTypePersonalityRelevance", $"Unknown personality trait: {link.Trait}.");
+            else if (!trait.Active)
+                report.Warn("MemoryTypePersonalityRelevance",
+                    $"{link.Memory} references inactive trait {link.Trait}; relevance will not apply while inactive.");
+        }
+
+        // Phase 13C: validate every authored memory creation effect before publishing.
+        foreach (var effect in Read(db,
+            "SELECT e.Id,e.OptionId,e.MemoryKey,e.Trigger,e.Affected,e.SeverityOverride,e.KnowledgeOverride FROM OptionMemoryEffects e",
+            r => (Id:r.GetInt64(0),OptionId:r.GetInt64(1),Memory:r.GetString(2),Trigger:r.GetString(3),
+                Affected:r.GetString(4),Severity:NullableText(r,5),Knowledge:NullableText(r,6))))
+        {
+            string location=$"OptionMemoryEffects #{effect.Id}";
+            if (!memoryMap.TryGetValue(effect.Memory,out var memory))
+                report.Error(location,$"Unknown memory type {effect.Memory}.");
+            else if (!memory.Active)
+                report.Error(location,$"Memory type {effect.Memory} is inactive.");
+            if (effect.Trigger is not ("SELECTED" or "SUCCESS" or "FAILURE" or "BOTH"))
+                report.Error(location,"Invalid trigger.");
+            if (effect.Affected is not ("ACTOR" or "PARTNER" or "BOTH"))
+                report.Error(location,"Invalid affected-character setting.");
+            if (effect.Severity is not (null or "MAJOR" or "MINOR"))
+                report.Error(location,"Invalid severity override.");
+            if (effect.Knowledge is not (null or "QUIET" or "ALLIES" or "GLOBAL"))
+                report.Error(location,"Invalid knowledge override.");
+        }
+
+        // Phase 13D: reject broken expressions before a snapshot is published.
+        foreach (var memoryRequirement in Read(db,
+            "SELECT OptionId,ExpressionJson FROM OptionMemoryRequirements",
+            r => (OptionId:r.GetInt64(0), Json:r.GetString(1))))
+        {
+            try
+            {
+                var tree = MemoryConditionRules.Read(memoryRequirement.Json);
+                MemoryConditionRules.Validate(tree,
+                    key => memoryMap.TryGetValue(key, out var type) && type.Active,
+                    characterIds.Contains, activeStatusKeys.Contains);
+            }
+            catch (Exception ex)
+            {
+                report.Error($"OptionMemoryRequirements choice {memoryRequirement.OptionId}", ex.Message);
+            }
+        }
+
         // Phase 6C: character associations are per encounter, not per interaction definition.
         var interactions = Read(db, "SELECT Id, Key, Title, StartNodeKey FROM Interactions", r =>
             new InteractionRow(r.GetInt64(0), r.GetString(1), Safe(r, 2), Safe(r, 3)));
+        // Phase 13E-1: authored encounter definitions. Godot will not select them
+        // automatically until the runtime selector is installed in Phase 13E-2.
+        var validEncounterInteractionIds = interactions.Select(i => i.Id).ToHashSet();
+        foreach (var encounter in Read(db, @"
+            SELECT Id, EncounterKey, Title, InteractionId, RecipientCharacterId,
+                   InitiatorCharacterId, LaunchMode, RepetitionMode, Priority, IsActive,
+                   ConditionJson, AnchorMemoryKey, AnchorActorRef,
+                   AnchorAffectedRef, AnchorKnowerRef FROM SpecialEncounters",
+            r => (Id:r.GetInt64(0), Key:r.GetString(1), Title:r.GetString(2),
+                InteractionId:r.GetInt64(3), Recipient:NullableText(r,4),
+                Initiator:NullableText(r,5), Launch:r.GetString(6),
+                Repeat:r.GetString(7), Priority:r.GetInt32(8), Active:r.GetInt32(9)==1,
+                Json:NullableText(r,10), Anchor:NullableText(r,11),
+                AnchorActor:r.GetString(12), AnchorAffected:r.GetString(13),
+                AnchorKnower:r.GetString(14))))
+        {
+            string location = $"SpecialEncounter {encounter.Key}";
+            if (!Regex.IsMatch(encounter.Key, "^[A-Z][A-Z0-9_]{0,47}$"))
+                report.Error(location, "Encounter key must be a stable uppercase key.");
+            if (string.IsNullOrWhiteSpace(encounter.Title)) report.Error(location, "Missing encounter title.");
+            if (!validEncounterInteractionIds.Contains(encounter.InteractionId))
+                report.Error(location, "Linked dialogue interaction is missing.");
+            if (encounter.Recipient is not null && !characterIds.Contains(encounter.Recipient))
+                report.Error(location, "Unknown recipient character.");
+            if (encounter.Initiator is not null && !characterIds.Contains(encounter.Initiator))
+                report.Error(location, "Unknown initiator character.");
+            if (encounter.Initiator is not null && encounter.Recipient is not null &&
+                string.Equals(encounter.Initiator, encounter.Recipient, StringComparison.OrdinalIgnoreCase))
+                report.Error(location, "Initiator and recipient cannot be identical.");
+            if (encounter.Launch is not ("AUTOMATIC" or "OPTIONAL") ||
+                encounter.Repeat is not ("ONCE_PER_PAIR" or "ONCE_PER_OCCURRENCE" or "REPEATABLE") ||
+                encounter.Priority is < 0 or > 1000)
+                report.Error(location, "Invalid launch, repetition or priority value.");
+            if (encounter.Repeat == "ONCE_PER_OCCURRENCE")
+            {
+                if (encounter.Anchor is null || !memoryMap.TryGetValue(encounter.Anchor, out var anchorType) || !anchorType.Active)
+                    report.Error(location, "Per-occurrence mode requires an active anchor memory type.");
+                else
+                {
+                    try
+                    {
+                        var anchor = new MemoryConditionNode
+                        {
+                            Kind = "MEMORY", MemoryKey = encounter.Anchor,
+                            ActorRef = encounter.AnchorActor, AffectedRef = encounter.AnchorAffected,
+                            KnowerRef = encounter.AnchorKnower
+                        };
+                        MemoryConditionRules.Validate(anchor,
+                            key => memoryMap.TryGetValue(key, out var type) && type.Active,
+                            characterIds.Contains, activeStatusKeys.Contains);
+                    }
+                    catch (Exception ex) { report.Error(location, "Invalid anchor filter: " + ex.Message); }
+                }
+            }
+            else if (encounter.Anchor is not null)
+                report.Error(location, "Unexpected anchor memory for non-occurrence mode.");
+            if (encounter.Json is null)
+            {
+                if (encounter.Active) report.Error(location, "Active encounter requires eligibility conditions.");
+            }
+            else
+            {
+                try
+                {
+                    var tree = MemoryConditionRules.Read(encounter.Json);
+                    MemoryConditionRules.Validate(tree,
+                        key => memoryMap.TryGetValue(key, out var type) && type.Active,
+                        characterIds.Contains, activeStatusKeys.Contains);
+                }
+                catch (Exception ex)
+                {
+                    if (encounter.Active) report.Error(location, "Invalid conditions: " + ex.Message);
+                    else report.Warn(location, "Inactive draft has invalid conditions: " + ex.Message);
+                }
+            }
+        }
+
+
+        // Phase 13E-4A: normal conversation menu topics, distinct from special encounters.
+        // A NULL condition tree means always eligible for the configured character pair.
+        foreach (var topic in Read(db, @"
+            SELECT Id, AvailabilityKey, Title, InteractionId, RecipientCharacterId,
+                   InitiatorCharacterId, DisplayOrder, IsActive, ConditionJson
+            FROM ConversationAvailability",
+            r => (Id:r.GetInt64(0), Key:r.GetString(1), Title:r.GetString(2),
+                InteractionId:r.GetInt64(3), Recipient:NullableText(r,4),
+                Initiator:NullableText(r,5), Order:r.GetInt32(6), Active:r.GetInt32(7)==1,
+                Json:NullableText(r,8))))
+        {
+            string location = $"ConversationAvailability {topic.Key}";
+            if (!Regex.IsMatch(topic.Key, "^[A-Z][A-Z0-9_]{0,47}$"))
+                report.Error(location, "Topic key must be a stable uppercase key.");
+            if (string.IsNullOrWhiteSpace(topic.Title) || topic.Title.Length > 120)
+                report.Error(location, "Conversation menu title must be between 1 and 120 characters.");
+            if (!validEncounterInteractionIds.Contains(topic.InteractionId))
+                report.Error(location, "Linked dialogue interaction is missing.");
+            if (topic.Recipient is not null && !characterIds.Contains(topic.Recipient))
+                report.Error(location, "Unknown recipient character.");
+            if (topic.Initiator is not null && !characterIds.Contains(topic.Initiator))
+                report.Error(location, "Unknown initiator character.");
+            if (topic.Recipient is not null && topic.Initiator is not null &&
+                string.Equals(topic.Recipient, topic.Initiator, StringComparison.OrdinalIgnoreCase))
+                report.Error(location, "Initiator and recipient cannot be the same character.");
+            if (topic.Order is < 0 or > 10000)
+                report.Error(location, "Display order must be between 0 and 10000.");
+            if (topic.Json is not null)
+            {
+                try
+                {
+                    var tree = MemoryConditionRules.Read(topic.Json);
+                    MemoryConditionRules.Validate(tree,
+                        key => memoryMap.TryGetValue(key, out var type) && type.Active,
+                        characterIds.Contains, activeStatusKeys.Contains);
+                }
+                catch (Exception ex)
+                {
+                    if (topic.Active) report.Error(location, "Invalid conditions: " + ex.Message);
+                    else report.Warn(location, "Inactive topic has invalid conditions: " + ex.Message);
+                }
+            }
+        }
+
         var nodes = Read(db, "SELECT Id, InteractionId, Key, Round FROM Nodes", r =>
             new NodeRow(r.GetInt64(0), r.GetInt64(1), r.GetString(2), r.GetInt64(3)));
         var options = Read(db,
@@ -572,9 +769,9 @@ public static class ContentPublisher
             if (!characterIds.Contains(intro.Speaker))
                 report.Error("NodeIntroductions", $"Introduction {intro.Id} references unknown speaker {intro.Speaker}.");
             if (intro.Visitor is not null && !characterIds.Contains(intro.Visitor))
-                report.Error("NodeIntroductions", $"Introduction {intro.Id} references unknown visitor {intro.Visitor}.");
+                report.Error("NodeIntroductions", $"Introduction {intro.Id} references unknown initiator {intro.Visitor}.");
             if (intro.Visitor is not null && string.Equals(intro.Visitor, intro.Speaker, StringComparison.OrdinalIgnoreCase))
-                report.Error("NodeIntroductions", $"Introduction {intro.Id} has the same speaker and visitor.");
+                report.Error("NodeIntroductions", $"Introduction {intro.Id} has the same speaker and initiator.");
             if (string.IsNullOrWhiteSpace(intro.Text))
                 report.Error("NodeIntroductions", $"Introduction {intro.Id} has no text.");
         }

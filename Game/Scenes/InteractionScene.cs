@@ -13,13 +13,38 @@ public partial class InteractionScene : Control
 	[Export] public string VisitorCharacterId { get; set; } = "ARK";
 	[Export] public string PartnerCharacterId { get; set; } = ""; // blank = interaction default
 	[Export] public string InteractionKey { get; set; } = "ROYAL_AUDIENCE";
+	// True for normal approaches and running this scene directly from Godot.
+	// InteractionLauncher.Create() disables selection for targeted debugging.
+	[Export] public bool EnableSpecialEncounterSelection { get; set; } = true;
+	public string? SelectedSpecialEncounterKey { get; private set; }
+	public long? SelectedAnchorMemoryOccurrenceId { get; private set; }
+
+	private DialogueRepository _repository = null!;
+	private SqliteRelationshipStore _numericStore = null!;
+	private SqliteMemoryStore _memoryStore = null!;
+	private SqliteInteractionEffectStore _effectStore = null!;
+	private SqliteSpecialEncounterCompletionStore _completionStore = null!;
+	private SelectedSpecialEncounter? _selectedEncounter;
+	private readonly SpecialEncounterCompletionGuard _completionGuard = new();
+	// Set only by the Conversation Selection screen, before AddChild/_Ready.
+	private SelectedSpecialEncounter? _requestedEncounter;
+	public Action? ReturnToConversationMenu { get; set; }
+	public void ConfigureSelectedEncounter(SelectedSpecialEncounter selection)
+	{
+		_requestedEncounter = selection ?? throw new ArgumentNullException(nameof(selection));
+		EnableSpecialEncounterSelection = false;
+		InteractionKey = selection.InteractionKey;
+	}
+
+	private string _encounterSummary = "";
 
 	private enum DisplayStage { Choices, PlayerSpeaking, HostSpeaking, Finished }
 
 	private DialogueEngine _engine = null!;
 	private SqliteRelationshipStatusStore _statusStore = null!;
 	private DialogueResolution? _lastResult;
-	private readonly SqliteInteractionHistoryStore _historyStore = new();
+	private bool _choiceSubmissionInProgress;
+	private readonly List<(Button Button, string OptionKey, bool WasLocked)> _choiceButtons = new();
 	private DisplayStage _stage;
 	private Texture2D? _defaultLeftTexture;
 	private Texture2D? _defaultRightTexture;
@@ -77,13 +102,13 @@ public partial class InteractionScene : Control
 		_footer = GetNode<Label>("Footer");
 
 		_statusStore = new SqliteRelationshipStatusStore();
-		// The prototype begins a fresh game on process launch, not every scene open.
-		// A future Load Game action can call RelationshipStatusSession.KeepSavedStatusesForLoad().
-		RelationshipStatusSession.EnsureFreshPrototypeSession(_statusStore);
-		var numericStore = new SqliteRelationshipStore();
-		_engine = new DialogueEngine(new DialogueRepository(), numericStore,
-			InteractionKey, VisitorCharacterId, PartnerCharacterId, _statusStore,
-			new SqliteInteractionEffectStore(numericStore, _statusStore));
+		// All savegame stores persist across process launches; only Reset Progress clears them.
+		_memoryStore = new SqliteMemoryStore(_statusStore);
+		_completionStore = new SqliteSpecialEncounterCompletionStore();
+		_numericStore = new SqliteRelationshipStore();
+		_effectStore = new SqliteInteractionEffectStore(_numericStore, _statusStore, _memoryStore);
+		_repository = new DialogueRepository();
+		SelectAndCreateEngine();
 
 		// Respect existing Inspector textures if no data image is present.
 		_defaultLeftTexture = LoadImage(_engine.Visitor.DefaultImage) ?? _leftPortrait.Texture;
@@ -95,11 +120,109 @@ public partial class InteractionScene : Control
 		_leftOutcomeBadge = CreateOutcomeBadge(_leftFrame, "LeftOutcomeBadge");
 		_rightOutcomeBadge = CreateOutcomeBadge(_rightFrame, "RightOutcomeBadge");
 		_continueButton.Pressed += ContinueConversation;
-		RestartConversation();
+		BuildResetProgressControl();
+		RestartConversation(reselect: false);
 	}
 
-	private void RestartConversation()
+	private void SelectAndCreateEngine()
 	{
+		string dialogueKey = InteractionKey;
+		SelectedSpecialEncounterKey = null;
+		SelectedAnchorMemoryOccurrenceId = null;
+		_selectedEncounter = null;
+		_encounterSummary = "Normal dialogue";
+		if (_requestedEncounter is not null)
+		{
+			_selectedEncounter = _requestedEncounter;
+			dialogueKey = _requestedEncounter.InteractionKey;
+			SelectedSpecialEncounterKey = _requestedEncounter.EncounterKey;
+			SelectedAnchorMemoryOccurrenceId = _requestedEncounter.AnchorMemoryOccurrenceId;
+			_encounterSummary = $"SPECIAL: {_requestedEncounter.Title} [{_requestedEncounter.EncounterKey}]";
+		}
+		else if (EnableSpecialEncounterSelection)
+		{
+			try
+			{
+				var selector = new SpecialEncounterSelector(_memoryStore, _statusStore,
+					_completionStore);
+				var selection = selector.Select(VisitorCharacterId, PartnerCharacterId,
+					message => GD.Print("[SpecialEncounter] " + message));
+				if (selection is not null)
+				{
+					_selectedEncounter = selection;
+					dialogueKey = selection.InteractionKey;
+					SelectedSpecialEncounterKey = selection.EncounterKey;
+					SelectedAnchorMemoryOccurrenceId = selection.AnchorMemoryOccurrenceId;
+					_encounterSummary = $"SPECIAL: {selection.Title} [{selection.EncounterKey}]";
+				}
+			}
+			catch (Exception ex)
+			{
+				GD.PushWarning("[SpecialEncounter] Selection failed; using normal dialogue: " + ex.Message);
+			}
+		}
+		else
+			GD.Print("[SpecialEncounter] Direct dialogue launch — selector bypassed.");
+
+		_engine = new DialogueEngine(_repository, _numericStore,
+			dialogueKey, VisitorCharacterId, PartnerCharacterId, _statusStore,
+			_effectStore, _memoryStore);
+	}
+
+	private void BuildResetProgressControl()
+	{
+		// Low-profile prototype control outside the central conversation and portrait areas.
+		var resetButton = new Button
+		{
+			Name = "ResetProgressButton",
+			Text = "New game / Reset",
+			AnchorLeft = 0.79f,
+			AnchorRight = 0.975f,
+			AnchorTop = 0.935f,
+			AnchorBottom = 0.985f,
+			FocusMode = FocusModeEnum.None
+		};
+		resetButton.AddThemeFontSizeOverride("font_size", 13);
+		AddChild(resetButton);
+		var confirmation = new ConfirmationDialog
+		{
+			Name = "ResetProgressConfirmation",
+			Title = "Start a new game?",
+			DialogText = "This permanently clears saved relationship values, relationship statuses, interaction history and memories. Authored Studio defaults stay unchanged. Continue?"
+		};
+		AddChild(confirmation);
+		resetButton.Pressed += () => confirmation.PopupCentered(new Vector2I(560, 190));
+		confirmation.Confirmed += () =>
+		{
+			try
+			{
+				SaveGameProgress.ResetAll();
+				if (ReturnToConversationMenu is not null)
+				{
+					// Re-evaluate eligibility from the cleared savegame rather
+					// than continuing the now-ineligible selected encounter.
+					ReturnToConversationMenu();
+				}
+				else
+				{
+					RestartConversation();
+					_footer.Text = "New game started — saved progress cleared; authored defaults restored.";
+				}
+			}
+			catch (Exception ex)
+			{
+				GD.PushError($"Could not reset savegame: {ex}");
+				_footer.Text = "Reset failed — existing savegame has not been deliberately cleared.";
+			}
+		};
+	}
+
+	private void RestartConversation(bool reselect = true)
+	{
+		// Every NEW encounter (including Start another conversation) rechecks
+		// eligibility. Advancing dialogue nodes never invokes the selector.
+		if (reselect) SelectAndCreateEngine();
+		_completionGuard.Reset();
 		_engine.Restart();
 		_leftPortrait.Texture = _defaultLeftTexture;
 		_rightPortrait.Texture = _defaultRightTexture;
@@ -108,6 +231,7 @@ public partial class InteractionScene : Control
 		_leftOutcomeBadge.Visible = false;
 		_rightOutcomeBadge.Visible = false;
 		_lastResult = null;
+		_choiceSubmissionInProgress = false;
 		RefreshPlaceholders();
 		ShowCurrentNode();
 	}
@@ -125,6 +249,7 @@ public partial class InteractionScene : Control
 		_choicesScroll.ScrollVertical = 0;
 		_continueButton.Visible = false;
 
+		_choiceButtons.Clear();
 		foreach (Node child in _choicesContainer.GetChildren())
 		{
 			_choicesContainer.RemoveChild(child);
@@ -164,43 +289,94 @@ public partial class InteractionScene : Control
 			button.AddThemeFontSizeOverride("font_size", 17);
 			button.Pressed += () => Choose(key);
 			_choicesContainer.AddChild(button);
+			_choiceButtons.Add((button, key, choice.IsLocked));
 		}
 
 		UpdateRelationshipPanels();
-		_footer.Text = "Relationship states are directional  •  choose an action";
+		_footer.Text = _encounterSummary + "  •  choose an action";
+	}
+
+	private void SetChoiceButtons(bool disableAll, string? retryOnlyKey = null)
+	{
+		foreach (var (button, key, wasLocked) in _choiceButtons)
+			button.Disabled = disableAll || wasLocked ||
+				(retryOnlyKey is not null &&
+				 !string.Equals(key, retryOnlyKey, StringComparison.OrdinalIgnoreCase));
 	}
 
 	private void Choose(string optionKey)
 	{
-		if (_stage != DisplayStage.Choices) return;
-		_lastResult = _engine.Choose(optionKey);
-		_historyStore.Record(_engine, _lastResult);
-		_stage = DisplayStage.PlayerSpeaking;
-		_choicesScroll.Visible = false;
-		_continueButton.Visible = true;
-		_continueButton.Text = "Continue";
+		// The UI guard stops double-clicks; DialogueEngine independently blocks
+		// duplicate commits (including a callback after UI presentation fails).
+		if (_stage != DisplayStage.Choices || _choiceSubmissionInProgress ||
+			_engine.HasCommittedChoice) return;
 
-		// Only the ACTOR rolls. The target reacts; they are never a second
-		// success/failure roll, nor the inverse winner/loser of the actor.
-		SetActorOutcomePortrait(_leftPortrait, _leftOutcomeBadge,
-			_engine.Visitor, _lastResult.PlayerLine,
-			_lastResult.Succeeded, _defaultLeftTexture);
-		SetTargetReactionPortrait(_rightPortrait, _rightOutcomeBadge,
-			_engine.Host, _lastResult.HostLine,
-			_lastResult.Succeeded, _lastResult.TargetReaction,
-			_defaultRightTexture);
+		_choiceSubmissionInProgress = true;
+		SetChoiceButtons(disableAll: true);
+		try
+		{
+			try
+			{
+				_lastResult = _engine.Choose(optionKey); // One roll, one atomic commit.
+			}
+			catch (Exception ex)
+			{
+				// A failed transaction can retry ONLY this already-resolved choice.
+				// Do not offer other options, which would let a failed roll be discarded.
+				GD.PushError($"[Dialogue] Could not save choice '{optionKey}': {ex}");
+				if (_engine.HasCommittedChoice)
+				{
+					_footer.Text = "Choice already saved; cannot submit it again.";
+					return;
+				}
+				SetChoiceButtons(disableAll: false, retryOnlyKey: _engine.PendingChoiceKey);
+				_footer.Text = _engine.PendingChoiceKey is null
+					? "Could not resolve dialogue choice; check the error and retry."
+					: "Could not save dialogue choice — retry the SAME choice (roll preserved).";
+				return;
+			}
 
-		Speak(_engine.Visitor.Id, _lastResult.PlayerLine.Text);
-		UpdateRelationshipPanels(_lastResult.Changes);
-		ShowStatusChangeFeedback(_lastResult.StatusChanges);
-		string skill = _engine.SkillLabel(_lastResult.Choice);
-		_footer.Text = $"Chance {_lastResult.Chance}%" +
-			(string.IsNullOrEmpty(skill) ? "" : $" ({skill})") +
-			$"  •  Rolled {_lastResult.Roll}/100  •  " +
-			$"{_engine.Visitor.Name}: " + (_lastResult.Succeeded ? "Success" : "Failure") +
-			$"  •  {_engine.Host.Name}: {ReactionLabel(_lastResult.TargetReaction)}" +
-			$"  •  {_lastResult.Changes.Count} stat change(s)" +
-			$"  •  {_lastResult.StatusChanges.Count} status change(s)";
+			// Set this BEFORE drawing; a portrait/UI exception must not allow
+			// another submission of an already committed outcome.
+			_stage = DisplayStage.PlayerSpeaking;
+			_choicesScroll.Visible = false;
+			_continueButton.Visible = true;
+			_continueButton.Text = "Continue";
+
+			try
+			{
+				// Only the initiator rolls. The recipient reacts; they are never
+				// a second success/failure roll or the inverse of the initiator.
+				SetActorOutcomePortrait(_leftPortrait, _leftOutcomeBadge,
+					_engine.Visitor, _lastResult.PlayerLine,
+					_lastResult.Succeeded, _defaultLeftTexture);
+				SetTargetReactionPortrait(_rightPortrait, _rightOutcomeBadge,
+					_engine.Host, _lastResult.HostLine,
+					_lastResult.Succeeded, _lastResult.TargetReaction,
+					_defaultRightTexture);
+
+				Speak(_engine.Visitor.Id, _lastResult.PlayerLine.Text);
+				UpdateRelationshipPanels(_lastResult.Changes);
+				ShowStatusChangeFeedback(_lastResult.StatusChanges);
+				string skill = _engine.SkillLabel(_lastResult.Choice);
+				_footer.Text = $"Chance {_lastResult.Chance}%" +
+					(string.IsNullOrEmpty(skill) ? "" : $" ({skill})") +
+					$"  •  Rolled {_lastResult.Roll}/100  •  " +
+					$"{_engine.Visitor.Name}: " + (_lastResult.Succeeded ? "Success" : "Failure") +
+					$"  •  {_engine.Host.Name}: {ReactionLabel(_lastResult.TargetReaction)}" +
+					$"  •  {_lastResult.Changes.Count} stat change(s)" +
+					$"  •  {_lastResult.StatusChanges.Count} status change(s)";
+			}
+			catch (Exception ex)
+			{
+				GD.PushError($"[Dialogue] Choice saved but presentation failed: {ex}");
+				_footer.Text = "Choice saved. Some presentation failed; continue without resubmitting.";
+			}
+		}
+		finally
+		{
+			_choiceSubmissionInProgress = false;
+		}
 	}
 
 	private void ContinueConversation()
@@ -222,17 +398,54 @@ public partial class InteractionScene : Control
 		}
 		else if (_stage == DisplayStage.Finished)
 		{
-			RestartConversation();
+			if (ReturnToConversationMenu is not null)
+				ReturnToConversationMenu();
+			else
+				RestartConversation();
 		}
 	}
 
 	private void EndConversation()
 	{
+		// Only terminal dialogue flow calls this. Choices were already committed
+		// individually; the encounter becomes complete only after the player has
+		// seen the final recipient response and selected Finish conversation.
+		// Never reselect a memory here: _selectedEncounter retains the exact
+		// anchor and directional pair chosen at launch.
+		_continueButton.Disabled = true;
+		try
+		{
+			_completionGuard.Finish(() =>
+			{
+				if (_selectedEncounter is null) return; // Normal conversation.
+				bool recorded = _completionStore.RecordCompletion(_selectedEncounter,
+					_engine.Visitor.Id, _engine.Host.Id);
+				GD.Print($"[SpecialEncounter] Completed {_selectedEncounter.EncounterKey}" +
+					(recorded ? " — saved." : " — repeatable or already saved."));
+			});
+		}
+		catch (Exception ex)
+		{
+			// The guard only marks completion on successful persistence.
+			// Retry the SAME end operation; never reapply the final choice.
+			GD.PushError($"[SpecialEncounter] Could not save completion: {ex}");
+			_continueButton.Text = "Retry finish";
+			_footer.Text = "Could not save special encounter completion — retry finish.";
+			return;
+		}
+		finally
+		{
+			_continueButton.Disabled = false;
+		}
+
+		// If presentation fails after persistence, the guard remembers that the
+		// completion was committed; another Finish will not write a second row.
 		_stage = DisplayStage.Finished;
 		_choicesScroll.Visible = false;
 		_continueButton.Visible = true;
 		_continueButton.Text = "Start another conversation";
-		_footer.Text = "Conversation complete  •  relationship changes saved";
+		_footer.Text = "Conversation complete  •  effects saved" +
+			(_selectedEncounter is null ? "" : "  •  special encounter completed");
 		UpdateRelationshipPanels();
 	}
 
@@ -480,44 +693,44 @@ public partial class InteractionScene : Control
 			_engine.Host.Name, _engine.Visitor.Name, changes);
 	}
 
-	private void UpdateStatusLabel(TextureRect icon, Label label, string statusKey)
-	{
-		string displayName = _statusStore.GetDisplayName(statusKey);
-		string iconPath = _statusStore.GetIconPath(statusKey);
-		string hexColor = _statusStore.GetColorHex(statusKey);
-		Color colour = new Color(hexColor);
-		Texture2D? texture = LoadImage(iconPath);
-		icon.Texture = texture;
-		icon.Modulate = colour;
-		icon.Visible = texture is not null;
-		// An authored icon replaces the old dot; a missing/empty icon retains it.
-		label.Text = texture is null ? $"• {displayName}" : displayName;
-		label.TooltipText = $"Current status: {displayName} ({statusKey})";
-		label.AddThemeColorOverride("font_color", colour);
-	}
+    private void UpdateStatusLabel(TextureRect icon, Label label, string statusKey)
+    {
+        string displayName = _statusStore.GetDisplayName(statusKey);
+        string iconPath = _statusStore.GetIconPath(statusKey);
+        string hexColor = _statusStore.GetColorHex(statusKey);
+        Color colour = new Color(hexColor);
+        Texture2D? texture = LoadImage(iconPath);
+        icon.Texture = texture;
+        icon.Modulate = colour;
+        icon.Visible = texture is not null;
+        // An authored icon replaces the old dot; a missing/empty icon retains it.
+        label.Text = texture is null ? $"• {displayName}" : displayName;
+        label.TooltipText = $"Current status: {displayName} ({statusKey})";
+        label.AddThemeColorOverride("font_color", colour);
+    }
 
-	private void ShowStatusChangeFeedback(IReadOnlyList<AppliedRelationshipStatusChange> changes)
-	{
-		if (changes.Count == 0)
-		{
-			_choiceTitle.Text = "RESPONSE RECORDED";
-			return;
-		}
+    private void ShowStatusChangeFeedback(IReadOnlyList<AppliedRelationshipStatusChange> changes)
+    {
+        if (changes.Count == 0)
+        {
+            _choiceTitle.Text = "RESPONSE RECORDED";
+            return;
+        }
 
-		string[] lines = changes.Select(change =>
-			$"STATUS  •  {DisplayCharacter(change.FromId)} → {DisplayCharacter(change.ToId)}: " +
-			$"{_statusStore.GetDisplayName(change.Before)} → {_statusStore.GetDisplayName(change.After)}")
-			.ToArray();
-		_choiceTitle.Text = string.Join("\n", lines);
-		_choiceTitle.TooltipText = string.Join("\n", lines);
-		_choiceTitle.AddThemeColorOverride("font_color", new Color(0.93f, 0.83f, 0.66f));
-	}
+        string[] lines = changes.Select(change =>
+            $"STATUS  •  {DisplayCharacter(change.FromId)} → {DisplayCharacter(change.ToId)}: " +
+            $"{_statusStore.GetDisplayName(change.Before)} → {_statusStore.GetDisplayName(change.After)}")
+            .ToArray();
+        _choiceTitle.Text = string.Join("\n", lines);
+        _choiceTitle.TooltipText = string.Join("\n", lines);
+        _choiceTitle.AddThemeColorOverride("font_color", new Color(0.93f, 0.83f, 0.66f));
+    }
 
-	private string DisplayCharacter(string id) =>
-		string.Equals(id, _engine.Visitor.Id, StringComparison.OrdinalIgnoreCase)
-			? _engine.Visitor.Name
-			: string.Equals(id, _engine.Host.Id, StringComparison.OrdinalIgnoreCase)
-				? _engine.Host.Name : id;
+    private string DisplayCharacter(string id) =>
+        string.Equals(id, _engine.Visitor.Id, StringComparison.OrdinalIgnoreCase)
+            ? _engine.Visitor.Name
+            : string.Equals(id, _engine.Host.Id, StringComparison.OrdinalIgnoreCase)
+                ? _engine.Host.Name : id;
 
 	private static void FillStats(Dictionary<string, Label> labels,
 		Dictionary<string, Control> chips, RelationshipStats stats,

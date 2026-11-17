@@ -178,6 +178,15 @@ public sealed class SqliteRelationshipStatusStore : IRelationshipStatusStore
         return GetOnConnection(db,null,from,to);
     }
 
+    /// <summary>Read pending ally/status changes inside a caller-owned unit of work.</summary>
+    internal string GetInTransaction(SqliteConnection db, SqliteTransaction tx,
+        string fromCharacterId, string toCharacterId)
+    {
+        string from=Key(fromCharacterId),to=Key(toCharacterId);
+        CheckPair(from,to);
+        return GetOnConnection(db,tx,from,to);
+    }
+
     /// <summary>Use for scripted gameplay events until the event engine exists.</summary>
     public AppliedRelationshipStatusChange? SetStatus(string fromCharacterId,string toCharacterId,string statusKey)
     {

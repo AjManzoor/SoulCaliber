@@ -66,7 +66,7 @@
             <Button Content="Save modifier" Click="SaveModifier_Click"/>
             <Button Content="Delete selected modifier" Click="DeleteModifier_Click"/>
           </WrapPanel>
-          <TextBlock Text="Assign saved traits to individual characters in the Character Manager. Effects are modified for the owner of the outgoing relationship, not necessarily the actor."
+          <TextBlock Text="Assign saved traits to individual characters in the Character Manager. Effects are modified for the owner of the outgoing relationship, not necessarily the initiator."
                      TextWrapping="Wrap" Foreground="#B9C9E4" Margin="0,16,0,0"/>
         </StackPanel>
       </ScrollViewer>

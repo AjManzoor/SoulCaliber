@@ -12,11 +12,11 @@
       <Grid>
         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
         <StackPanel Margin="0,0,10,0">
-          <TextBlock Text="Visitor / actor (left)" Foreground="#B9C9E4"/>
+          <TextBlock Text="Initiator (left)" Foreground="#B9C9E4"/>
           <ComboBox x:Name="PreviewActorBox" Margin="0,4,0,5"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Margin="0,0,10,0">
-          <TextBlock Text="Partner / host (right)" Foreground="#B9C9E4"/>
+          <TextBlock Text="Recipient (right)" Foreground="#B9C9E4"/>
           <ComboBox x:Name="PreviewHostBox" Margin="0,4,0,5"/>
         </StackPanel>
         <Button Grid.Column="2" Content="Resolve dialogue" Click="Resolve_Click" VerticalAlignment="Bottom" Margin="4,0,0,5"/>

@@ -1,27 +1,25 @@
+using System;
+
 namespace SoulCaliber.Dialogue;
 
 /// <summary>
-/// Phase 12C prototype boot policy: a fresh process uses master-content starting
-/// statuses; repeatedly opening/advancing dialogue scenes does NOT reset them.
-/// A future load-game menu must call KeepSavedStatusesForLoad() BEFORE opening
-/// the first interaction scene to preserve existing runtime overrides.
+/// Compatibility wrapper for callers of the old Phase 12C session helper.
+/// Opening the game must NEVER delete saved progress. Use SaveGameProgress.ResetAll
+/// only for an explicit New Game / Reset Progress action.
 /// </summary>
+[Obsolete("Use SaveGameProgress.ResetAll() for explicit resets; opening a session keeps saved progress.")]
 public static class RelationshipStatusSession
 {
-    private static bool _sessionInitialised;
+    // No longer deletes status overrides on first scene load (the old data-loss bug).
+    public static void EnsureFreshPrototypeSession(SqliteRelationshipStatusStore store) =>
+        _ = store ?? throw new ArgumentNullException(nameof(store));
 
-    public static void EnsureFreshPrototypeSession(SqliteRelationshipStatusStore store)
-    {
-        if (_sessionInitialised) return;
-        store.ResetToDefaults();
-        _sessionInitialised = true;
-    }
-
+    // Preserve the method for any old caller, but reset ALL runtime progress together.
     public static void StartNewGame(SqliteRelationshipStatusStore store)
     {
-        store.ResetToDefaults();
-        _sessionInitialised = true;
+        _ = store ?? throw new ArgumentNullException(nameof(store));
+        SaveGameProgress.ResetAll();
     }
 
-    public static void KeepSavedStatusesForLoad() => _sessionInitialised = true;
+    public static void KeepSavedStatusesForLoad() { } // Persistence is now the default.
 }

@@ -1,0 +1,17 @@
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\bin\Debug\net8.0\EncounterCompletionGuardTests.exe
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\bin\Debug\net8.0\EncounterCompletionGuardTests.deps.json
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\bin\Debug\net8.0\EncounterCompletionGuardTests.runtimeconfig.json
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\bin\Debug\net8.0\EncounterCompletionGuardTests.runtimeconfig.dev.json
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\bin\Debug\net8.0\EncounterCompletionGuardTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\bin\Debug\net8.0\EncounterCompletionGuardTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\EncounterCompletionGuardTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\EncounterCompletionGuardTests.AssemblyInfoInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\EncounterCompletionGuardTests.AssemblyInfo.cs
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\EncounterCompletionGuardTests.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\EncounterCompletionGuardTests.sourcelink.json
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\EncounterCompletionGuardTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\refint\EncounterCompletionGuardTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\EncounterCompletionGuardTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\EncounterCompletionGuardTests.genruntimeconfig.cache
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\ref\EncounterCompletionGuardTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\EncounterCompletionGuardTests\obj\Debug\net8.0\Encounte.32B016D2.Up2Date

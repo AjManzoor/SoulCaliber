@@ -116,6 +116,11 @@ public sealed partial class DialogueDesignerStore
             throw new InvalidOperationException("NEUTRAL is the required fallback and cannot be disabled.");
         if (item.IsDefault != (key == "NEUTRAL"))
             throw new InvalidOperationException("For Phase 12A, NEUTRAL must remain the default status.");
+        // Advanced STATUS leaves are authored as JSON, so foreign keys alone
+        // cannot protect them from catalogue deactivation.
+        if (!item.IsActive && AdvancedRequirementsUseStatus(key))
+            throw new InvalidOperationException(
+                $"Cannot deactivate {key}: an advanced dialogue condition uses this status.");
 
         Write(tx =>
         {
@@ -136,12 +141,34 @@ public sealed partial class DialogueDesignerStore
         });
     }
 
+    private bool AdvancedRequirementsUseStatus(string key)
+    {
+        if (!Exists(_db,
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='OptionMemoryRequirements'"))
+            return false;
+        using var cmd = Command("SELECT ExpressionJson FROM OptionMemoryRequirements");
+        using var rows = cmd.ExecuteReader();
+        while (rows.Read())
+        {
+            var root = SoulCaliber.Shared.MemoryConditionRules.Read(rows.GetString(0));
+            if (Uses(root)) return true;
+        }
+        return false;
+
+        bool Uses(SoulCaliber.Shared.MemoryConditionNode node) =>
+            (node.Kind == "STATUS" &&
+             string.Equals(node.StatusKey, key, StringComparison.OrdinalIgnoreCase)) ||
+            (node.Children?.Any(Uses) ?? false);
+    }
+
     public void DeleteStatus(string key)
     {
         if (string.Equals(key, "NEUTRAL", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("The default NEUTRAL status cannot be deleted.");
-        // Future authored default pair rows will use a foreign key with RESTRICT,
-        // so deletion of a referenced status will remain prohibited.
+        if (AdvancedRequirementsUseStatus(key))
+            throw new InvalidOperationException(
+                $"Cannot delete {key}: an advanced dialogue condition uses this status.");
+        // Other direct table references remain protected by foreign keys.
         Write(tx =>
         {
             using var cmd = Command("DELETE FROM RelationshipStatuses WHERE Key=$key AND IsDefault=0", tx);

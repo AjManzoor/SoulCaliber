@@ -1,0 +1,25 @@
+flowchart TD
+ START[OPENING: Casual conversation] -->|neutral| PROPOSAL[PROPOSAL: Recruitment]
+ START -->|enemy| TRUCE[TRUCE: Reconciliation]
+ START -->|ally| ALLY[ALLY_COUNCIL]
+ START -->|ally + fear 90+| FEAR[FEAR_COUNCIL]
+ START -->|ally + respect 75+, fear <=30| RESPECT[RESPECT_COUNCIL]
+ START --> MEASURE[MEASURE: Training]
+ MEASURE --> PROOF[PROOF: Test of judgement]
+ MEASURE --> COMMON[COMMON_GROUND]
+ PROPOSAL -->|persuade| OATH[OATH: Voluntary alliance]
+ PROPOSAL -->|threaten| COERCED[COERCED: Forced alliance]
+ PROPOSAL -->|rebuffed| REBUFF[REBUFF]
+ TRUCE -->|succeed| COMMON
+ TRUCE -->|fail| REPRISAL[REPRISAL]
+ FEAR -->|press too hard| REPRISAL
+ FEAR -->|keep pressure| COERCED
+ OATH --> ALLY
+ ALLY -->|trust check| WARNING[WARNING: Mizuri]
+ RESPECT --> WARNING
+ COMMON --> WARNING
+ REBUFF --> REPRISAL
+ REBUFF --> COMMON
+ WARNING --> FAREWELL[FAREWELL]
+ REPRISAL --> FAREWELL
+ FAREWELL --> END((End))

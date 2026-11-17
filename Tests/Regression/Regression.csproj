@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <!-- Compile real Godot-independent production rules; these are NOT copied test stubs. -->
+  <ItemGroup>
+    <Compile Include="../../Game/Dialogue/MemoryConditionRules.cs" Link="Production/MemoryConditionRules.cs" />
+    <Compile Include="../../Game/Dialogue/ChanceFormula.cs" Link="Production/ChanceFormula.cs" />
+    <Compile Include="../../Game/Dialogue/PersonalityEffectRules.cs" Link="Production/PersonalityEffectRules.cs" />
+    <Compile Include="../../Game/Dialogue/ConditionalDialogueRules.cs" Link="Production/ConditionalDialogueRules.cs" />
+    <Compile Include="../../Game/Dialogue/ChoiceResolutionGuard.cs" Link="Production/ChoiceResolutionGuard.cs" />
+    <Compile Include="../../Game/Dialogue/SpecialEncounterCompletionGuard.cs" Link="Production/SpecialEncounterCompletionGuard.cs" />
+  </ItemGroup>
+</Project>

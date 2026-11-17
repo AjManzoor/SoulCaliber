@@ -74,6 +74,7 @@ public partial class InteractionSimulatorWindow
         _partnerStatus = partner;
         if (_node is not null && !_awaitingContinue)
             Safely(RefreshChoiceAvailability);
+        else Safely(RefreshEncounterDiagnostics);
     }
 
     private void RestoreStatuses_Click(object sender, RoutedEventArgs e) => Safely(() =>
@@ -82,6 +83,7 @@ public partial class InteractionSimulatorWindow
             throw new InvalidOperationException("Start an interaction before restoring statuses.");
         SetStatusPair(_data.StartingStatus(_actor, _partner), _data.StartingStatus(_partner, _actor));
         if (_node is not null && !_awaitingContinue) RefreshChoiceAvailability();
+        else RefreshEncounterDiagnostics();
     });
 
     private IReadOnlyList<SimulationRequirementCheck> GetRequirementChecks(SimChoice choice)
@@ -120,6 +122,14 @@ public partial class InteractionSimulatorWindow
             };
             checks.Add(new SimulationRequirementCheck(passes,
                 $"{DirectionLabel(requirement.Direction)} · status = {actual}, requires {_data.StatusName(requirement.StatusKey)}"));
+        }
+        var advanced = _data.OptionConditions(choice.Id);
+        if (advanced is not null)
+        {
+            string failure = _memoryRuntime.CheckChoiceConditions(advanced, _actor, _partner,
+                CurrentSimulatedStatus);
+            checks.Add(new SimulationRequirementCheck(failure.Length == 0,
+                failure.Length == 0 ? "Advanced memory/status AND / OR / NOT: all passed" : failure));
         }
         return checks;
     }
@@ -227,6 +237,7 @@ public partial class InteractionSimulatorWindow
         ChoiceAvailabilityText.Text = sb.ToString();
         UpdateButtons();
         RefreshMechanicsAudit();
+        RefreshEncounterDiagnostics();
     }
 }
 

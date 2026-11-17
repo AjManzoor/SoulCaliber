@@ -188,7 +188,7 @@ public partial class MainWindow
         {
             InteractionList.SelectedItem = null;
             PopulateInteraction(null);
-            DesignerStatus.Text = "New interaction: enter key, title and host, then Save. Add nodes before setting its start node.";
+            DesignerStatus.Text = "New interaction: enter a key and title, then Save. Choose the initiator and recipient when testing or launching it.";
         }
         finally { _designerLoading = false; }
     }
@@ -224,7 +224,7 @@ public partial class MainWindow
         {
             LineList.SelectedItem = null;
             PopulateLine(null);
-            DesignerStatus.Text = "New character-specific phrase: choose a speaker, optional partner/outcome, then Save.";
+            DesignerStatus.Text = "New character-specific phrase: choose a speaker, optional other character and outcome, then Save.";
         }
         finally { _designerLoading = false; }
     }
@@ -234,7 +234,7 @@ public partial class MainWindow
         {
             action();
             _designerDirty = false;
-            DesignerStatus.Text = "Saved successfully. No automatic backup was created.";
+            DesignerStatus.Text = "Saved successfully. A consistent SQLite backup was created before the change.";
         }
         catch (Exception ex)
         {
@@ -300,7 +300,7 @@ public partial class MainWindow
         });
     }
     private bool ConfirmDelete(string label) => MessageBox.Show(this,
-        $"Permanently delete {label} from the master content database?\n\nNo automatic backup will be created.",
+        $"Permanently delete {label} from the master content database?\n\nA backup will be created before deletion.",
         "Confirm content deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
     private void DeleteInteraction_Click(object sender, RoutedEventArgs e)
     {

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using static SoulCaliberStudio.DialogueDesignerStore;
 
 namespace SoulCaliberStudio;
@@ -48,6 +49,39 @@ public partial class ChoiceMechanicsWindow : Window
         ReloadChoiceVisibility();
         ReloadModifiers();
         ReloadSkill();
+        RefreshConfigurationIndicators();
+    }
+
+    // These labels reflect persisted rules, not unsaved edits or cached window state.
+    // A modal child editor can add/delete rules, so refresh after it closes.
+    private void RefreshConfigurationIndicators()
+    {
+        SetConfigurationIndicator(MemoryEffectsBadge, MemoryEffectsCountText,
+            _store.MemoryEffects(_option.Id).Count, "effect");
+        SetConfigurationIndicator(StatusEffectsBadge, StatusEffectsCountText,
+            _store.StatusEffects(_option.Id).Count, "effect");
+        SetConfigurationIndicator(SimpleRequirementsBadge, SimpleRequirementsCountText,
+            _store.StatusRequirements(_option.Id).Count, "rule");
+
+        var expression = _store.GetMemoryRequirements(_option.Id);
+        SetConfigurationIndicator(AdvancedRequirementsBadge, AdvancedRequirementsCountText,
+            expression is null ? 0 : CountConditionLeaves(expression), "condition");
+    }
+
+    private static int CountConditionLeaves(SoulCaliber.Shared.MemoryConditionNode node) =>
+        node.Kind is "MEMORY" or "STATUS" ? 1 :
+        node.Children?.Sum(CountConditionLeaves) ?? 0;
+
+    private static void SetConfigurationIndicator(Border badge, TextBlock text, int count, string noun)
+    {
+        bool configured = count > 0;
+        text.Text = configured ? $"✓ {count} {noun}{(count == 1 ? "" : "s")}" : "None";
+        badge.Background = new SolidColorBrush(configured
+            ? Color.FromRgb(0x2B, 0x50, 0x40)
+            : Color.FromRgb(0x35, 0x41, 0x51));
+        text.Foreground = new SolidColorBrush(configured
+            ? Color.FromRgb(0xB6, 0xEE, 0xCB)
+            : Color.FromRgb(0xC2, 0xCD, 0xDF));
     }
 
     // Display descriptions without changing the exact string tokens Godot expects.
@@ -356,6 +390,7 @@ public partial class ChoiceMechanicsWindow : Window
         try
         {
             new StatusRequirementsWindow(_store, _option.Id) { Owner = this }.ShowDialog();
+            RefreshConfigurationIndicators();
             StatusText.Text = "Dialogue status requirements saved. Unmet choices are locked or hidden as configured.";
         }
         catch (Exception ex)
@@ -364,12 +399,37 @@ public partial class ChoiceMechanicsWindow : Window
         }
     }
 
+    private void EditMemoryRequirements_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CanSwitch()) return;
+        try
+        {
+            new MemoryRequirementsWindow(_store, _option.Id) { Owner = this }.ShowDialog();
+            RefreshConfigurationIndicators();
+            StatusText.Text = "Advanced requirements updated. Simple numeric/status rules still combine with them using AND.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Memory requirements", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void EditMemoryEffects_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CanSwitch()) return;
+        try {new MemoryEffectsWindow(_store,_option.Id){Owner=this}.ShowDialog();
+            RefreshConfigurationIndicators();
+            StatusText.Text="Memory creation rules saved.";}
+        catch(Exception ex){MessageBox.Show(this,ex.Message,"Memory effects",MessageBoxButton.OK,MessageBoxImage.Error);}
+    }
+
     private void EditStatusEffects_Click(object sender, RoutedEventArgs e)
     {
         if (!CanSwitch()) return;
         try
         {
             new StatusEffectsWindow(_store, _option.Id) { Owner = this }.ShowDialog();
+            RefreshConfigurationIndicators();
             StatusText.Text = "Discrete relationship-status outcomes configured separately from numeric effects.";
         }
         catch (Exception ex)

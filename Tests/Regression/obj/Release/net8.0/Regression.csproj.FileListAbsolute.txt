@@ -1,0 +1,16 @@
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\bin\Release\net8.0\Regression.exe
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\bin\Release\net8.0\Regression.deps.json
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\bin\Release\net8.0\Regression.runtimeconfig.json
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\bin\Release\net8.0\Regression.dll
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\bin\Release\net8.0\Regression.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.AssemblyInfoInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.AssemblyInfo.cs
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.sourcelink.json
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.dll
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\refint\Regression.dll
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.genruntimeconfig.cache
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\ref\Regression.dll
+C:\Users\User\Documents\SoulCaliber\Tests\Regression\obj\Release\net8.0\Regression.csproj.Up2Date

@@ -29,14 +29,14 @@
     <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto">
       <StackPanel Margin="0,0,14,0">
         <TextBlock Text="EDIT INTRODUCTION" FontWeight="Bold" FontSize="16" Margin="0,0,0,10"/>
-        <TextBlock Text="Speaking character (the partner / right-side character)" Foreground="#B9C9E4"/>
+        <TextBlock Text="Recipient — speaking character (right)" Foreground="#B9C9E4"/>
         <ComboBox x:Name="IntroSpeakerBox" Margin="0,4,0,10" SelectionChanged="Editor_Changed"/>
-        <TextBlock Text="Other character (left-side visitor; blank = any)" Foreground="#B9C9E4"/>
+        <TextBlock Text="Initiator — approaching character (left; blank = any)" Foreground="#B9C9E4"/>
         <ComboBox x:Name="IntroVisitorBox" Margin="0,4,0,10" SelectionChanged="Editor_Changed"/>
         <TextBlock Text="Introduction text" Foreground="#B9C9E4"/>
         <TextBox x:Name="IntroTextBox" Margin="0,4,0,6" Height="100" TextWrapping="Wrap"
                  AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextChanged="Editor_Changed"/>
-        <TextBlock Text="Use {actor} for the visitor's name and {partner} for the speaker's name."
+        <TextBlock Text="Use {actor} for the initiator and {partner} for the recipient. These existing placeholders remain supported."
                    Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap"/>
         <Button Content="Save introduction" Click="Save_Click" HorizontalAlignment="Left" Margin="0,11,0,0"/>
         <Separator Margin="0,17,0,13"/>
@@ -46,11 +46,11 @@
         <Grid>
           <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
           <StackPanel Grid.Column="0" Margin="0,0,8,0">
-            <TextBlock Text="Partner / speaking character" Foreground="#B9C9E4"/>
+            <TextBlock Text="Recipient / speaking character" Foreground="#B9C9E4"/>
             <ComboBox x:Name="PreviewSpeakerBox" Margin="0,4,0,5"/>
           </StackPanel>
           <StackPanel Grid.Column="1">
-            <TextBlock Text="Visitor / other character" Foreground="#B9C9E4"/>
+            <TextBlock Text="Initiator / approaching character" Foreground="#B9C9E4"/>
             <ComboBox x:Name="PreviewVisitorBox" Margin="0,4,0,5"/>
           </StackPanel>
         </Grid>

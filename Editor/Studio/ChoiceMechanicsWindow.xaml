@@ -9,7 +9,7 @@
     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
       <TextBlock Text="CHOICE MECHANICS" FontSize="22" FontWeight="Bold"/>
       <TextBlock x:Name="ChoiceHeading" FontSize="14" Foreground="#9EC5FF" Margin="0,3,0,0"/>
-      <TextBlock Text="These rules apply to the selected choice for ANY two characters. All changes save to the master database; Godot already reads these four tables."
+      <TextBlock Text="These rules apply to the selected choice for ANY two characters. All changes save to the master database; Godot reads the published content and evaluates these rules at runtime."
                  Foreground="#C4D0E1" TextWrapping="Wrap" Margin="0,6,0,0"/>
     </StackPanel>
     <DockPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
@@ -47,7 +47,24 @@
                   <TextBox x:Name="EffectDeltaBox" TextChanged="Editor_Changed"/>
                 </StackPanel>
               </WrapPanel>
-              <Button Content="Edit Ally / Enemy status changes..." Click="EditStatusEffects_Click" Margin="0,0,0,8"/>
+              <Button x:Name="MemoryEffectsButton" Click="EditMemoryEffects_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="44" Margin="0,0,0,8">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="Edit memory creation effects..." TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                  <Border x:Name="MemoryEffectsBadge" Grid.Column="1" CornerRadius="9" Padding="9,4" Background="#354151" VerticalAlignment="Center">
+                    <TextBlock x:Name="MemoryEffectsCountText" Text="None" FontSize="11" FontWeight="SemiBold" Foreground="#C2CDDF"/>
+                  </Border>
+                </Grid>
+              </Button>
+              <Button x:Name="StatusEffectsButton" Click="EditStatusEffects_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="44" Margin="0,0,0,8">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="Edit Ally / Enemy status changes..." TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                  <Border x:Name="StatusEffectsBadge" Grid.Column="1" CornerRadius="9" Padding="9,4" Background="#354151" VerticalAlignment="Center">
+                    <TextBlock x:Name="StatusEffectsCountText" Text="None" FontSize="11" FontWeight="SemiBold" Foreground="#C2CDDF"/>
+                  </Border>
+                </Grid>
+              </Button>
               <TextBlock Text="Example: SUCCESS · Recipient → Initiator · Fear · +15 means a successful threat makes its target fear the initiator more."
                          TextWrapping="Wrap" Foreground="#B9C9E4" FontSize="11" Margin="0,1,0,7"/>
               <WrapPanel>
@@ -119,10 +136,26 @@
           <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
           <DockPanel Grid.Row="0">
             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
-              <TextBlock Text="All numeric and status requirements must pass before a choice can be selected. Set below whether an unmet choice remains visibly locked or disappears entirely."
+              <TextBlock Text="All numeric, status and memory requirements must pass before a choice can be selected. Set below whether an unmet choice remains visibly locked or disappears entirely."
                          TextWrapping="Wrap" Foreground="#B9C9E4" Margin="0,0,0,6"/>
-              <Button Content="Edit Ally / Enemy / custom status requirements..." Click="EditStatusRequirements_Click"
-                      HorizontalAlignment="Left"/>
+              <Button x:Name="AdvancedRequirementsButton" Click="EditMemoryRequirements_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="44" Margin="0,0,0,8">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="Advanced requirements — memory / status (AND / OR / NOT)..." TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                  <Border x:Name="AdvancedRequirementsBadge" Grid.Column="1" CornerRadius="9" Padding="9,4" Background="#354151" VerticalAlignment="Center">
+                    <TextBlock x:Name="AdvancedRequirementsCountText" Text="None" FontSize="11" FontWeight="SemiBold" Foreground="#C2CDDF"/>
+                  </Border>
+                </Grid>
+              </Button>
+              <Button x:Name="SimpleRequirementsButton" Click="EditStatusRequirements_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="44" Margin="0,0,0,8">
+                <Grid>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="Simple relationship status requirements (AND only)..." TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                  <Border x:Name="SimpleRequirementsBadge" Grid.Column="1" CornerRadius="9" Padding="9,4" Background="#354151" VerticalAlignment="Center">
+                    <TextBlock x:Name="SimpleRequirementsCountText" Text="None" FontSize="11" FontWeight="SemiBold" Foreground="#C2CDDF"/>
+                  </Border>
+                </Grid>
+              </Button>
               <Border Background="#242C39" CornerRadius="6" Padding="10" Margin="0,10,0,8">
                 <StackPanel>
                   <TextBlock Text="WHEN ANY REQUIREMENT IS NOT MET" FontWeight="Bold" Margin="0,0,0,5"/>
@@ -131,7 +164,7 @@
                               SelectionChanged="UnmetBehaviour_Changed"/>
                     <Button Content="Save choice visibility" Click="SaveChoiceVisibility_Click"/>
                   </WrapPanel>
-                  <TextBlock Text="Show as locked is the default. Hide completely removes only this choice from the response list until its requirements are met. Applies to numeric and status requirements."
+                  <TextBlock Text="Show as locked is the default. Hide completely removes only this choice from the response list until its requirements are met. Applies to numeric, status and memory requirements."
                              Foreground="#B9C9E4" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
                 </StackPanel>
               </Border>

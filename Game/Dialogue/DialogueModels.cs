@@ -61,6 +61,9 @@ public sealed class DialogueNode
 	public List<DialogueOption> Options { get; set; } = new();
 }
 
+public sealed record DialogueMemoryEffect(string MemoryKey, string Trigger, string Affected,
+    string? SeverityOverride, string? KnowledgeOverride);
+
 public sealed class DialogueOption
 {
 	public string Key { get; set; } = "";
@@ -70,6 +73,7 @@ public sealed class DialogueOption
 	// Rules and effects are DATA. Add or remove attributes without adding scene code.
 	public List<RelationshipRequirement> Requirements { get; set; } = new();
 	public List<RelationshipStatusRequirement> StatusRequirements { get; set; } = new();
+    public SoulCaliber.Shared.MemoryConditionNode? MemoryRequirements { get; set; }
     // An unmet choice is normally shown disabled; HIDE removes it from the offered list.
     public bool HideWhenRequirementsUnmet { get; set; }
 	public List<ChanceModifier> ChanceModifiers { get; set; } = new();
@@ -77,6 +81,7 @@ public sealed class DialogueOption
 	public List<RelationshipEffect> FailureEffects { get; set; } = new();
 	public List<RelationshipStatusEffect> SuccessStatusEffects { get; set; } = new();
 	public List<RelationshipStatusEffect> FailureStatusEffects { get; set; } = new();
+    public List<DialogueMemoryEffect> MemoryEffects { get; set; } = new();
 
 	public string? SuccessNextNodeKey { get; set; }
 	public string? FailureNextNodeKey { get; set; }

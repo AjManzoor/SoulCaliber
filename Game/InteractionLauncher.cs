@@ -25,6 +25,21 @@ public static class InteractionLauncher
 		scene.VisitorCharacterId = actorId.Trim();
 		scene.PartnerCharacterId = partnerId.Trim();
 		scene.InteractionKey = interactionKey.Trim();
+		// Explicitly requested dialogue is a direct/test launch, not an approach.
+		scene.EnableSpecialEncounterSelection = false;
+		return scene;
+	}
+
+	/// <summary>
+	/// Begin a normal character approach. The authored interaction is the fallback;
+	/// an eligible automatic special encounter can replace it at _Ready().
+	/// Add the returned scene to the tree AFTER setting its properties.
+	/// </summary>
+	public static InteractionScene CreateForApproach(string actorId, string partnerId,
+		string normalInteractionKey)
+	{
+		var scene = Create(actorId, partnerId, normalInteractionKey);
+		scene.EnableSpecialEncounterSelection = true;
 		return scene;
 	}
 }
