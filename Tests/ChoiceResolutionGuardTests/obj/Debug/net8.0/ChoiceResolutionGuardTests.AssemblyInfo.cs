@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ChoiceResolutionGuardTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+debbff49a88005b9da21f81a7b14a1e20c27e07a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+60670a97080849876ae30dfc0f17f90ea250cf91")]
 [assembly: System.Reflection.AssemblyProductAttribute("ChoiceResolutionGuardTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ChoiceResolutionGuardTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

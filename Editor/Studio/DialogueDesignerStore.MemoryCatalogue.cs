@@ -1,6 +1,7 @@
 using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Text.RegularExpressions;
+using SoulCaliber.Shared;
 
 namespace SoulCaliberStudio;
 
@@ -77,7 +78,7 @@ public sealed partial class DialogueDesignerStore
     }
 
     /// <summary>Save a definition and all personality relevance links together.</summary>
-    public void SaveMemoryType(MemoryTypeDefinition item, bool isNew, IReadOnlyCollection<string> relevantTraitKeys)
+    public void SaveMemoryType(MemoryTypeDefinition item, bool isNew, IReadOnlyCollection<string> relevantTraitKeys, KnowledgeAudienceSpec? customAudience = null)
     {
         string key = (item.Key ?? "").Trim().ToUpperInvariant();
         if (!Regex.IsMatch(key, "^[A-Z][A-Z0-9_]{0,47}$"))
@@ -99,6 +100,7 @@ public sealed partial class DialogueDesignerStore
             if (!Exists(_db, "SELECT 1 FROM PersonalityTraits WHERE Key=$key", ("$key", traitKey)))
                 throw new InvalidOperationException($"Unknown personality trait: {traitKey}.");
 
+        ValidateAudience(customAudience);
         Write(tx =>
         {
             using (var cmd = Command(isNew ? """
@@ -135,6 +137,7 @@ public sealed partial class DialogueDesignerStore
                 Add(add, "$memory", key); Add(add, "$trait", traitKey);
                 Changed(add);
             }
+            SaveMemoryTypeAudienceInTransaction(key, customAudience, tx);
         });
     }
 

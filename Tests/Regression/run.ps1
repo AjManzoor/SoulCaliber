@@ -30,6 +30,21 @@ try {
         Invoke-Check "13G-3 completion SQLite suite" "python" @("Tests/EncounterCompletionSqliteTests/run.py")
     }
 
+    if (Test-Path "Tests/DynamicRelationshipTargets/DynamicRelationshipTargetsTests.csproj") {
+        Invoke-Check "13H-4 existing dynamic-target selector" "dotnet" @("run", "--project", "Tests/DynamicRelationshipTargets/DynamicRelationshipTargetsTests.csproj", "--configuration", "Release")
+    }
+    if (Test-Path "Tests/DynamicRelationshipTargets/sqlite_contract.py") {
+        Invoke-Check "13H-4 migration 023 contracts" "python" @("Tests/DynamicRelationshipTargets/sqlite_contract.py")
+    }
+
+    # Phase 13H-5: target selector / one-pair effects (shared production C# code),
+    # custom-list SQLite projection, and Test Lab read-only/UI source contracts.
+    if (Test-Path "Tests/DynamicTargetSimulation/DynamicTargetSimulationTests.csproj") {
+        Invoke-Check "13H-5 target selection and directional effects" "dotnet" @("run", "--project", "Tests/DynamicTargetSimulation/DynamicTargetSimulationTests.csproj", "--configuration", "Release")
+        Invoke-Check "13H-5 Studio SQLite 023/024 contracts" "python" @("Tests/DynamicTargetSimulation/sqlite_contract.py")
+        Invoke-Check "13H-5 Test Lab source and XAML contracts" "python" @("Tests/DynamicTargetSimulation/source_contract.py")
+    }
+
     if ($failed -gt 0) {
         Write-Host "`n$failed regression group(s) failed." -ForegroundColor Red
         exit 1

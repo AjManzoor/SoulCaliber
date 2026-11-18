@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using SoulCaliber.Shared;
 
 namespace SoulCaliberStudio;
 
@@ -10,6 +11,7 @@ public sealed class MemoryEffectsWindow : Window
     private readonly ListBox _items=new() { Height=170 };
     private readonly ComboBox _memory=new(), _trigger=new(), _affected=new(), _severity=new(), _knowledge=new();
     private int _editingId;
+    private KnowledgeAudienceSpec? _customAudience;
 
     public MemoryEffectsWindow(DialogueDesignerStore store,int optionId)
     {
@@ -32,7 +34,8 @@ public sealed class MemoryEffectsWindow : Window
         _affected.DisplayMemberPath="Label";
         _affected.SelectedValuePath="Key";
         _severity.ItemsSource=new[]{"Use catalogue default","MAJOR","MINOR"};
-        _knowledge.ItemsSource=new[]{"Use catalogue default","QUIET","ALLIES","GLOBAL"};
+        _knowledge.ItemsSource=new[]{"Use catalogue default","QUIET","ALLIES","GLOBAL","Custom audiences"};
+        AddButton(panel,"Configure custom knowledge audiences...",ConfigureAudiences);
         var buttons=new WrapPanel {Margin=new Thickness(0,12,0,0)};
         AddButton(buttons,"New",()=>Clear());
         AddButton(buttons,"Save",Save);
@@ -63,6 +66,7 @@ public sealed class MemoryEffectsWindow : Window
         _memory.SelectedIndex=_memory.Items.Count>0?0:-1;
         _trigger.SelectedItem="SUCCESS";_affected.SelectedValue="PARTNER";
         _severity.SelectedIndex=0;_knowledge.SelectedIndex=0;
+        _customAudience=null;
     }
     private void Select()
     {
@@ -71,7 +75,17 @@ public sealed class MemoryEffectsWindow : Window
         _memory.SelectedItem=_memory.Items.OfType<MemoryTypeDefinition>().FirstOrDefault(x=>x.Key==row.MemoryKey);
         _trigger.SelectedItem=row.Trigger;_affected.SelectedValue=row.Affected;
         _severity.SelectedItem=row.SeverityOverride??"Use catalogue default";
-        _knowledge.SelectedItem=row.KnowledgeOverride??"Use catalogue default";
+        _customAudience=_store.MemoryEffectAudience(row.Id);
+        _knowledge.SelectedItem=_customAudience is null ? row.KnowledgeOverride??"Use catalogue default" : "Custom audiences";
+    }
+    private void ConfigureAudiences()
+    {
+        var editor=new KnowledgeAudienceEditorWindow(_store,_customAudience) { Owner=this };
+        if(editor.ShowDialog()==true)
+        {
+            _customAudience=editor.Result;
+            _knowledge.SelectedItem="Custom audiences";
+        }
     }
     private void Save()
     {
@@ -79,9 +93,11 @@ public sealed class MemoryEffectsWindow : Window
         {
             if(_memory.SelectedItem is not MemoryTypeDefinition memory)throw new InvalidOperationException("Select a memory type.");
             string? severity=_severity.SelectedIndex==0?null:_severity.SelectedItem as string;
-            string? knowledge=_knowledge.SelectedIndex==0?null:_knowledge.SelectedItem as string;
+            bool custom=_knowledge.SelectedItem as string=="Custom audiences";
+            string? knowledge=custom || _knowledge.SelectedIndex==0?null:_knowledge.SelectedItem as string;
             int id=_store.SaveMemoryEffect(new(_editingId,_optionId,memory.Key,
-                _trigger.SelectedItem as string??"SUCCESS",_affected.SelectedValue as string??"PARTNER",severity,knowledge));
+                _trigger.SelectedItem as string??"SUCCESS",_affected.SelectedValue as string??"PARTNER",severity,knowledge),
+                custom ? _customAudience ?? new KnowledgeAudienceSpec() : null);
             Reload(id);
         }
         catch(Exception ex){MessageBox.Show(this,ex.Message,"Memory effect",MessageBoxButton.OK,MessageBoxImage.Error);}

@@ -39,7 +39,11 @@ public partial class SpecialEncountersWindow : Window
             new OptionValue("ONCE_PER_OCCURRENCE", "Once per memory occurrence"),
             new OptionValue("REPEATABLE", "Repeatable while eligible")
         };
-        AnchorMemoryBox.ItemsSource = store.MemoryTypeDefinitions(activeOnly: true);
+        AnchorMemoryBox.ItemsSource = new[] { new MemoryTypeDefinition("", "No memory anchor", "", "MINOR", "QUIET", 0, true) }
+            .Concat(store.MemoryTypeDefinitions(activeOnly: true)).ToArray();
+        AffectedStatusBox.ItemsSource = new[] { new OptionValue("", "No affected relationship requirement") }
+            .Concat(store.StatusDefinitions(activeOnly: true)
+                .Select(status => new OptionValue(status.Key, status.Name))).ToArray();
         var refs = new[]
         {
             new OptionValue("ANY", "Any"),
@@ -55,7 +59,8 @@ public partial class SpecialEncountersWindow : Window
         foreach (var field in new[] { KeyBox, TitleBox, PriorityBox })
             field.TextChanged += (_, _) => MarkDirty();
         foreach (var field in new[] { InteractionBox, RecipientBox, InitiatorBox, LaunchBox,
-            RepetitionBox, AnchorMemoryBox, AnchorActorBox, AnchorAffectedBox, AnchorKnowerBox })
+            RepetitionBox, AnchorMemoryBox, AnchorActorBox, AnchorAffectedBox, AnchorKnowerBox,
+            AffectedStatusBox })
             field.SelectionChanged += (_, _) => MarkDirty();
         ActiveBox.Checked += (_, _) => MarkDirty();
         ActiveBox.Unchecked += (_, _) => MarkDirty();
@@ -108,6 +113,7 @@ public partial class SpecialEncountersWindow : Window
         SelectOption(AnchorActorBox, item?.AnchorActorRef ?? "ANY");
         SelectOption(AnchorAffectedBox, item?.AnchorAffectedRef ?? "ANY");
         SelectOption(AnchorKnowerBox, item?.AnchorKnowerRef ?? "ANY");
+        SelectOption(AffectedStatusBox, item?.AffectedRelationshipStatusKey ?? "");
         UpdateAnchorState();
         ConditionsButton.IsEnabled = item is not null;
         ConditionsButton.Content = item is not null && _store.SpecialEncounterHasConditions(item.Id)
@@ -117,12 +123,20 @@ public partial class SpecialEncountersWindow : Window
 
     private void UpdateAnchorState()
     {
-        bool enabled = OptionKey(RepetitionBox) == "ONCE_PER_OCCURRENCE";
-        foreach (var combo in new[] { AnchorMemoryBox, AnchorActorBox, AnchorAffectedBox, AnchorKnowerBox })
-            combo.IsEnabled = enabled;
+        bool anchored = AnchorMemoryBox.SelectedItem is MemoryTypeDefinition memory &&
+            !string.IsNullOrWhiteSpace(memory.Key);
+        // Optional memory binding works for all repetition modes; mandatory for per-occurrence.
+        AnchorMemoryBox.IsEnabled = true;
+        foreach (var combo in new[] { AnchorActorBox, AnchorAffectedBox, AnchorKnowerBox, AffectedStatusBox })
+            combo.IsEnabled = anchored;
     }
 
     private void RepetitionBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateAnchorState();
+    }
+
+    private void AnchorMemoryBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         UpdateAnchorState();
     }
@@ -178,11 +192,11 @@ public partial class SpecialEncountersWindow : Window
             interaction.Id, string.IsNullOrEmpty(recipient) ? null : recipient,
             string.IsNullOrEmpty(initiator) ? null : initiator,
             OptionKey(LaunchBox), repetition, priority, ActiveBox.IsChecked == true,
-            repetition == "ONCE_PER_OCCURRENCE"
-                ? (AnchorMemoryBox.SelectedItem as MemoryTypeDefinition)?.Key : null,
-            repetition == "ONCE_PER_OCCURRENCE" ? OptionKey(AnchorActorBox) : "ANY",
-            repetition == "ONCE_PER_OCCURRENCE" ? OptionKey(AnchorAffectedBox) : "ANY",
-            repetition == "ONCE_PER_OCCURRENCE" ? OptionKey(AnchorKnowerBox) : "ANY");
+            (AnchorMemoryBox.SelectedItem as MemoryTypeDefinition)?.Key is string memoryKey &&
+                !string.IsNullOrWhiteSpace(memoryKey) ? memoryKey : null,
+            OptionKey(AnchorActorBox), OptionKey(AnchorAffectedBox),
+            OptionKey(AnchorKnowerBox),
+            string.IsNullOrWhiteSpace(OptionKey(AffectedStatusBox)) ? null : OptionKey(AffectedStatusBox));
         int id = _store.SaveSpecialEncounter(data);
         Refresh(id);
         StatusText.Text = $"Saved encounter {data.Key.Trim().ToUpperInvariant()}.";
@@ -228,4 +242,5 @@ public partial class SpecialEncountersWindow : Window
             MessageBox.Show(this, ex.Message, "Special encounters", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }

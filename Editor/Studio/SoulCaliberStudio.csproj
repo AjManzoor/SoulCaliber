@@ -7,6 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Game\Dialogue\MemoryAwareEncounterRules.cs" Link="MemoryAwareEncounterRules.cs" />
+    <Compile Include="..\..\Game\Dialogue\DynamicTargetRules.cs" Link="DynamicTargetRules.cs" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>
@@ -28,6 +30,10 @@
     <EmbeddedResource Include="Migrations\018_SpecialEncounters.sql" LogicalName="SoulCaliberStudio.Migrations.018_SpecialEncounters.sql" />
     <EmbeddedResource Include="Migrations\019_SpecialEncounterAnyRecipient.sql" LogicalName="SoulCaliberStudio.Migrations.019_SpecialEncounterAnyRecipient.sql" />
     <EmbeddedResource Include="Migrations\020_ConversationAvailability.sql" LogicalName="SoulCaliberStudio.Migrations.020_ConversationAvailability.sql" />
+    <EmbeddedResource Include="Migrations\021_KnowledgeAudiences.sql" LogicalName="SoulCaliberStudio.Migrations.021_KnowledgeAudiences.sql" />
+    <EmbeddedResource Include="Migrations\022_MemoryAwareSpecialEncounters.sql" LogicalName="SoulCaliberStudio.Migrations.022_MemoryAwareSpecialEncounters.sql" />
+    <EmbeddedResource Include="Migrations\023_DynamicTargetChoices.sql" LogicalName="SoulCaliberStudio.Migrations.023_DynamicTargetChoices.sql" />
+    <EmbeddedResource Include="Migrations\024_CustomDynamicTargetLists.sql" LogicalName="SoulCaliberStudio.Migrations.024_CustomDynamicTargetLists.sql" />
     <EmbeddedResource Include="Migrations\015_MemoryCatalogue.sql" LogicalName="SoulCaliberStudio.Migrations.015_MemoryCatalogue.sql" />
   </ItemGroup>
 </Project>

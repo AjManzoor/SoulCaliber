@@ -13,11 +13,8 @@ public static class SaveGameProgress
 {
     public static void ResetAll()
     {
-        // Bring older save files up to the current schema before clearing anything.
-        using (var context = new SaveDbContext()) context.Database.EnsureCreated();
-        var statuses = new SqliteRelationshipStatusStore();
-        _ = new SqliteMemoryStore(statuses);
-        _ = new SqliteSpecialEncounterCompletionStore();
+        // Validate / migrate before reset. New Game never resets the schema version.
+        SaveGameSchemaManager.EnsureCurrent();
 
         using var connection = new SqliteConnection(DatabasePaths.ConnectionString(DatabasePaths.Save));
         connection.Open();

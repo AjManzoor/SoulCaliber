@@ -1,7 +1,7 @@
 <Window x:Class="SoulCaliberStudio.SpecialEncountersWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Special Encounters — Phase 13E-1" Width="1130" Height="840"
+        Title="Special Encounters — Memory-Aware Rules" Width="1130" Height="840"
         MinWidth="860" MinHeight="630" WindowStartupLocation="CenterOwner"
         Background="#152033" Foreground="White">
   <Window.Resources>
@@ -27,11 +27,13 @@
     </Style>
   </Window.Resources>
   <DockPanel Margin="22">
-    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+      <StackPanel>
       <TextBlock Text="SPECIAL ENCOUNTERS" FontSize="25" FontWeight="Bold"/>
-      <TextBlock Text="Connect authored dialogue interactions to conditional encounters. No Godot encounter selection or completion tracking is active yet."
+      <TextBlock Text="Link dialogue to conditional encounters. A memory anchor can power different first-party and third-party reactions."
                  Foreground="#AFC5E4" FontSize="13" Margin="0,7,0,0" TextWrapping="Wrap"/>
-    </StackPanel>
+      </StackPanel>
+    </DockPanel>
     <TextBlock DockPanel.Dock="Bottom" x:Name="StatusText" Foreground="#9CC8FA"
                Margin="0,10,0,2" TextWrapping="Wrap"
                Text="Create an inactive draft, save it, configure conditions, then activate."/>
@@ -50,9 +52,16 @@
                  BorderBrush="#597090" FontSize="14" Padding="5"
                  SelectionChanged="EncounterList_SelectionChanged"/>
       </DockPanel>
-      <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto"
-                    HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="4,0,12,0">
+      <DockPanel Grid.Column="1" LastChildFill="True">
+        <!-- Keep both actions visible below the scrolling encounter definition. -->
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="4,10,12,0">
+          <Button Content="Save encounter definition" Click="Save_Click" FontWeight="Bold"
+                  HorizontalAlignment="Left"/>
+          <Button Content="Close" Click="Close_Click" Width="100" Margin="10,3,0,3"/>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="4,0,12,0">
           <TextBlock Text="ENCOUNTER DEFINITION" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
           <TextBlock Text="Stable encounter key (cannot be changed later)" Foreground="#B9C9E4"/>
           <TextBox x:Name="KeyBox"/>
@@ -94,11 +103,11 @@
                       VerticalAlignment="Center" IsChecked="False" Margin="8,0,0,0" Foreground="White"/>
           </Grid>
           <Separator Margin="0,7,0,12"/>
-          <TextBlock Text="PER-OCCURRENCE ANCHOR" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
-          <TextBlock Text="Only needed for 'Once per memory occurrence'. Identifies which incident the future completion record will consume."
+          <TextBlock Text="MEMORY ANCHOR (OPTIONAL EXCEPT ONCE PER OCCURRENCE)" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
+          <TextBlock Text="Bind a matching historical incident for dialogue placeholders and relationship checks. Once-per-occurrence also uses it for completion tracking."
                      Foreground="#AFC5E4" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"/>
           <TextBlock Text="Memory type to acknowledge" Foreground="#B9C9E4"/>
-          <ComboBox x:Name="AnchorMemoryBox"/>
+          <ComboBox x:Name="AnchorMemoryBox" SelectionChanged="AnchorMemoryBox_SelectionChanged"/>
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
@@ -116,6 +125,12 @@
               <ComboBox x:Name="AnchorKnowerBox"/>
             </StackPanel>
           </Grid>
+          <TextBlock Text="THIRD-PARTY RELATIONSHIP TO THE MEMORY'S AFFECTED CHARACTER" FontWeight="Bold" Margin="0,6,0,4"/>
+          <TextBlock Text="Require Recipient → a character affected by this SAME anchored memory to have a particular status. Leave empty for direct-victim encounters. If multiple people were affected, the matched person is bound to {affected}."
+                     Foreground="#AFC5E4" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,6"/>
+          <ComboBox x:Name="AffectedStatusBox"/>
+          <TextBlock Text="Placeholders in this linked dialogue: {affected}, {memory.actor}, {initiator}, {recipient}. Direct encounters can set Anchor Affected = Recipient. Existing {actor}/{partner} remain valid."
+                     Foreground="#AFC5E4" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,7"/>
           <Separator Margin="0,7,0,12"/>
           <TextBlock Text="ELIGIBILITY CONDITIONS" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
           <TextBlock Text="Use the existing memory/status AND, OR and NOT editor. Its Initiator/Recipient references refer to the characters in this encounter."
@@ -124,10 +139,9 @@
                   Click="EditConditions_Click" HorizontalAlignment="Stretch"/>
           <TextBlock Text="Save an inactive draft before editing conditions. Active encounters must have a valid condition tree."
                      Foreground="#AFC5E4" FontSize="12" TextWrapping="Wrap" Margin="0,7,0,12"/>
-          <Button Content="Save encounter definition" Click="Save_Click" FontWeight="Bold"
-                  HorizontalAlignment="Left" Margin="0,9,0,0"/>
-        </StackPanel>
-      </ScrollViewer>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
     </Grid>
   </DockPanel>
 </Window>

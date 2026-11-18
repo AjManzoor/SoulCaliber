@@ -44,13 +44,13 @@ public sealed class SqliteInteractionEffectStore : IInteractionOutcomeStore
         var connection = (SqliteConnection)db.Database.GetDbConnection();
         var sqliteTx = (SqliteTransaction)tx.GetDbTransaction();
         var statusChanges = _statuses.ApplyInTransaction(connection, sqliteTx,
-            choice.ActorId, choice.PartnerId, choice.StatusEffects);
+            choice.ActorId, choice.PartnerId, choice.StatusEffects, choice.PairStatusEffects);
 
         // These must be AFTER status effects to preserve existing ally-knowledge ordering.
         foreach (var memory in choice.MemoryEffects)
             _memories!.RecordInTransaction(connection, sqliteTx, memory.MemoryKey,
                 choice.ActorId, choice.ActorId, memory.AffectedCharacterIds,
-                memory.SeverityOverride, memory.KnowledgeOverride);
+                memory.SeverityOverride, memory.KnowledgeOverride, memory.CustomAudienceJson);
 
         // Also record choices without stat changes: history is part of this same commit.
         _history.RecordInTransaction(db, choice, relationshipChanges, statusChanges);

@@ -27,11 +27,15 @@
     </Style>
   </Window.Resources>
   <DockPanel Margin="22">
-    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+      <Button DockPanel.Dock="Right" Content="Close" Click="Close_Click"
+              Width="100" Height="36" Margin="14,0,0,0" VerticalAlignment="Top"/>
+      <StackPanel>
       <TextBlock Text="MEMORY CATALOGUE" FontSize="25" FontWeight="Bold"/>
       <TextBlock Text="Author reusable memory tags, defaults and relevant personality traits. This does not record gameplay memories."
                  Foreground="#AFC5E4" FontSize="13" Margin="0,7,0,0" TextWrapping="Wrap"/>
-    </StackPanel>
+      </StackPanel>
+    </DockPanel>
     <TextBlock DockPanel.Dock="Bottom" x:Name="StatusText"
                Foreground="#9CC8FA" Margin="0,10,0,2" TextWrapping="Wrap"
                Text="Choose a memory or create a new one."/>
@@ -71,6 +75,9 @@
               <ComboBox x:Name="KnowledgeBox" SelectedValuePath="Tag"/>
             </StackPanel>
           </Grid>
+          <Button x:Name="AudienceButton" Content="Configure custom audiences..." Click="Audience_Click"
+                  HorizontalAlignment="Left" Margin="0,0,0,8"/>
+          <TextBlock x:Name="AudienceSummary" Foreground="#AFC5E4" TextWrapping="Wrap" Margin="0,0,0,7"/>
           <TextBlock Text="These defaults can be overridden by specific occurrences in later phases."
                      FontSize="12" Foreground="#AFC5E4" TextWrapping="Wrap" Margin="0,0,0,13"/>
           <Grid>

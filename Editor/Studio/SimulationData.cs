@@ -130,6 +130,7 @@ public sealed partial class SimulationData : IDisposable
         // Phase 12E: master defaults, status requirements/effects and choice visibility.
         // Read-only like the rest of the Interaction Test Lab projection.
         LoadStatusSimulationData();
+        LoadDynamicTargetSimulationData();
         LoadMemoryEncounterSimulationData();
     }
 

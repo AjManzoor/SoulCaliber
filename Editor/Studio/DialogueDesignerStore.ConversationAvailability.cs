@@ -85,7 +85,9 @@ public sealed partial class DialogueDesignerStore
             var characters = CharacterIds().ToHashSet(StringComparer.OrdinalIgnoreCase);
             var statusKeys = StatusDefinitions(true).Select(s => s.Key)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            MemoryConditionRules.Validate(tree, memoryKeys.Contains, characters.Contains, statusKeys.Contains);
+            MemoryConditionRules.Validate(tree, memoryKeys.Contains, characters.Contains, statusKeys.Contains,
+                TraitDefinitions().Where(t => t.IsActive).Select(t => t.Key)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase).Contains);
         }
         string? json = tree is null ? null : MemoryConditionRules.Write(tree);
         Write(tx =>
@@ -129,7 +131,9 @@ public sealed partial class DialogueDesignerStore
                 var characters = CharacterIds().ToHashSet(StringComparer.OrdinalIgnoreCase);
                 var statuses = StatusDefinitions(true).Select(s => s.Key)
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                MemoryConditionRules.Validate(tree, memories.Contains, characters.Contains, statuses.Contains);
+                MemoryConditionRules.Validate(tree, memories.Contains, characters.Contains, statuses.Contains,
+                    TraitDefinitions().Where(t => t.IsActive).Select(t => t.Key)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase).Contains);
             }
         }
         int resultId = item.Id;

@@ -9,11 +9,15 @@
     <Style TargetType="TextBox"><Setter Property="Padding" Value="8"/><Setter Property="FontSize" Value="14"/><Setter Property="Margin" Value="0,3,8,10"/></Style>
   </Window.Resources>
   <DockPanel Margin="18">
-    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+      <Button DockPanel.Dock="Right" Content="Close" Click="Close_Click"
+              Width="100" Height="36" Margin="14,0,0,0" VerticalAlignment="Top"/>
+      <StackPanel>
       <TextBlock Text="RELATIONSHIP ATTRIBUTES" FontSize="25" FontWeight="Bold"/>
       <TextBlock Text="Stable keys drive every condition, effect, formula and saved relationship. Names, icons, ranges and sort order are configurable. Changes to existing keys are deliberately blocked."
                  Foreground="#AFCAE7" FontSize="13" Margin="0,7,0,0"/>
-    </StackPanel>
+      </StackPanel>
+    </DockPanel>
     <TextBlock DockPanel.Dock="Bottom" x:Name="Status" Text="Open the catalogue to edit relationships." TextWrapping="Wrap" Foreground="#9CC8FA" Margin="0,8,0,2"/>
     <Grid>
       <Grid.ColumnDefinitions><ColumnDefinition Width="360"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>

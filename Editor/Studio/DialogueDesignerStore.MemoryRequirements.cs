@@ -45,7 +45,9 @@ public sealed partial class DialogueDesignerStore
             var statuses = StatusDefinitions(activeOnly: true).Select(x => x.Key)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
             MemoryConditionRules.Validate(expression, active.Contains, characters.Contains,
-                statuses.Contains);
+                statuses.Contains,
+                TraitDefinitions().Where(t => t.IsActive).Select(t => t.Key)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase).Contains);
             json = MemoryConditionRules.Write(expression);
         }
         Write(tx =>

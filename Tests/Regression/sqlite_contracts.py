@@ -5,20 +5,11 @@ NOT instantiate or execute the C# EF Core/Godot save services. C# integration
 and knowledge-distribution behaviour still require local .NET/Godot tests.
 """
 from pathlib import Path
-import re
+from production_sql import savegame_extra_schema, savegame_audience_v2_migration, store_command
 import sqlite3
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-MEMORY = ROOT / "Game" / "Persistence" / "SqliteMemoryStore.cs"
-COMPLETION = ROOT / "Game" / "Persistence" / "SqliteSpecialEncounterCompletionStore.cs"
-
-
-def extract(source: str, expression: str) -> str:
-    match = re.search(expression, source, re.S)
-    if match is None:
-        raise AssertionError("Production SQL pattern missing: " + expression)
-    return match.group(1)
 
 
 def must_fail(action, label):
@@ -31,18 +22,19 @@ def must_fail(action, label):
 
 
 def main():
-    mem_text = MEMORY.read_text(encoding="utf-8")
-    complete_text = COMPLETION.read_text(encoding="utf-8")
-    mem_schema = extract(mem_text, r'create\.CommandText\s*=\s*@"(\s*CREATE TABLE IF NOT EXISTS SavedMemoryOccurrences.*?);\s*";')
-    complete_schema = extract(complete_text, r'command\.CommandText\s*=\s*@"(\s*CREATE TABLE IF NOT EXISTS SavedSpecialEncounterCompletions.*?);\s*";')
-    mem_insert = extract(mem_text, r'insert\.CommandText\s*=\s*@"(\s*INSERT INTO SavedMemoryOccurrences.*?\))\s*";')
-    complete_insert = extract(complete_text, r'command\.CommandText\s*=\s*@"(\s*INSERT INTO SavedSpecialEncounterCompletions.*?ON CONFLICT DO NOTHING)";')
-    mem_find = extract(mem_text, r'query\.CommandText\s*=\s*@"(\s*SELECT m\.Id,m\.MemoryKey.*?ORDER BY m\.Id\s*)";')
+    # The schema is authored centrally; SQL used by the stores remains in
+    # their INSERT/SELECT commands. Read both from the actual C# definitions.
+    schema = savegame_extra_schema(ROOT)
+    v2_migration = savegame_audience_v2_migration(ROOT)
+    mem_insert = store_command(ROOT, "SqliteMemoryStore.cs", "INSERT INTO SavedMemoryOccurrences")
+    complete_insert = store_command(ROOT, "SqliteSpecialEncounterCompletionStore.cs",
+                                    "INSERT INTO SavedSpecialEncounterCompletions")
+    mem_find = store_command(ROOT, "SqliteMemoryStore.cs", "SELECT m.Id,m.MemoryKey")
 
     connection = sqlite3.connect(":memory:", isolation_level=None)
     connection.execute("PRAGMA foreign_keys=ON")
-    connection.executescript(mem_schema)
-    connection.executescript(complete_schema)
+    connection.executescript(schema)
+    connection.executescript(v2_migration)
 
     def add_memory(tag="DEFEAT", actor="LAW", player="LAW", severity="MAJOR", level="QUIET"):
         cursor = connection.execute(mem_insert, {"memory": tag, "actor": actor,

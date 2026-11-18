@@ -1,0 +1,16 @@
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\bin\Release\net8.0\DynamicTargetSimulationTests.exe
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\bin\Release\net8.0\DynamicTargetSimulationTests.deps.json
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\bin\Release\net8.0\DynamicTargetSimulationTests.runtimeconfig.json
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\bin\Release\net8.0\DynamicTargetSimulationTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\bin\Release\net8.0\DynamicTargetSimulationTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicTargetSimulationTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicTargetSimulationTests.AssemblyInfoInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicTargetSimulationTests.AssemblyInfo.cs
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicTargetSimulationTests.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicTargetSimulationTests.sourcelink.json
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicTargetSimulationTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\refint\DynamicTargetSimulationTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicTargetSimulationTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicTargetSimulationTests.genruntimeconfig.cache
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\ref\DynamicTargetSimulationTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicTargetSimulation\obj\Release\net8.0\DynamicT.D3B07F5D.Up2Date

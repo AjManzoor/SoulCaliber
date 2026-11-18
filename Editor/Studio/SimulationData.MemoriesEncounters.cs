@@ -4,18 +4,18 @@ namespace SoulCaliberStudio;
 
 // Phase 13F: read-only projection of published memory, choice and conversation rules.
 // The Test Lab's changing history lives only in InteractionSimulatorWindow.
-public sealed record SimMemoryDefinition(string Key, string Name, string Severity, string Knowledge)
+public sealed record SimMemoryDefinition(string Key, string Name, string Severity, string Knowledge, string? CustomAudienceJson = null)
 {
     public override string ToString() => $"{Name} [{Key}]";
 }
 public sealed record SimMemoryEffect(int OptionId, string MemoryKey, string Trigger,
-    string Affected, string? SeverityOverride, string? KnowledgeOverride);
+    string Affected, string? SeverityOverride, string? KnowledgeOverride, string? CustomAudienceJson = null);
 public sealed record SimConversationRule(string Key, string Title, string InteractionKey, int Order,
     bool Active, string? Initiator, string? Recipient, MemoryConditionNode? Conditions);
 public sealed record SimSpecialEncounter(string Key, string Title, string InteractionKey, int Priority,
     bool Active, string LaunchMode, string RepetitionMode, string? Initiator, string? Recipient,
     MemoryConditionNode? Conditions, string? AnchorMemoryKey, string AnchorActorRef,
-    string AnchorAffectedRef, string AnchorKnowerRef);
+    string AnchorAffectedRef, string AnchorKnowerRef, string? AffectedRelationshipStatusKey);
 
 public sealed partial class SimulationData
 {
@@ -37,22 +37,28 @@ public sealed partial class SimulationData
     {
         // A stale master database should fail clearly rather than pretending no memories exist.
         foreach (string table in new[] { "MemoryTypes", "OptionMemoryEffects", "OptionMemoryRequirements",
-                     "SpecialEncounters", "ConversationAvailability" })
+                     "SpecialEncounters", "ConversationAvailability",
+                     "MemoryTypeKnowledgeAudiences", "OptionMemoryEffectKnowledgeAudiences" })
             if (!HasTable(table)) throw new InvalidOperationException(
-                $"Phase 13F requires '{table}'. Apply Studio migrations through 020 and reopen the Test Lab.");
+                $"Phase 13F requires '{table}'. Apply Studio migrations through 021 and reopen the Test Lab.");
 
         _memories.AddRange(Read(
-            "SELECT Key,Name,DefaultSeverity,DefaultKnowledge FROM MemoryTypes WHERE IsActive=1 ORDER BY SortOrder,Name,Key",
-            r => new SimMemoryDefinition(r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3))));
+            "SELECT m.Key,m.Name,m.DefaultSeverity,m.DefaultKnowledge,a.AudienceJson " +
+            "FROM MemoryTypes m LEFT JOIN MemoryTypeKnowledgeAudiences a ON a.MemoryKey=m.Key " +
+            "WHERE m.IsActive=1 ORDER BY m.SortOrder,m.Name,m.Key",
+            r => new SimMemoryDefinition(r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3),
+                r.IsDBNull(4) ? null : r.GetString(4))));
 
         foreach (var row in Read("SELECT OptionId,ExpressionJson FROM OptionMemoryRequirements",
                      r => (OptionId: r.GetInt32(0), Json: r.GetString(1))))
             _optionConditions.Add(row.OptionId, MemoryConditionRules.Read(row.Json));
 
         foreach (var effect in Read(
-            "SELECT OptionId,MemoryKey,Trigger,Affected,SeverityOverride,KnowledgeOverride FROM OptionMemoryEffects ORDER BY Id",
+            "SELECT e.OptionId,e.MemoryKey,e.Trigger,e.Affected,e.SeverityOverride,e.KnowledgeOverride,a.AudienceJson " +
+            "FROM OptionMemoryEffects e LEFT JOIN OptionMemoryEffectKnowledgeAudiences a ON a.OptionMemoryEffectId=e.Id ORDER BY e.Id",
             r => new SimMemoryEffect(r.GetInt32(0), r.GetString(1), r.GetString(2),
-                r.GetString(3), r.IsDBNull(4) ? null : r.GetString(4), r.IsDBNull(5) ? null : r.GetString(5))))
+                r.GetString(3), r.IsDBNull(4) ? null : r.GetString(4), r.IsDBNull(5) ? null : r.GetString(5),
+                r.IsDBNull(6) ? null : r.GetString(6))))
         {
             if (!_memoryEffects.TryGetValue(effect.OptionId, out var group))
                 _memoryEffects[effect.OptionId] = group = [];
@@ -71,13 +77,15 @@ public sealed partial class SimulationData
         _encounters.AddRange(Read(@"
             SELECT e.EncounterKey,e.Title,i.Key,e.Priority,e.IsActive,e.LaunchMode,e.RepetitionMode,
                    e.InitiatorCharacterId,e.RecipientCharacterId,e.ConditionJson,e.AnchorMemoryKey,
-                   e.AnchorActorRef,e.AnchorAffectedRef,e.AnchorKnowerRef
+                   e.AnchorActorRef,e.AnchorAffectedRef,e.AnchorKnowerRef,
+                   e.AffectedRelationshipStatusKey
             FROM SpecialEncounters e JOIN Interactions i ON i.Id=e.InteractionId
             ORDER BY e.Priority DESC,e.Id", r => new SimSpecialEncounter(
                 r.GetString(0),r.GetString(1),r.GetString(2),r.GetInt32(3),r.GetInt32(4) != 0,
                 r.GetString(5),r.GetString(6),r.IsDBNull(7) ? null : r.GetString(7),
                 r.IsDBNull(8) ? null : r.GetString(8),
                 r.IsDBNull(9) ? null : MemoryConditionRules.Read(r.GetString(9)),
-                r.IsDBNull(10) ? null : r.GetString(10),r.GetString(11),r.GetString(12),r.GetString(13))));
+                r.IsDBNull(10) ? null : r.GetString(10),r.GetString(11),r.GetString(12),r.GetString(13),
+                r.IsDBNull(14) ? null : r.GetString(14))));
     }
 }

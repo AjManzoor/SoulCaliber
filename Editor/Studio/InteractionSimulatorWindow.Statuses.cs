@@ -131,6 +131,16 @@ public partial class InteractionSimulatorWindow
             checks.Add(new SimulationRequirementCheck(failure.Length == 0,
                 failure.Length == 0 ? "Advanced memory/status AND / OR / NOT: all passed" : failure));
         }
+        var targetRule = _data.DynamicTarget(choice.Id);
+        if (targetRule is not null)
+        {
+            var eligible = EligibleTargets(choice);
+            string description = eligible.Count == 0
+                ? "Dynamic target: no eligible third-party characters (option unavailable)"
+                : $"Dynamic target: {eligible.Count} eligible character(s): " +
+                  string.Join(", ", eligible.Select(x => x.Name));
+            checks.Add(new SimulationRequirementCheck(eligible.Count > 0, description));
+        }
         return checks;
     }
 
@@ -216,6 +226,7 @@ public partial class InteractionSimulatorWindow
         ChoiceList.ItemsSource = visible;
         ChoiceList.SelectedItem = visible.FirstOrDefault(x => x.Choice.Id == previousChoiceId)
                                   ?? visible.FirstOrDefault();
+        UpdateTargetPicker();
 
         var sb = new StringBuilder();
         sb.AppendLine($"{_data.Name(_actor)} → {_data.Name(_partner)}: {_data.StatusName(_actorStatus)}");

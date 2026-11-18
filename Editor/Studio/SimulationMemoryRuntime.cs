@@ -1,3 +1,4 @@
+using SoulCaliber.Dialogue;
 using SoulCaliber.Shared;
 
 namespace SoulCaliberStudio;
@@ -21,7 +22,8 @@ public sealed class SimulatedMemory(long id, string key, string actor, string pl
 public sealed record SimulatedEncounterCompletion(string Key, string Initiator, string Recipient, long? MemoryId);
 public sealed record SimulationConversationEntry(string Key, string Title, string InteractionKey,
     string Category, string Status, string Explanation, int Order,
-    SimSpecialEncounter? Encounter = null, long? AnchorMemoryId = null)
+    SimSpecialEncounter? Encounter = null, long? AnchorMemoryId = null,
+    string? BoundAffectedId = null)
 {
     public bool Available => Status == "Available";
     public override string ToString() => $"{Status.ToUpperInvariant()} · {Category} · {Title} [{Key}] — {Explanation}";
@@ -38,20 +40,28 @@ public sealed class SimulationMemoryRuntime(SimulationData data)
     private long _nextId = 1;
     public IReadOnlyList<SimulatedMemory> History => _history;
     public IReadOnlyList<SimulatedEncounterCompletion> Completions => _completions;
+    // Test Lab can override the current pair using its in-memory trait checkboxes.
+    public Func<string, string, bool>? TraitCheckOverride { get; set; }
+    private bool TraitCheck(string characterId, string traitKey) =>
+        TraitCheckOverride?.Invoke(characterId, traitKey) ?? data.AssignedTraits(characterId).Contains(traitKey);
 
     private static string Norm(string value) => value.Trim().ToUpperInvariant();
     private static bool Same(string? a, string? b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
     public SimulatedMemory Record(string key, string actor, string player,
         IReadOnlyCollection<string> affected, string? severity, string? knowledge,
-        Func<string, string, string> statusFor)
+        Func<string, string, string> statusFor, string? customAudienceJson = null)
     {
         var definition = data.Memories.FirstOrDefault(x => Same(x.Key, key))
             ?? throw new InvalidOperationException($"Inactive or missing memory type: {key}.");
         string finalSeverity = severity ?? definition.Severity;
-        string finalKnowledge = knowledge ?? definition.Knowledge;
+        KnowledgeAudienceSpec? customAudience = customAudienceJson is not null
+            ? KnowledgeAudienceSpec.Parse(customAudienceJson)
+            : knowledge is null && definition.CustomAudienceJson is not null
+                ? KnowledgeAudienceSpec.Parse(definition.CustomAudienceJson) : null;
+        string finalKnowledge = customAudience is not null ? "CUSTOM" : knowledge ?? definition.Knowledge;
         if (finalSeverity is not ("MAJOR" or "MINOR") ||
-            finalKnowledge is not ("QUIET" or "ALLIES" or "GLOBAL"))
+            finalKnowledge is not ("QUIET" or "ALLIES" or "GLOBAL" or "CUSTOM"))
             throw new InvalidOperationException("Invalid memory severity or knowledge level.");
         actor = Norm(actor); player = Norm(player);
         string[] victims = affected.Select(Norm).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
@@ -59,6 +69,13 @@ public sealed class SimulationMemoryRuntime(SimulationData data)
         if (!characters.Contains(actor) || !characters.Contains(player) || victims.Any(v => !characters.Contains(v)))
             throw new InvalidOperationException("Memory references an unknown character.");
         var knowers = new HashSet<string>(victims, StringComparer.OrdinalIgnoreCase) { player };
+        if (finalKnowledge == "CUSTOM")
+        {
+            knowers = KnowledgeAudienceRules.Resolve(customAudience!, actor, victims, characters, statusFor)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (knowers.Any(k => !characters.Contains(k)))
+                throw new InvalidOperationException("Custom knowledge distribution references an unknown character.");
+        }
         if (finalKnowledge == "ALLIES")
             foreach (var from in new[] { player }.Concat(victims).Distinct(StringComparer.OrdinalIgnoreCase))
                 foreach (var target in characters)
@@ -103,7 +120,8 @@ public sealed class SimulationMemoryRuntime(SimulationData data)
 
     public bool Evaluate(MemoryConditionNode conditions, string initiator, string recipient,
         Func<string, string, string> statusFor, out string failure) =>
-        MemoryConditionRules.Evaluate(conditions, initiator, recipient, Count, statusFor, out failure);
+        MemoryConditionRules.Evaluate(conditions, initiator, recipient, Count, statusFor, out failure,
+            data.Characters.Select(c => c.Id), TraitCheck);
 
     private bool HasCompletedPair(string encounter, string initiator, string recipient) =>
         _completions.Any(c => Same(c.Key, encounter) && Same(c.Initiator, initiator) &&
@@ -159,24 +177,40 @@ public sealed class SimulationMemoryRuntime(SimulationData data)
                 : encounter.Conditions is null ? "Missing eligibility conditions"
                 : EvaluateSafe(encounter.Conditions, initiator, recipient, statusFor);
             long? anchor = null;
-            if (reason.Length == 0 && encounter.RepetitionMode == "ONCE_PER_OCCURRENCE")
+            string? boundAffected = null;
+            if (reason.Length == 0)
             {
-                if (string.IsNullOrWhiteSpace(encounter.AnchorMemoryKey))
-                    reason = "Missing memory occurrence anchor";
-                else
+                if (encounter.AnchorMemoryKey is string anchorKey && !string.IsNullOrWhiteSpace(anchorKey))
                 {
                     try
                     {
-                        var matched = Find(encounter.AnchorMemoryKey,
+                        var matched = Find(anchorKey,
                             MemoryConditionRules.Resolve(encounter.AnchorActorRef, initiator, recipient),
                             MemoryConditionRules.Resolve(encounter.AnchorAffectedRef, initiator, recipient),
                             MemoryConditionRules.Resolve(encounter.AnchorKnowerRef, initiator, recipient));
-                        var handled = HandledOccurrences(encounter.Key, initiator, recipient);
-                        anchor = matched.FirstOrDefault(m => !handled.Contains(m.Id))?.Id;
-                        if (anchor is null) reason = "No unhandled qualifying memory occurrence";
+                        var handled = encounter.RepetitionMode == "ONCE_PER_OCCURRENCE"
+                            ? HandledOccurrences(encounter.Key, initiator, recipient) : new HashSet<long>();
+                        foreach (var memory in matched)
+                        {
+                            if (handled.Contains(memory.Id)) continue;
+                            var affected = MemoryAwareEncounterRules.BindAffected(
+                                memory.Affected.ToList(), recipient, encounter.AffectedRelationshipStatusKey,
+                                statusFor);
+                            if (encounter.AffectedRelationshipStatusKey is not null && affected is null)
+                                continue;
+                            anchor = memory.Id;
+                            boundAffected = affected;
+                            break;
+                        }
+                        if (anchor is null) reason = encounter.AffectedRelationshipStatusKey is null
+                            ? "No qualifying unhandled anchored memory occurrence"
+                            : $"No anchored incident with Recipient → Affected = {encounter.AffectedRelationshipStatusKey}";
                     }
                     catch (Exception ex) { reason = "Invalid anchor: " + ex.Message; }
                 }
+                else if (encounter.RepetitionMode == "ONCE_PER_OCCURRENCE" ||
+                         encounter.AffectedRelationshipStatusKey is not null)
+                    reason = "Encounter requires a configured memory anchor";
             }
             if (reason.Length == 0 && encounter.RepetitionMode is not
                 ("ONCE_PER_OCCURRENCE" or "ONCE_PER_PAIR" or "REPEATABLE"))
@@ -185,8 +219,10 @@ public sealed class SimulationMemoryRuntime(SimulationData data)
             results.Add(new SimulationConversationEntry(encounter.Key, encounter.Title,
                 encounter.InteractionKey, encounter.LaunchMode == "AUTOMATIC" ? "Mandatory" : "Optional",
                 eligible ? "Available" : "Not eligible",
-                eligible ? (anchor is long id ? $"Eligible occurrence #{id}" : "All requirements passed") : reason,
-                -encounter.Priority, encounter, anchor));
+                eligible ? (anchor is long id
+                    ? $"Eligible occurrence #{id}" + (boundAffected is null ? "" : $" · Affected: {data.Name(boundAffected)}")
+                    : "All requirements passed") : reason,
+                -encounter.Priority, encounter, anchor, boundAffected));
         }
         var mandatory = results.FirstOrDefault(r => r.Category == "Mandatory" && r.Available);
         if (mandatory is not null)
@@ -208,7 +244,8 @@ public sealed class SimulationMemoryRuntime(SimulationData data)
             var memories = data.Memories.Select(x => x.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var statuses = data.Statuses.Select(x => x.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var characters = data.Characters.Select(x => x.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            MemoryConditionRules.Validate(conditions, memories.Contains, characters.Contains, statuses.Contains);
+            MemoryConditionRules.Validate(conditions, memories.Contains, characters.Contains, statuses.Contains,
+                data.Traits.Select(t => t.Key).ToHashSet(StringComparer.OrdinalIgnoreCase).Contains);
             return Evaluate(conditions, actor, partner, statusFor, out var failure) ? "" : "Condition failed: " + failure;
         }
         catch (Exception ex) { return "Invalid condition configuration: " + ex.Message; }

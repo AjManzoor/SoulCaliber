@@ -330,6 +330,83 @@ public sealed class DialogueRepository
             }
         }
 
+        // Phase 13H-4: optional one-at-a-time relationship-target choices and pair status effects.
+        // Old published content databases without these authoring tables remain readable.
+        using (var dynamicDb = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource=DatabasePaths.Content, Mode=SqliteOpenMode.ReadOnly,
+            ForeignKeys=true, Pooling=false
+        }.ToString()))
+        {
+            dynamicDb.Open();
+            bool HasTable(string name)
+            {
+                using var q=dynamicDb.CreateCommand();
+                q.CommandText="SELECT 1 FROM sqlite_master WHERE type='table' AND name=$name";
+                q.Parameters.AddWithValue("$name",name);
+                return q.ExecuteScalar() is not null;
+            }
+            DialogueOption OptionById(int id)
+            {
+                if (!optionLookup.TryGetValue(id,out var row))
+                    throw new InvalidOperationException("Dynamic target references unknown option.");
+                var node=nodeLookup[row.NodeId];
+                var interaction=interactionLookup[node.InteractionId];
+                return _interactions[interaction.Key].Nodes.Single(n=>Eq(n.Key,node.Key)).Options.Single(o=>Eq(o.Key,row.Key));
+            }
+            if(HasTable("OptionDynamicTargets"))
+            {
+                // Older published content has only relationship groups. New content
+                // adds CUSTOM mode with explicit, FK-backed character IDs.
+                var customIds=new Dictionary<int,List<string>>();
+                if(HasTable("OptionDynamicTargetCharacters"))
+                {
+                    using var members=dynamicDb.CreateCommand();
+                    members.CommandText="SELECT OptionId,CharacterId FROM OptionDynamicTargetCharacters ORDER BY OptionId,SortOrder,CharacterId";
+                    using var ids=members.ExecuteReader();
+                    while(ids.Read())
+                    {
+                        int optionId=ids.GetInt32(0);
+                        if(!customIds.TryGetValue(optionId,out var list))
+                            customIds[optionId]=list=new List<string>();
+                        list.Add(ids.GetString(1));
+                    }
+                }
+                using var col=dynamicDb.CreateCommand();
+                col.CommandText="SELECT 1 FROM pragma_table_info('OptionDynamicTargets') WHERE name='SelectionMode'";
+                bool hasSelectionMode=col.ExecuteScalar() is not null;
+                using var q=dynamicDb.CreateCommand();
+                q.CommandText=hasSelectionMode
+                    ? "SELECT OptionId,OwnerRef,RelationshipDirection,RequiredStatusKey,SelectionMode FROM OptionDynamicTargets"
+                    : "SELECT OptionId,OwnerRef,RelationshipDirection,RequiredStatusKey,'GROUP' FROM OptionDynamicTargets";
+                using var r=q.ExecuteReader();
+                while(r.Read())
+                {
+                    int optionId=r.GetInt32(0);
+                    customIds.TryGetValue(optionId,out var list);
+                    OptionById(optionId).DynamicTarget=new DynamicTargetRule(
+                        r.GetString(1),r.GetString(2),r.GetString(3),r.GetString(4),list);
+                }
+            }
+            if(HasTable("OptionPairStatusEffects"))
+            {
+                using var q=dynamicDb.CreateCommand();
+                q.CommandText="SELECT OptionId,Outcome,FromRef,ToRef,StatusKey,ReverseStatusKey FROM OptionPairStatusEffects ORDER BY Id";
+                using var r=q.ExecuteReader();
+                while(r.Read())
+                {
+                    var option=OptionById(r.GetInt32(0));
+                    var effect=new PairStatusEffect(r.GetString(2),r.GetString(3),r.GetString(4),r.IsDBNull(5)?null:r.GetString(5));
+                    switch(r.GetString(1))
+                    {
+                        case "SUCCESS":option.SuccessPairStatusEffects.Add(effect);break;
+                        case "FAILURE":option.FailurePairStatusEffects.Add(effect);break;
+                        default:throw new InvalidOperationException("Invalid pair-status-effect outcome.");
+                    }
+                }
+            }
+        }
+
         // Phase 13C: memory creation effects attached to dialogue choices.
         using (var memoryDb = new SqliteConnection(new SqliteConnectionStringBuilder
         {
@@ -339,7 +416,14 @@ public sealed class DialogueRepository
         {
             memoryDb.Open();
             using var cmd=memoryDb.CreateCommand();
-            cmd.CommandText="SELECT OptionId,MemoryKey,Trigger,Affected,SeverityOverride,KnowledgeOverride FROM OptionMemoryEffects ORDER BY Id";
+            using (var existsAudience = memoryDb.CreateCommand())
+            {
+                existsAudience.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name='OptionMemoryEffectKnowledgeAudiences'";
+                bool hasAudience = existsAudience.ExecuteScalar() is not null;
+                cmd.CommandText = hasAudience
+                    ? "SELECT e.OptionId,e.MemoryKey,e.Trigger,e.Affected,e.SeverityOverride,e.KnowledgeOverride,a.AudienceJson FROM OptionMemoryEffects e LEFT JOIN OptionMemoryEffectKnowledgeAudiences a ON a.OptionMemoryEffectId=e.Id ORDER BY e.Id"
+                    : "SELECT OptionId,MemoryKey,Trigger,Affected,SeverityOverride,KnowledgeOverride,NULL FROM OptionMemoryEffects ORDER BY Id";
+            }
             using var r=cmd.ExecuteReader();
             while(r.Read())
             {
@@ -350,7 +434,8 @@ public sealed class DialogueRepository
                 _interactions[interactionRow.Key].Nodes.Single(n=>Eq(n.Key,nodeRow.Key))
                     .Options.Single(o=>Eq(o.Key,optionRow.Key)).MemoryEffects.Add(
                         new DialogueMemoryEffect(r.GetString(1),r.GetString(2),r.GetString(3),
-                            r.IsDBNull(4)?null:r.GetString(4),r.IsDBNull(5)?null:r.GetString(5)));
+                            r.IsDBNull(4)?null:r.GetString(4),r.IsDBNull(5)?null:r.GetString(5),
+                            r.IsDBNull(6)?null:r.GetString(6)));
             }
         }
 
@@ -404,6 +489,13 @@ public sealed class DialogueRepository
                     using var statusReader = statuses.ExecuteReader();
                     while (statusReader.Read()) activeStatusKeys.Add(statusReader.GetString(0));
                 }
+                var activeTraitKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                using (var traits = memoryRequirementsDb.CreateCommand())
+                {
+                    traits.CommandText = "SELECT Key FROM PersonalityTraits WHERE IsActive=1";
+                    using var rows = traits.ExecuteReader();
+                    while (rows.Read()) activeTraitKeys.Add(rows.GetString(0));
+                }
                 using var cmd = memoryRequirementsDb.CreateCommand();
                 cmd.CommandText = "SELECT OptionId,ExpressionJson FROM OptionMemoryRequirements ORDER BY OptionId";
                 using var reader = cmd.ExecuteReader();
@@ -414,7 +506,7 @@ public sealed class DialogueRepository
                         throw new InvalidOperationException("A memory requirement references an unknown dialogue choice.");
                     var tree = MemoryConditionRules.Read(reader.GetString(1));
                     MemoryConditionRules.Validate(tree, activeMemoryKeys.Contains, _characters.ContainsKey,
-                        activeStatusKeys.Contains);
+                        activeStatusKeys.Contains, activeTraitKeys.Contains);
                     var nodeRow = nodeLookup[optionRow.NodeId];
                     var interactionRow = interactionLookup[nodeRow.InteractionId];
                     _interactions[interactionRow.Key].Nodes.Single(n => Eq(n.Key, nodeRow.Key))
@@ -471,6 +563,8 @@ public sealed class DialogueRepository
             Values(actorToPartner,partnerToActor));
         return selected.Candidate?.Text ?? node.HostIntroduction;
     }
+
+    public IReadOnlyCollection<string> CharacterIds => _characters.Keys;
 
     public CharacterDefinition Character(string id) => _characters.TryGetValue(id, out var value)
 		? value : throw new InvalidOperationException($"Unknown character '{id}' in content.db");
@@ -533,6 +627,9 @@ public sealed class DialogueRepository
 
     public PersonalityAdjustment AdjustRelationshipEffect(string receiverId, string attribute,
         int baseDelta, bool succeeded) => _traitRules.Adjust(receiverId, attribute, baseDelta, succeeded);
+
+    public bool HasTrait(string characterId, string traitKey) =>
+        _traitRules.HasTrait(characterId, traitKey);
 
     private static PersonalityEffectRules LoadTraitRules()
     {

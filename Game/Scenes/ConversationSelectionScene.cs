@@ -27,25 +27,50 @@ public partial class ConversationSelectionScene : Control
 	private Label _hint = null!;
 	private Control? _activeDialogue;
 	private Control _menu = null!;
+	private Button _refreshButton = null!;
+	private bool _saveReady;
 
 	public override void _Ready()
 	{
 		SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 		BuildUi();
+		var startup = SaveGameStartup.TryInitialize();
+		if (!startup.Success)
+		{
+			BlockGameplay("Savegame could not be loaded", startup.UserMessage, startup.TechnicalDetails);
+			return;
+		}
+
 		try
 		{
 			LoadCharacters();
 			Populate(_initiator, DefaultInitiatorId);
 			Populate(_recipient, DefaultRecipientId);
+			_saveReady = true;
 			_initiator.ItemSelected += _ => Refresh();
 			_recipient.ItemSelected += _ => Refresh();
 			Refresh();
 		}
 		catch (Exception ex)
 		{
-			_hint.Text = "Could not load content: " + ex.Message;
-			GD.PushError("[ConversationMenu] " + ex);
+			BlockGameplay("Game content could not be loaded",
+				"Published character/content data could not be loaded. Conversations are disabled; your savegame was not reset. Check the diagnostic log and published Studio content.",
+				ex.ToString());
 		}
+	}
+
+	private void BlockGameplay(string title, string message, string technicalDetails)
+	{
+		_saveReady = false;
+		_initiator.Disabled = true;
+		_recipient.Disabled = true;
+		_refreshButton.Disabled = true;
+		_entries.Clear();
+		ClearList(_entriesList);
+		_hint.Text = message;
+		GD.PushError("[ConversationMenu] " + title + ": " + technicalDetails);
+		// The read-only integrity diagnostic remains accessible in debug mode.
+		SaveGameStartupDialog.Show(this, title, message);
 	}
 
 	private void BuildUi()
@@ -73,9 +98,9 @@ public partial class ConversationSelectionScene : Control
 		layout.AddChild(pair);
 		_initiator = AddCharacterSelector(pair, "Initiator");
 		_recipient = AddCharacterSelector(pair, "Recipient");
-		var refresh = new Button { Text = "Refresh", CustomMinimumSize = new Vector2(120, 45) };
-		refresh.Pressed += Refresh;
-		pair.AddChild(refresh);
+		_refreshButton = new Button { Text = "Refresh", CustomMinimumSize = new Vector2(120, 45) };
+		_refreshButton.Pressed += Refresh;
+		pair.AddChild(_refreshButton);
 		_hint = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
 		_hint.AddThemeColorOverride("font_color", new Color(0.76f, 0.73f, 0.84f));
 		layout.AddChild(_hint);
@@ -124,6 +149,9 @@ public partial class ConversationSelectionScene : Control
 		_diagnosticsPane.AddChild(diagnosticsHeader);
 		_diagnosticsSummary = new Label { AutowrapMode = TextServer.AutowrapMode.WordSmart };
 		_diagnosticsPane.AddChild(_diagnosticsSummary);
+		var integrityButton = new Button { Text = "Check save integrity (copy report)" };
+		integrityButton.Pressed += CheckSaveIntegrity;
+		_diagnosticsPane.AddChild(integrityButton);
 		var diagnosticsScroll = new ScrollContainer
 		{
 			SizeFlagsVertical = SizeFlags.ExpandFill,
@@ -171,7 +199,7 @@ public partial class ConversationSelectionScene : Control
 
 	private void Refresh()
 	{
-		if (_activeDialogue is not null) return;
+		if (!_saveReady || _activeDialogue is not null) return;
 		ClearList(_entriesList);
 		ClearList(_diagnosticsList);
 		_lastReport = null;
@@ -279,6 +307,18 @@ public partial class ConversationSelectionScene : Control
 			_diagnosticsList.AddChild(new Label { Text = "No authored conversation rules to inspect." });
 	}
 
+	private void CheckSaveIntegrity()
+	{
+		// A manual, read-only diagnostic tool. Do not run a full integrity scan
+		// every frame or on every interaction, and never attempt auto-repair.
+		var report = SaveGameIntegrityChecker.Inspect();
+		string text = report.ToText();
+		DisplayServer.ClipboardSet(text);
+		GD.Print("[SaveIntegrity] " + text);
+		_hint.Text = $"Save integrity: {report.Errors} error(s), {report.Warnings} warning(s). " +
+			"Full read-only report copied to clipboard and written to Godot Output.";
+	}
+
 	private void CopyDiagnostics()
 	{
 		if (_lastReport is null) return;
@@ -291,7 +331,7 @@ public partial class ConversationSelectionScene : Control
 
 	private void StartConversation(AvailableConversation entry)
 	{
-		if (_activeDialogue is not null) return;
+		if (!_saveReady || _activeDialogue is not null) return;
 		try
 		{
 			var scene = InteractionLauncher.Create(SelectedId(_initiator), SelectedId(_recipient), entry.InteractionKey);

@@ -22,7 +22,10 @@ public interface IInteractionEffectStore
 /// <summary>A resolved memory effect, including already-resolved participant IDs.</summary>
 public sealed record ResolvedMemoryEffect(string MemoryKey,
     IReadOnlyList<string> AffectedCharacterIds,
-    string? SeverityOverride, string? KnowledgeOverride);
+    string? SeverityOverride, string? KnowledgeOverride, string? CustomAudienceJson = null);
+
+/// <summary>Concrete outgoing directional status change, resolved before the transaction begins.</summary>
+public sealed record ResolvedPairStatusEffect(string FromId, string ToId, string StatusKey);
 
 /// <summary>
 /// The immutable facts needed to save ONE resolved choice, not an entire conversation.
@@ -34,7 +37,8 @@ public sealed record ResolvedChoiceCommit(
     bool Succeeded, int Roll, int Chance, string TargetReaction,
     IReadOnlyList<RelationshipEffect> RelationshipEffects,
     IReadOnlyList<RelationshipStatusEffect> StatusEffects,
-    IReadOnlyList<ResolvedMemoryEffect> MemoryEffects);
+    IReadOnlyList<ResolvedMemoryEffect> MemoryEffects,
+    IReadOnlyList<ResolvedPairStatusEffect>? PairStatusEffects = null);
 
 /// <summary>
 /// Atomic game-save unit of work. All effects, memories, affected people, knowledge,

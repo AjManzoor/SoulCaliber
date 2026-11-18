@@ -16,6 +16,15 @@ public partial class InteractionSimulatorWindow
     private void InitialiseMemoryAndEncounterControls()
     {
         _memoryRuntime = new SimulationMemoryRuntime(_data);
+        _memoryRuntime.TraitCheckOverride = (characterId, traitKey) =>
+        {
+            var rows = string.Equals(characterId, _actor, StringComparison.OrdinalIgnoreCase)
+                ? _actorTraits
+                : string.Equals(characterId, _partner, StringComparison.OrdinalIgnoreCase)
+                    ? _partnerTraits : null;
+            return rows is null || rows.Count == 0 ? _data.AssignedTraits(characterId).Contains(traitKey)
+                : rows.Any(t => t.IsSelected && string.Equals(t.Key, traitKey, StringComparison.OrdinalIgnoreCase));
+        };
         MemoryTypeBox.ItemsSource = _data.Memories;
         MemoryTypeBox.SelectedIndex = _data.Memories.Count > 0 ? 0 : -1;
         MemoryAffectedBox.ItemsSource = new[] { new { Key = "PARTNER", Label = "Recipient" }, new { Key = "ACTOR", Label = "Initiator" }, new { Key = "BOTH", Label = "Both" } };
@@ -32,15 +41,17 @@ public partial class InteractionSimulatorWindow
         EncounterAvailabilityText.Text = "Start an interaction to evaluate normal and special conversations for the selected character pair.";
     }
 
-    // The status sandbox only overrides the currently selected pair. All other
-    // directional alliances use their Studio-authored defaults, like a new save.
+    // All directional statuses, including third-party changes from dialogue choices,
+    // use one temporary world sandbox. The two visible participant selectors remain
+    // the source of truth for the current speaking pair.
     private string CurrentSimulatedStatus(string from, string to)
     {
         if (string.Equals(from, _actor, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(to, _partner, StringComparison.OrdinalIgnoreCase)) return _actorStatus;
         if (string.Equals(from, _partner, StringComparison.OrdinalIgnoreCase) &&
             string.Equals(to, _actor, StringComparison.OrdinalIgnoreCase)) return _partnerStatus;
-        return _data.StartingStatus(from, to);
+        return _sandboxPairStatuses.TryGetValue(StatusPairKey(from, to), out var status)
+            ? status : _data.StartingStatus(from, to);
     }
 
     private void AddMemory_Click(object sender, RoutedEventArgs e) => Safely(() =>
@@ -147,7 +158,7 @@ public partial class InteractionSimulatorWindow
             if (!fire) continue;
             created.Add(_memoryRuntime.Record(effect.MemoryKey, _actor, _actor,
                 AffectedFor(effect.Affected), effect.SeverityOverride,
-                effect.KnowledgeOverride, CurrentSimulatedStatus));
+                effect.KnowledgeOverride, CurrentSimulatedStatus, effect.CustomAudienceJson));
         }
         RefreshMemoryList(created.LastOrDefault()?.Id);
         RefreshEncounterDiagnostics();
@@ -167,7 +178,7 @@ public partial class InteractionSimulatorWindow
             if (effects.Count == 0) sb.AppendLine("  No memories recorded.");
             foreach (var effect in effects)
                 sb.AppendLine($"  {effect.MemoryKey} · {effect.Affected} · " +
-                    $"{effect.SeverityOverride ?? "catalogue severity"} / {effect.KnowledgeOverride ?? "catalogue knowledge"}");
+                    $"{effect.SeverityOverride ?? "catalogue severity"} / {(effect.CustomAudienceJson is not null ? "custom audiences" : effect.KnowledgeOverride ?? "catalogue knowledge")}");
         }
         return sb.ToString();
     }

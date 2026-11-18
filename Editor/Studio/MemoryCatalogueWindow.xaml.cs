@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using SoulCaliber.Shared;
 
 namespace SoulCaliberStudio;
 
@@ -13,6 +14,7 @@ public partial class MemoryCatalogueWindow : Window
     private MemoryTypeDefinition? _selected;
     private bool _loading;
     private bool _dirty;
+    private KnowledgeAudienceSpec? _audience;
 
     public MemoryCatalogueWindow(DialogueDesignerStore store)
     {
@@ -23,6 +25,7 @@ public partial class MemoryCatalogueWindow : Window
         KnowledgeBox.Items.Add(new ComboBoxItem { Content = "Quiet — player and affected characters", Tag = "QUIET" });
         KnowledgeBox.Items.Add(new ComboBoxItem { Content = "Allies — both sides' allies", Tag = "ALLIES" });
         KnowledgeBox.Items.Add(new ComboBoxItem { Content = "Global — everyone", Tag = "GLOBAL" });
+        KnowledgeBox.Items.Add(new ComboBoxItem { Content = "Custom — Actor / Affected / Other", Tag = "CUSTOM" });
 
         foreach (var field in new[] { KeyBox, NameBox, DescriptionBox, SortBox })
             field.TextChanged += (_, _) => MarkDirty();
@@ -69,7 +72,10 @@ public partial class MemoryCatalogueWindow : Window
         SortBox.Text = (item?.SortOrder ?? 100).ToString(CultureInfo.InvariantCulture);
         ActiveBox.IsChecked = item?.IsActive ?? true;
         SetCombo(SeverityBox, item?.DefaultSeverity ?? "MINOR");
-        SetCombo(KnowledgeBox, item?.DefaultKnowledge ?? "QUIET");
+        _audience = item is null ? null : _store.MemoryTypeAudience(item.Key);
+        SetCombo(KnowledgeBox, _audience is null ? item?.DefaultKnowledge ?? "QUIET" : "CUSTOM");
+        AudienceSummary.Text = _audience is null ? "Preset distribution: existing Quiet / Allies / Global rules." :
+            "Custom distribution configured. Click Configure to edit and preview recipients.";
         PopulateTraits(item?.Key);
     }
 
@@ -147,16 +153,29 @@ public partial class MemoryCatalogueWindow : Window
         finally { _loading = false; _dirty = false; }
     }
 
+    private void Audience_Click(object sender, RoutedEventArgs e) => Run(() =>
+    {
+        var window = new KnowledgeAudienceEditorWindow(_store, _audience) { Owner = this };
+        if (window.ShowDialog() == true)
+        {
+            _audience = window.Result;
+            SetCombo(KnowledgeBox, "CUSTOM");
+            AudienceSummary.Text = "Custom distribution configured (unsaved).";
+            MarkDirty();
+        }
+    });
+
     private void Save_Click(object sender, RoutedEventArgs e) => Run(() =>
     {
         if (!int.TryParse(SortBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int sortOrder))
             throw new InvalidOperationException("Sort order must be an integer.");
         string severity = (SeverityBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
         string knowledge = (KnowledgeBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "";
+        var custom = knowledge == "CUSTOM" ? _audience ?? new KnowledgeAudienceSpec() : null;
         var definition = new MemoryTypeDefinition(KeyBox.Text, NameBox.Text, DescriptionBox.Text,
-            severity, knowledge, sortOrder, ActiveBox.IsChecked == true);
+            severity, knowledge == "CUSTOM" ? "QUIET" : knowledge, sortOrder, ActiveBox.IsChecked == true);
         string[] traits = _traits.Where(pair => pair.Value.IsChecked == true).Select(pair => pair.Key).ToArray();
-        _store.SaveMemoryType(definition, _selected is null, traits);
+        _store.SaveMemoryType(definition, _selected is null, traits, custom);
         Refresh(definition.Key.Trim().ToUpperInvariant());
         StatusText.Text = $"Saved memory type {definition.Key.Trim().ToUpperInvariant()}.";
     });
@@ -186,4 +205,5 @@ public partial class MemoryCatalogueWindow : Window
             MessageBox.Show(this, ex.Message, "Memory catalogue", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }

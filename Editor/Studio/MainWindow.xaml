@@ -21,7 +21,7 @@
       <TabItem Header="Dialogue Designer" Padding="12,6">
         <Grid Margin="5">
           <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="310"/>
             <ColumnDefinition Width="290"/>
             <ColumnDefinition Width="*"/>
           </Grid.ColumnDefinitions>
@@ -30,27 +30,59 @@
             <RowDefinition Height="Auto"/>
           </Grid.RowDefinitions>
 
-          <!-- Interaction browser -->
+          <!-- Large, searchable interaction list. Details are collapsed by default so
+               browsing stays practical as the catalogue grows. -->
           <Border Grid.Column="0" Background="#242C39" CornerRadius="7" Padding="10" Margin="0,0,7,0">
             <DockPanel>
-              <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                <TextBlock Text="INTERACTION" FontWeight="SemiBold" Foreground="#B9C9E4" Margin="0,5"/>
-                <TextBlock Text="Key (immutable after creation)" FontSize="11" Foreground="#B9C9E4"/>
-                <TextBox x:Name="InteractionKeyBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
-                <TextBlock Text="Title" FontSize="11" Foreground="#B9C9E4"/>
-                <TextBox x:Name="InteractionTitleBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
-                <TextBlock Text="Participants are chosen when the interaction starts in Godot."
-                           FontSize="11" Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,2,0,6"/>
-                <TextBlock Text="Starting node key" FontSize="11" Foreground="#B9C9E4"/>
-                <TextBox x:Name="InteractionStartBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
-                <WrapPanel>
-                  <Button Content="New" Click="NewInteraction_Click"/>
-                  <Button Content="Save" Click="SaveInteraction_Click"/>
-                  <Button Content="Delete" Click="DeleteInteraction_Click"/>
-                </WrapPanel>
-              </StackPanel>
               <TextBlock DockPanel.Dock="Top" Text="INTERACTION TYPES" FontWeight="Bold" Margin="0,0,0,8"/>
-              <ListBox x:Name="InteractionList" SelectionChanged="InteractionList_SelectionChanged"/>
+              <TextBlock DockPanel.Dock="Top" Text="Search by title or key"
+                         Foreground="#B9C9E4" FontSize="11" Margin="0,0,0,3"/>
+              <DockPanel DockPanel.Dock="Top" Margin="0,0,0,9">
+                <Button DockPanel.Dock="Right" Content="New" Click="NewInteraction_Click"
+                        ToolTip="Create a new interaction" MinWidth="52" Margin="7,0,0,0"/>
+                <TextBox x:Name="InteractionSearchBox" ToolTip="Filter interactions by title or key"
+                         VerticalContentAlignment="Center" MinHeight="32"
+                         TextChanged="InteractionSearch_Changed"/>
+              </DockPanel>
+              <Expander x:Name="InteractionEditorExpander" DockPanel.Dock="Bottom"
+                        Header="Interaction details — edit / save / delete"
+                        IsExpanded="False" Margin="0,10,0,0"
+                        Foreground="{StaticResource ForegroundBrush}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                              MaxHeight="265" Margin="0,8,0,0">
+                  <StackPanel Margin="0,0,5,5">
+                    <TextBlock Text="Key (immutable after creation)" FontSize="11" Foreground="#B9C9E4"/>
+                    <TextBox x:Name="InteractionKeyBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
+                    <TextBlock Text="Title" FontSize="11" Foreground="#B9C9E4"/>
+                    <TextBox x:Name="InteractionTitleBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
+                    <TextBlock Text="Starting node key" FontSize="11" Foreground="#B9C9E4"/>
+                    <TextBox x:Name="InteractionStartBox" Margin="0,2,0,6" TextChanged="DesignerField_Changed"/>
+                    <TextBlock Text="Participants are chosen when the interaction starts in Godot."
+                               FontSize="11" Foreground="#B9C9E4" TextWrapping="Wrap" Margin="0,2,0,6"/>
+                    <WrapPanel>
+                      <Button Content="Save" Click="SaveInteraction_Click"/>
+                      <Button Content="Delete" Click="DeleteInteraction_Click"/>
+                    </WrapPanel>
+                  </StackPanel>
+                </ScrollViewer>
+              </Expander>
+              <ListBox x:Name="InteractionList" SelectionChanged="InteractionList_SelectionChanged"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto" MinHeight="100">
+                <ListBox.ItemContainerStyle>
+                  <Style TargetType="ListBoxItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                  </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                  <DataTemplate>
+                    <StackPanel ToolTip="{Binding}">
+                      <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                      <TextBlock Text="{Binding Key}" FontSize="10" Foreground="#B9C9E4"
+                                 TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
             </DockPanel>
           </Border>
 

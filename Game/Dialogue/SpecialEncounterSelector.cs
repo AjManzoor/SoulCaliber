@@ -12,7 +12,8 @@ public sealed record SelectedSpecialEncounter(
     string RepetitionMode, long? AnchorMemoryOccurrenceId,
     // Snapshot the directional participants at selection time. The scene must
     // not complete an encounter against a different pair later on.
-    string InitiatorCharacterId, string RecipientCharacterId);
+    string InitiatorCharacterId, string RecipientCharacterId,
+    string? BoundAffectedCharacterId = null);
 
 /// <summary>
 /// Read-only eligibility information for an authored special encounter.
@@ -87,6 +88,12 @@ public sealed class SpecialEncounterSelector
             }
         }
 
+        bool hasAffectedStatusColumn;
+        using (var schema = content.CreateCommand())
+        {
+            schema.CommandText = "SELECT 1 FROM pragma_table_info('SpecialEncounters') WHERE name='AffectedRelationshipStatusKey'";
+            hasAffectedStatusColumn = schema.ExecuteScalar() is not null;
+        }
         var candidates = new List<Candidate>();
         using (var cmd = content.CreateCommand())
         {
@@ -94,7 +101,8 @@ public sealed class SpecialEncounterSelector
                 SELECT e.Id, e.EncounterKey, e.Title, i.Key, e.Priority,
                        e.RepetitionMode, e.ConditionJson, e.AnchorMemoryKey,
                        e.AnchorActorRef, e.AnchorAffectedRef, e.AnchorKnowerRef,
-                       e.LaunchMode, e.IsActive, e.RecipientCharacterId, e.InitiatorCharacterId
+                       e.LaunchMode, e.IsActive, e.RecipientCharacterId, e.InitiatorCharacterId,
+                       " + (hasAffectedStatusColumn ? "e.AffectedRelationshipStatusKey" : "NULL") + @"
                 FROM SpecialEncounters e
                 JOIN Interactions i ON i.Id=e.InteractionId
                 ORDER BY e.Priority DESC, e.Id ASC";
@@ -108,13 +116,15 @@ public sealed class SpecialEncounterSelector
                     reader.GetString(8), reader.GetString(9), reader.GetString(10),
                     reader.GetString(11), reader.GetInt32(12) == 1,
                     reader.IsDBNull(13) ? null : reader.GetString(13),
-                    reader.IsDBNull(14) ? null : reader.GetString(14)));
+                    reader.IsDBNull(14) ? null : reader.GetString(14),
+                    reader.IsDBNull(15) ? null : reader.GetString(15)));
         }
 
         // Load validation catalogues once, only after closing the row reader.
         var memoryKeys = ReadKeys(content, "SELECT Key FROM MemoryTypes WHERE IsActive=1");
         var statusKeys = ReadKeys(content, "SELECT Key FROM RelationshipStatuses WHERE IsActive=1");
         var characterKeys = ReadKeys(content, "SELECT Id FROM Characters");
+        var traitLookup = PublishedTraitLookup.Load(content);
         var result = new List<SpecialEncounterInspection>();
         foreach (var encounter in candidates)
         {
@@ -154,44 +164,64 @@ public sealed class SpecialEncounterSelector
                 }
                 var tree = MemoryConditionRules.Read(encounter.ConditionJson);
                 MemoryConditionRules.Validate(tree, memoryKeys.Contains,
-                    characterKeys.Contains, statusKeys.Contains);
+                    characterKeys.Contains, statusKeys.Contains, traitLookup.Active);
                 if (!MemoryConditionRules.Evaluate(tree, initiatorId, recipientId,
                     (key, actor, affected, knower) => _memories.Count(key, actor, affected, knower),
-                    (from, to) => _statuses.Get(from, to), out string reason))
+                    (from, to) => _statuses.Get(from, to), out string reason, characterKeys,
+                    traitLookup.Has))
                 {
                     result.Add(Excluded("Condition failed: " + reason));
                     continue;
                 }
 
-                long? anchorId = null;
-                if (encounter.RepetitionMode == "ONCE_PER_OCCURRENCE")
+                if (encounter.RepetitionMode is not ("ONCE_PER_PAIR" or "ONCE_PER_OCCURRENCE" or "REPEATABLE"))
                 {
-                    if (string.IsNullOrWhiteSpace(encounter.AnchorMemoryKey))
-                    {
-                        result.Add(Excluded("No per-occurrence memory anchor configured"));
-                        continue;
-                    }
-                    var matching = _memories.Find(encounter.AnchorMemoryKey,
+                    result.Add(Excluded("Unknown repetition rule: " + encounter.RepetitionMode));
+                    continue;
+                }
+                long? anchorId = null;
+                string? boundAffected = null;
+                if (encounter.AnchorMemoryKey is string anchorKey && !string.IsNullOrWhiteSpace(anchorKey))
+                {
+                    var matching = _memories.Find(anchorKey,
                         MemoryConditionRules.Resolve(encounter.AnchorActorRef, initiatorId, recipientId),
                         MemoryConditionRules.Resolve(encounter.AnchorAffectedRef, initiatorId, recipientId),
                         MemoryConditionRules.Resolve(encounter.AnchorKnowerRef, initiatorId, recipientId));
-                    var handled = _completions.CompletedOccurrenceIds(encounter.Key, initiatorId, recipientId);
-                    anchorId = matching.FirstOrDefault(m => !handled.Contains(m.Id))?.Id;
+                    var handled = encounter.RepetitionMode == "ONCE_PER_OCCURRENCE"
+                        ? _completions.CompletedOccurrenceIds(encounter.Key, initiatorId, recipientId)
+                        : new HashSet<long>();
+                    // The incident, status relationship and placeholder all share
+                    // the exact occurrence and affected character chosen here.
+                    foreach (var memory in matching)
+                    {
+                        if (handled.Contains(memory.Id)) continue;
+                        string? affectedId = MemoryAwareEncounterRules.BindAffected(
+                            memory.AffectedCharacterIds, recipientId,
+                            encounter.AffectedRelationshipStatusKey, _statuses.Get);
+                        if (encounter.AffectedRelationshipStatusKey is not null && affectedId is null)
+                            continue;
+                        anchorId = memory.Id;
+                        boundAffected = affectedId;
+                        break;
+                    }
                     if (anchorId is null)
                     {
-                        result.Add(Excluded("No unhandled matching memory occurrence (all handled or none found)"));
+                        result.Add(Excluded(encounter.AffectedRelationshipStatusKey is null
+                            ? "No qualifying unhandled anchored memory occurrence"
+                            : $"No anchored memory whose affected character has Recipient → Affected = {encounter.AffectedRelationshipStatusKey}"));
                         continue;
                     }
                 }
-                else if (encounter.RepetitionMode is not ("ONCE_PER_PAIR" or "REPEATABLE"))
+                else if (encounter.RepetitionMode == "ONCE_PER_OCCURRENCE" ||
+                         encounter.AffectedRelationshipStatusKey is not null)
                 {
-                    result.Add(Excluded("Unknown repetition rule: " + encounter.RepetitionMode));
+                    result.Add(Excluded("Encounter requires a configured memory anchor"));
                     continue;
                 }
 
                 var selected = new SelectedSpecialEncounter(encounter.Key, encounter.Title,
                     encounter.InteractionKey, encounter.Priority, encounter.RepetitionMode, anchorId,
-                    initiatorId, recipientId);
+                    initiatorId, recipientId, boundAffected);
                 result.Add(new SpecialEncounterInspection(encounter.Key, encounter.Title,
                     encounter.InteractionKey, encounter.LaunchMode, encounter.Priority, true,
                     anchorId is long memoryId
@@ -222,5 +252,6 @@ public sealed class SpecialEncounterSelector
         string InteractionKey, int Priority, string RepetitionMode,
         string? ConditionJson, string? AnchorMemoryKey,
         string AnchorActorRef, string AnchorAffectedRef, string AnchorKnowerRef,
-        string LaunchMode, bool IsActive, string? RecipientCharacterId, string? InitiatorCharacterId);
+        string LaunchMode, bool IsActive, string? RecipientCharacterId, string? InitiatorCharacterId,
+        string? AffectedRelationshipStatusKey);
 }

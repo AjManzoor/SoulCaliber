@@ -88,6 +88,7 @@ public sealed class ConversationAvailabilitySelector
             var memories = ReadKeys(content, "SELECT Key FROM MemoryTypes WHERE IsActive=1");
             var statuses = ReadKeys(content, "SELECT Key FROM RelationshipStatuses WHERE IsActive=1");
             var characters = ReadKeys(content, "SELECT Id FROM Characters");
+            var traitLookup = PublishedTraitLookup.Load(content);
             foreach (var item in candidates)
             {
                 NormalInspection Excluded(string why) => new(item, false, why);
@@ -114,10 +115,11 @@ public sealed class ConversationAvailabilitySelector
                     {
                         var tree = MemoryConditionRules.Read(item.ConditionJson);
                         MemoryConditionRules.Validate(tree, memories.Contains,
-                            characters.Contains, statuses.Contains);
+                            characters.Contains, statuses.Contains, traitLookup.Active);
                         if (!MemoryConditionRules.Evaluate(tree, initiatorId, recipientId,
                             (key, actor, affected, knower) => _memories.Count(key, actor, affected, knower),
-                            (from, to) => _statuses.Get(from, to), out var reason))
+                            (from, to) => _statuses.Get(from, to), out var reason, characters,
+                            traitLookup.Has))
                         {
                             normal.Add(Excluded("Condition failed: " + reason));
                             continue;

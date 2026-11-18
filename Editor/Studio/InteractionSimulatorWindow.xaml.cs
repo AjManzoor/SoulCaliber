@@ -21,6 +21,10 @@ public partial class InteractionSimulatorWindow : Window
     private readonly List<SimulationTraitRow> _partnerTraits = [];
     private string? _lastAuditSnapshot;
     private bool _loadingTraits;
+    private string? _selectedTargetId;
+    private string? _pendingTargetId;
+    private int? _pendingTargetChoiceId;
+    private bool _loadingTargetPicker;
 
     public InteractionSimulatorWindow(string databasePath)
     {
@@ -42,6 +46,7 @@ public partial class InteractionSimulatorWindow : Window
         MechanicsText.Text = "Start an interaction, select a choice, then inspect all six stages.\n" +
             "Use the Personality and Status sandbox tabs for temporary tests.";
         InitialiseStatusControls();
+        InitialiseThirdPartyStatusControls();
         InitialiseMemoryAndEncounterControls();
         UpdateButtons();
     }
@@ -62,6 +67,10 @@ public partial class InteractionSimulatorWindow : Window
                            !_partner.Equals(partner.Id, StringComparison.OrdinalIgnoreCase);
         _actor = actor.Id;
         _partner = partner.Id;
+        if (pairChanged) ResetThirdPartyStatusSandbox();
+        _selectedTargetId = null; // Restart clears the selected target like Godot DialogueEngine.Restart().
+        _pendingTargetId = null;
+        _pendingTargetChoiceId = null;
         if (pairChanged || _actorTraits.Count == 0) RestoreOriginalTraits();
         InitialiseStatusPair(pairChanged);
         _interaction = interaction;
@@ -104,6 +113,7 @@ public partial class InteractionSimulatorWindow : Window
 
     private void ChoiceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!_awaitingContinue) Safely(UpdateTargetPicker);
         UpdateButtons();
         if (!_awaitingContinue) Safely(RefreshMechanicsAudit);
     }
@@ -177,7 +187,8 @@ public partial class InteractionSimulatorWindow : Window
         }
         // Refresh from current in-memory relationship and trait inputs, not from any game save.
         var current = ChoiceStatus(selected.Choice);
-        MechanicsText.Text = current.Audit.Describe(current.LockReason) + FormatStatusPreview(selected.Choice) + MemoryEffectPreview(selected.Choice);
+        MechanicsText.Text = current.Audit.Describe(current.LockReason) + FormatStatusPreview(selected.Choice)
+            + FormatPairStatusPreview(selected.Choice) + MemoryEffectPreview(selected.Choice);
     }
     private void ForceSuccess_Click(object sender, RoutedEventArgs e) => Safely(() => ExecuteChoice(true, 1, "FORCED SUCCESS"));
     private void ForceFailure_Click(object sender, RoutedEventArgs e) => Safely(() => ExecuteChoice(false, 100, "FORCED FAILURE"));
@@ -197,6 +208,11 @@ public partial class InteractionSimulatorWindow : Window
         var selected = SelectedChoice();
         if (_node is null) throw new InvalidOperationException("Start an interaction first.");
         var choice = selected.Choice;
+        // Resolve the target and pair effects against PRE-EFFECT state, as Godot does.
+        string? selectedTarget = _data.DynamicTarget(choice.Id) is null ? null : _pendingTargetId;
+        string? effectiveTarget = selectedTarget ?? _selectedTargetId;
+        var pairChanges = PreviewPairStatusChanges(choice, succeeded, effectiveTarget);
+        var pairAudit = FormatPairStatusPreview(choice);
         var before = Values();
         // Both dialogue lines are resolved against PRE-EFFECT values, like Godot's DialogueEngine.Choose().
         var actorLine = _data.Line(choice, _actor, _partner, succeeded, before, choice.GenericActorLine);
@@ -224,14 +240,21 @@ public partial class InteractionSimulatorWindow : Window
                 (effect.WasClamped ? " [range limit]" : ""));
         }
         ApplySimulatedStatusChanges(simulatedStatusChanges);
+        ApplySimulatedPairStatusChanges(pairChanges);
+        if (selectedTarget is not null) _selectedTargetId = selectedTarget;
         var createdMemories = ApplySimulatedMemoryEffects(choice, succeeded);
-        _lastAuditSnapshot = audit.Describe(null, succeeded, roll, testMode) + statusAudit + MemoryEffectPreview(choice);
+        _lastAuditSnapshot = audit.Describe(null, succeeded, roll, testMode)
+            + statusAudit + pairAudit + MemoryEffectPreview(choice);
         MechanicsText.Text = _lastAuditSnapshot;
         StatsGrid.Items.Refresh();
         _nextNode = succeeded ? choice.SuccessNext : choice.FailureNext;
         _awaitingContinue = true;
         _finished = false;
         var reaction = succeeded ? choice.SuccessReaction : choice.FailureReaction;
+        string pairChangesText = pairChanges.Count == 0 ? "No third-party changes."
+            : string.Join("\n", pairChanges.Select(c =>
+                $"{_data.Name(c.From)} → {_data.Name(c.To)}: " +
+                $"{_data.StatusName(c.Before)} → {_data.StatusName(c.After)}"));
         string statusChangesText = simulatedStatusChanges.Count == 0
             ? "No status changes."
             : string.Join("\n", simulatedStatusChanges.Select(c =>
@@ -239,14 +262,19 @@ public partial class InteractionSimulatorWindow : Window
         OutcomeText.Text = $"{testMode} | {choice.Label}\n" +
             $"Chance: {selected.Chance}% | Test roll: {roll}/100 | {(succeeded ? "SUCCESS" : "FAILURE")}\n" +
             $"Target reaction: {reaction}\n\n" +
-            $"{_data.Name(_actor)}: {actorLine.Text}\nSource: {actorLine.Source}\n\n" +
-            $"{_data.Name(_partner)}: {partnerLine.Text}\nSource: {partnerLine.Source}\n\n" +
+            $"{_data.Name(_actor)}: {Expand(actorLine.Text, effectiveTarget)}\nSource: {actorLine.Source}\n\n" +
+            $"{_data.Name(_partner)}: {Expand(partnerLine.Text, effectiveTarget)}\nSource: {partnerLine.Source}\n\n" +
             $"RELATIONSHIP EFFECTS\n{(changes.Count == 0 ? "No effects configured." : string.Join("\n", changes))}\n\n" +
             $"STATUS CHANGES\n{statusChangesText}\n\n" +
+            $"SELECTED TARGET: {(effectiveTarget is null ? "None" : _data.Name(effectiveTarget))}\n" +
+            $"THIRD-PARTY STATUS CHANGES\n{pairChangesText}\n\n" +
             $"MEMORIES CREATED\n{(createdMemories.Count == 0 ? "None" : string.Join("\n", createdMemories.Select(m => m.ToString())))}\n\n" +
             $"Next node: {(string.IsNullOrWhiteSpace(_nextNode) ? "END" : _nextNode)}";
+        _pendingTargetChoiceId = null;
+        _pendingTargetId = null;
         InspectorText.Text = $"INITIATOR PHRASE\n{actorLine.Inspector}\n\nRECIPIENT PHRASE\n{partnerLine.Inspector}\n\n" +
                              "Skill/chance calculation:\n" + selected.Breakdown;
+        UpdateTargetPicker();
         UpdateButtons();
     }
 
@@ -263,6 +291,7 @@ public partial class InteractionSimulatorWindow : Window
             RefreshEncounterDiagnostics();
             _node = null;
             ChoiceList.ItemsSource = null;
+            UpdateTargetPicker();
             ChoiceAvailabilityText.Text = "Conversation complete. Restart to test further choices with the current sandbox state.";
             NodeLabel.Text = "Conversation complete";
             IntroductionText.Text = "Start another test to replay the interaction with the current simulated relationship values.";
@@ -280,6 +309,8 @@ public partial class InteractionSimulatorWindow : Window
     private void RenderNode()
     {
         if (_node is null) return;
+        _pendingTargetId = null;
+        _pendingTargetChoiceId = null;
         var intro = _data.Intro(_node, _partner, _actor, Values());
         NodeLabel.Text = $"{_interaction?.Title} · Round {_node.Round} · {_node.Key}";
         IntroductionSource.Text = $"{_data.Name(_partner)} · {intro.Source}";
@@ -306,6 +337,12 @@ public partial class InteractionSimulatorWindow : Window
         var current = ChoiceStatus(chosen.Choice);
         if (current.IsLocked) throw new InvalidOperationException(
             $"This choice is {(current.IsHidden ? "hidden" : "locked")}: {current.LockReason}");
+        if (_data.DynamicTarget(chosen.Choice.Id) is not null &&
+            (_pendingTargetChoiceId != chosen.Choice.Id ||
+             _pendingTargetId is null ||
+             !EligibleTargets(chosen.Choice).Any(x =>
+                 x.Id.Equals(_pendingTargetId, StringComparison.OrdinalIgnoreCase))))
+            throw new InvalidOperationException("Choose an eligible target character before resolving this option.");
         return current;
     }
 
@@ -336,8 +373,16 @@ public partial class InteractionSimulatorWindow : Window
                 throw new InvalidOperationException($"{stat.Attribute} must be in the range {stat.Minimum} to {stat.Maximum}.");
         }
     }
-    private string Expand(string text) => text.Replace("{actor}", _data.Name(_actor), StringComparison.OrdinalIgnoreCase)
-        .Replace("{partner}", _data.Name(_partner), StringComparison.OrdinalIgnoreCase);
+    private string Expand(string text, string? chosenTarget = null)
+    {
+        string expanded = text.Replace("{actor}", _data.Name(_actor), StringComparison.OrdinalIgnoreCase)
+            .Replace("{partner}", _data.Name(_partner), StringComparison.OrdinalIgnoreCase)
+            .Replace("{initiator}", _data.Name(_actor), StringComparison.OrdinalIgnoreCase)
+            .Replace("{recipient}", _data.Name(_partner), StringComparison.OrdinalIgnoreCase);
+        string? name = chosenTarget ?? _selectedTargetId;
+        return SoulCaliber.Dialogue.DynamicTargetRules.FormatTarget(
+            expanded, name is null ? null : _data.Name(name));
+    }
 
     private void Validate_Click(object sender, RoutedEventArgs e) => Safely(() =>
     {
@@ -349,7 +394,9 @@ public partial class InteractionSimulatorWindow : Window
     private void UpdateButtons()
     {
         bool ready = !_awaitingContinue && !_finished && _node is not null &&
-                     ChoiceList.SelectedItem is SimulationChoiceDisplay { IsLocked: false };
+                     ChoiceList.SelectedItem is SimulationChoiceDisplay { IsLocked: false } available &&
+                     (_data.DynamicTarget(available.Choice.Id) is null ||
+                      (_pendingTargetChoiceId == available.Choice.Id && _pendingTargetId is not null));
         ForceSuccessButton.IsEnabled = ready;
         ForceFailureButton.IsEnabled = ready;
         RollButton.IsEnabled = ready;
@@ -360,6 +407,8 @@ public partial class InteractionSimulatorWindow : Window
         try { action(); }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "Interaction Test Lab", MessageBoxButton.OK, MessageBoxImage.Warning); }
     }
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }
 
 public sealed class SimulationStatRow(RelationshipAttributeDefinition definition)

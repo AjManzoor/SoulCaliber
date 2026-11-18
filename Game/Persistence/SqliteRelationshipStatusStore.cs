@@ -81,28 +81,7 @@ public sealed class SqliteRelationshipStatusStore : IRelationshipStatusStore
                 }
             }
         }
-        using var db = new SaveDbContext();
-        db.Database.EnsureCreated(); // Existing saves require the CREATE TABLE below.
-        using var save=OpenSave();
-        using var cmdCreate=save.CreateCommand();
-        cmdCreate.CommandText="""
-            CREATE TABLE IF NOT EXISTS SavedCharacterStatusOverrides (
-                FromCharacterId TEXT NOT NULL COLLATE NOCASE,
-                ToCharacterId TEXT NOT NULL COLLATE NOCASE,
-                StatusKey TEXT NOT NULL COLLATE NOCASE,
-                PRIMARY KEY(FromCharacterId,ToCharacterId),
-                CHECK(FromCharacterId <> ToCharacterId COLLATE NOCASE)
-            ) WITHOUT ROWID;
-            CREATE TABLE IF NOT EXISTS SavedInteractionStatusChanges (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                SavedInteractionId INTEGER NOT NULL REFERENCES InteractionHistory(Id) ON DELETE CASCADE,
-                FromCharacterId TEXT NOT NULL,
-                ToCharacterId TEXT NOT NULL,
-                Before TEXT NOT NULL,
-                After TEXT NOT NULL
-            );
-            """;
-        cmdCreate.ExecuteNonQuery();
+        // Schema creation belongs solely to SaveGameSchemaManager.
     }
 
     private static string Key(string value) => value.Trim().ToUpperInvariant();
@@ -218,7 +197,8 @@ public sealed class SqliteRelationshipStatusStore : IRelationshipStatusStore
     /// </summary>
     internal IReadOnlyList<AppliedRelationshipStatusChange> ApplyInTransaction(
         SqliteConnection db, SqliteTransaction tx, string actorId, string partnerId,
-        IReadOnlyList<RelationshipStatusEffect> effects)
+        IReadOnlyList<RelationshipStatusEffect> effects,
+        IReadOnlyList<ResolvedPairStatusEffect>? pairEffects = null)
     {
         string actor = Key(actorId), partner = Key(partnerId);
         CheckPair(actor, partner);
@@ -239,6 +219,16 @@ public sealed class SqliteRelationshipStatusStore : IRelationshipStatusStore
                 default:
                     throw new InvalidOperationException($"Invalid status effect direction '{effect.Direction}'.");
             }
+        }
+        // Explicit character-pair effects are resolved by the dialogue engine before the unit of work.
+        // The same transaction and conflict detection cover both authored effect types.
+        foreach (var effect in pairEffects ?? Array.Empty<ResolvedPairStatusEffect>())
+        {
+            string from=Key(effect.FromId), to=Key(effect.ToId), status=Key(effect.StatusKey);
+            CheckPair(from,to);
+            if (!_activeStatusKeys.Contains(status))
+                throw new InvalidOperationException($"Unknown or inactive status: {status}.");
+            targets.Add((from,to,status));
         }
         if (targets.Select(x => (x.From, x.To)).Distinct().Count() != targets.Count)
             throw new InvalidOperationException("Conflicting status effects for the same outcome and direction.");

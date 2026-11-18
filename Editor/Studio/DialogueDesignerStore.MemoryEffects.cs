@@ -1,4 +1,5 @@
 using System.IO;
+using SoulCaliber.Shared;
 
 namespace SoulCaliberStudio;
 
@@ -41,7 +42,7 @@ public sealed partial class DialogueDesignerStore
         return rows;
     }
 
-    public int SaveMemoryEffect(DialogueMemoryEffectRow item)
+    public int SaveMemoryEffect(DialogueMemoryEffectRow item, KnowledgeAudienceSpec? customAudience = null)
     {
         if (!Exists(_db,"SELECT 1 FROM Options WHERE Id=$id",("$id",item.OptionId)))
             throw new InvalidOperationException("Dialogue choice no longer exists.");
@@ -51,6 +52,7 @@ public sealed partial class DialogueDesignerStore
         if (item.Affected is not ("ACTOR" or "PARTNER" or "BOTH")) throw new InvalidOperationException("Invalid affected character setting.");
         if (item.SeverityOverride is not (null or "MAJOR" or "MINOR")) throw new InvalidOperationException("Invalid severity override.");
         if (item.KnowledgeOverride is not (null or "QUIET" or "ALLIES" or "GLOBAL")) throw new InvalidOperationException("Invalid knowledge override.");
+        ValidateAudience(customAudience);
         int savedId=item.Id;
         Write(tx => {
             using var cmd=Command(item.Id==0 ?
@@ -61,6 +63,7 @@ public sealed partial class DialogueDesignerStore
             if(item.Id!=0) Add(cmd,"$id",item.Id);
             Changed(cmd,item.Id!=0);
             if(item.Id==0) {using var get=Command("SELECT last_insert_rowid()",tx);savedId=Convert.ToInt32((long)get.ExecuteScalar()!);}
+            SaveMemoryEffectAudienceInTransaction(savedId, customAudience, tx);
         });
         return savedId;
     }

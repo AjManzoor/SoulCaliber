@@ -1,0 +1,17 @@
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\bin\Debug\net10.0\CharacterTraitsTests.exe
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\bin\Debug\net10.0\CharacterTraitsTests.deps.json
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\bin\Debug\net10.0\CharacterTraitsTests.runtimeconfig.json
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\bin\Debug\net10.0\CharacterTraitsTests.runtimeconfig.dev.json
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\bin\Debug\net10.0\CharacterTraitsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\bin\Debug\net10.0\CharacterTraitsTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\CharacterTraitsTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\CharacterTraitsTests.AssemblyInfoInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\CharacterTraitsTests.AssemblyInfo.cs
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\CharacterTraitsTests.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\CharacterTraitsTests.sourcelink.json
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\CharacterTraitsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\refint\CharacterTraitsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\CharacterTraitsTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\CharacterTraitsTests.genruntimeconfig.cache
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\ref\CharacterTraitsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\CharacterTraits\obj\Debug\net10.0\Characte.2A3509E9.Up2Date

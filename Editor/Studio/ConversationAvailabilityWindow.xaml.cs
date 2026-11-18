@@ -232,4 +232,5 @@ public partial class ConversationAvailabilityWindow : Window
             MessageBox.Show(this, ex.Message, "Conversation availability", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }

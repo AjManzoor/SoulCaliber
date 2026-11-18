@@ -101,27 +101,50 @@ public partial class InteractionScene : Control
 		_choiceTitle.VerticalAlignment = VerticalAlignment.Center;
 		_footer = GetNode<Label>("Footer");
 
-		_statusStore = new SqliteRelationshipStatusStore();
-		// All savegame stores persist across process launches; only Reset Progress clears them.
-		_memoryStore = new SqliteMemoryStore(_statusStore);
-		_completionStore = new SqliteSpecialEncounterCompletionStore();
-		_numericStore = new SqliteRelationshipStore();
-		_effectStore = new SqliteInteractionEffectStore(_numericStore, _statusStore, _memoryStore);
-		_repository = new DialogueRepository();
-		SelectAndCreateEngine();
+		// Initialise before constructing any savegame stores. An existing
+		// invalid save must NEVER be silently replaced by a new one.
+		var startup = SaveGameStartup.TryInitialize();
+		if (!startup.Success)
+		{
+			GD.PushError("[Savegame] Cannot initialise: " + startup.TechnicalDetails);
+			_footer.Text = startup.UserMessage;
+			_continueButton.Disabled = true;
+			SaveGameStartupDialog.Show(this, "Savegame could not be loaded", startup.UserMessage);
+			return;
+		}
 
-		// Respect existing Inspector textures if no data image is present.
-		_defaultLeftTexture = LoadImage(_engine.Visitor.DefaultImage) ?? _leftPortrait.Texture;
-		_defaultRightTexture = LoadImage(_engine.Host.DefaultImage) ?? _rightPortrait.Texture;
-		_leftName.Text = _engine.Visitor.Name;
-		_rightName.Text = _engine.Host.Name;
-
-		BuildRelationshipPanels();
-		_leftOutcomeBadge = CreateOutcomeBadge(_leftFrame, "LeftOutcomeBadge");
-		_rightOutcomeBadge = CreateOutcomeBadge(_rightFrame, "RightOutcomeBadge");
-		_continueButton.Pressed += ContinueConversation;
-		BuildResetProgressControl();
-		RestartConversation(reselect: false);
+		try
+		{
+			_statusStore = new SqliteRelationshipStatusStore();
+			// All savegame stores persist across process launches; only Reset Progress clears them.
+			_memoryStore = new SqliteMemoryStore(_statusStore);
+			_completionStore = new SqliteSpecialEncounterCompletionStore();
+			_numericStore = new SqliteRelationshipStore();
+			_effectStore = new SqliteInteractionEffectStore(_numericStore, _statusStore, _memoryStore);
+			_repository = new DialogueRepository();
+			SelectAndCreateEngine();
+	
+			// Respect existing Inspector textures if no data image is present.
+			_defaultLeftTexture = LoadImage(_engine.Visitor.DefaultImage) ?? _leftPortrait.Texture;
+			_defaultRightTexture = LoadImage(_engine.Host.DefaultImage) ?? _rightPortrait.Texture;
+			_leftName.Text = _engine.Visitor.Name;
+			_rightName.Text = _engine.Host.Name;
+	
+			BuildRelationshipPanels();
+			_leftOutcomeBadge = CreateOutcomeBadge(_leftFrame, "LeftOutcomeBadge");
+			_rightOutcomeBadge = CreateOutcomeBadge(_rightFrame, "RightOutcomeBadge");
+			_continueButton.Pressed += ContinueConversation;
+			BuildResetProgressControl();
+			RestartConversation(reselect: false);
+		}
+		catch (Exception ex)
+		{
+			// A content load failure must not crash the scene or trigger New Game.
+			GD.PushError("[InteractionScene] Cannot load game state or published content: " + ex);
+			_footer.Text = "Could not load the conversation or saved state. Progress was not reset. Check the diagnostic log.";
+			_continueButton.Disabled = true;
+			SaveGameStartupDialog.Show(this, "Conversation could not be loaded", _footer.Text);
+		}
 	}
 
 	private void SelectAndCreateEngine()
@@ -167,6 +190,12 @@ public partial class InteractionScene : Control
 		_engine = new DialogueEngine(_repository, _numericStore,
 			dialogueKey, VisitorCharacterId, PartnerCharacterId, _statusStore,
 			_effectStore, _memoryStore);
+		if (_selectedEncounter?.AnchorMemoryOccurrenceId is long anchoredId)
+		{
+			var incident = _memoryStore.FindById(anchoredId)
+				?? throw new InvalidOperationException($"Anchored memory occurrence #{anchoredId} no longer exists.");
+			_engine.BindMemoryOccurrence(incident, _selectedEncounter.BoundAffectedCharacterId);
+		}
 	}
 
 	private void BuildResetProgressControl()
@@ -277,8 +306,8 @@ public partial class InteractionScene : Control
 			{
 				Name = $"Choice{index}",
 				Text = choice.IsLocked
-					? $"{index}. {choice.Definition.Label}  [LOCKED: {choice.LockReason}]"
-					: $"{index}. {choice.Definition.Label}  ({choice.Chance}%" +
+					? $"{index}. {_engine.FormatDialogueText(choice.Definition.DynamicTarget is null ? choice.Definition.Label : choice.Definition.Label.Replace("{target}", "…", StringComparison.OrdinalIgnoreCase))}  [LOCKED: {choice.LockReason}]"
+					: $"{index}. {_engine.FormatDialogueText(choice.Definition.DynamicTarget is null ? choice.Definition.Label : choice.Definition.Label.Replace("{target}", "…", StringComparison.OrdinalIgnoreCase))}  ({choice.Chance}%" +
 						(string.IsNullOrEmpty(_engine.SkillLabel(choice.Definition))
 							? "" : $" · {_engine.SkillLabel(choice.Definition)}") + ")",
 				TooltipText = _engine.ChanceBreakdown(choice.Definition),
@@ -287,13 +316,66 @@ public partial class InteractionScene : Control
 				SizeFlagsHorizontal = SizeFlags.ExpandFill
 			};
 			button.AddThemeFontSizeOverride("font_size", 17);
-			button.Pressed += () => Choose(key);
+			button.Pressed += () =>
+			{
+				if(choice.Definition.DynamicTarget is not null) ShowDynamicTargetMenu(key);
+				else Choose(key);
+			};
 			_choicesContainer.AddChild(button);
 			_choiceButtons.Add((button, key, choice.IsLocked));
 		}
 
 		UpdateRelationshipPanels();
 		_footer.Text = _encounterSummary + "  •  choose an action";
+	}
+
+	/// <summary>Second stage of a dynamic option: choose exactly ONE matching character.</summary>
+	private void ShowDynamicTargetMenu(string optionKey)
+	{
+		if (_stage != DisplayStage.Choices || _choiceSubmissionInProgress || _engine.HasCommittedChoice) return;
+		var targets=_engine.DynamicTargetsForOption(optionKey);
+		if (targets.Count==0)
+		{
+			_footer.Text="No matching relationship targets are currently available.";
+			return;
+		}
+		var definition=_engine.CurrentNode.Options.First(o=>
+			string.Equals(o.Key,optionKey,StringComparison.OrdinalIgnoreCase));
+		_choiceTitle.Text="SELECT ONE CHARACTER";
+		_choicesScroll.ScrollVertical=0;
+		_choiceButtons.Clear();
+		foreach (Node child in _choicesContainer.GetChildren())
+		{
+			_choicesContainer.RemoveChild(child);child.QueueFree();
+		}
+		foreach (var target in targets)
+		{
+			string selection=optionKey+"::"+target.Id;
+			string title=definition.Label.Contains("{target}",StringComparison.OrdinalIgnoreCase)
+				? definition.Label.Replace("{target}",target.Name,StringComparison.OrdinalIgnoreCase)
+				: target.Name;
+			var button=new Button
+			{
+				Text=title,
+				CustomMinimumSize=new Vector2(0,48),
+				SizeFlagsHorizontal=SizeFlags.ExpandFill
+			};
+			button.AddThemeFontSizeOverride("font_size",17);
+			button.Pressed+=()=>Choose(selection);
+			_choicesContainer.AddChild(button);
+			_choiceButtons.Add((button,selection,false));
+		}
+		var back=new Button
+		{
+			Text="Back to choices",
+			CustomMinimumSize=new Vector2(0,44),
+			SizeFlagsHorizontal=SizeFlags.ExpandFill
+		};
+		back.Pressed+=ShowCurrentNode;
+		_choicesContainer.AddChild(back);
+		// When a database save fails, only the already-rolled target may be retried.
+		_choiceButtons.Add((back,"__back__",false));
+		_footer.Text="Choose one relationship target. Only that character will be affected.";
 	}
 
 	private void SetChoiceButtons(bool disableAll, string? retryOnlyKey = null)
@@ -730,7 +812,7 @@ public partial class InteractionScene : Control
         string.Equals(id, _engine.Visitor.Id, StringComparison.OrdinalIgnoreCase)
             ? _engine.Visitor.Name
             : string.Equals(id, _engine.Host.Id, StringComparison.OrdinalIgnoreCase)
-                ? _engine.Host.Name : id;
+                ? _engine.Host.Name : _engine.CharacterName(id);
 
 	private static void FillStats(Dictionary<string, Label> labels,
 		Dictionary<string, Control> chips, RelationshipStats stats,

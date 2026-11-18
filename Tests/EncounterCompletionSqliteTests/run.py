@@ -5,26 +5,33 @@ Uses an in-memory SQLite database; never touches the actual savegame.
 This is SQL-only validation, not execution of Godot's C# completion store.
 """
 from pathlib import Path
-import re
 import sqlite3
+import sys
 
-source = Path(__file__).resolve().parents[2] / 'Game' / 'Persistence' / 'SqliteSpecialEncounterCompletionStore.cs'
-text = source.read_text(encoding='utf-8')
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "Tests" / "Regression"))
+from production_sql import savegame_extra_schema, store_command
 
-def extract(pattern):
-    match = re.search(pattern, text, flags=re.S)
-    if match is None:
-        raise RuntimeError(f'SQL was not found in {source.name}: {pattern}')
-    return match.group(1)
-
-schema = extract(r'command\.CommandText\s*=\s*@"(\s*CREATE TABLE IF NOT EXISTS SavedSpecialEncounterCompletions.*?);\s*";')
-insert = extract(r'command\.CommandText\s*=\s*@"(\s*INSERT INTO SavedSpecialEncounterCompletions.*?ON CONFLICT DO NOTHING)";')
+# Since Phase 13G-5B, the schema is owned by SaveGameSchemaManager, not
+# SqliteSpecialEncounterCompletionStore. Keep the SQL contract tied to the
+# production code while avoiding brittle assumptions about local variable names.
+schema = savegame_extra_schema(ROOT)
+insert = store_command(ROOT, "SqliteSpecialEncounterCompletionStore.cs",
+                       "INSERT INTO SavedSpecialEncounterCompletions")
 
 c = sqlite3.connect(':memory:')
 c.execute('PRAGMA foreign_keys=ON')
-c.executescript('CREATE TABLE SavedMemoryOccurrences (Id INTEGER PRIMARY KEY AUTOINCREMENT);')
 c.executescript(schema)
-c.executemany('INSERT INTO SavedMemoryOccurrences(Id) VALUES(?)', [(1,), (2,), (3,)])
+# Seed valid memory rows under the production NOT NULL/CHECK constraints.
+# The old test used an Id-only stub, which is no longer the actual schema.
+def seed_memory(memory_id):
+    c.execute("""INSERT INTO SavedMemoryOccurrences
+        (Id,MemoryKey,ActorCharacterId,PlayerCharacterId,Severity,KnowledgeLevel,OccurredUtc)
+        VALUES(?, 'DEFEATED', 'LAW', 'LAW', 'MAJOR', 'QUIET', '2026-11-17T17:00:00Z')""",
+        (memory_id,))
+
+for memory_id in (1, 2, 3):
+    seed_memory(memory_id)
 
 def complete(key, initiator, recipient, memory=None, utc='2026-11-17T17:00:00Z'):
     return c.execute(insert, {'encounter': key, 'initiator': initiator,
@@ -67,7 +74,7 @@ c.commit()
 assert not rows()
 print('PASS new-game reset clears completion state')
 # A failed transaction should not leave completed history behind.
-c.execute('INSERT INTO SavedMemoryOccurrences(Id) VALUES (4)')
+seed_memory(4)
 c.commit()
 try:
     c.execute('BEGIN')

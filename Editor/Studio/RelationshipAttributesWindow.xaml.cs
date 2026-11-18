@@ -79,4 +79,5 @@ public partial class RelationshipAttributesWindow : Window
         try { action(); }
         catch(Exception ex) { MessageBox.Show(this,ex.Message,"Relationship attributes",MessageBoxButton.OK,MessageBoxImage.Warning); }
     }
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }

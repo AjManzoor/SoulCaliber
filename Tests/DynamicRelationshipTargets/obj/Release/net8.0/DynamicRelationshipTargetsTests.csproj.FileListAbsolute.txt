@@ -1,0 +1,16 @@
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\bin\Release\net8.0\DynamicRelationshipTargetsTests.exe
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\bin\Release\net8.0\DynamicRelationshipTargetsTests.deps.json
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\bin\Release\net8.0\DynamicRelationshipTargetsTests.runtimeconfig.json
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\bin\Release\net8.0\DynamicRelationshipTargetsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\bin\Release\net8.0\DynamicRelationshipTargetsTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicRelationshipTargetsTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicRelationshipTargetsTests.AssemblyInfoInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicRelationshipTargetsTests.AssemblyInfo.cs
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicRelationshipTargetsTests.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicRelationshipTargetsTests.sourcelink.json
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicRelationshipTargetsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\refint\DynamicRelationshipTargetsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicRelationshipTargetsTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicRelationshipTargetsTests.genruntimeconfig.cache
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\ref\DynamicRelationshipTargetsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\DynamicRelationshipTargets\obj\Release\net8.0\DynamicR.5D3FCB62.Up2Date

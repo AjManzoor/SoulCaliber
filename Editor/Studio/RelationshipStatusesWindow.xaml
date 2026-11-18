@@ -19,11 +19,15 @@
     </Style>
   </Window.Resources>
   <DockPanel Margin="18">
-    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,14">
+      <Button DockPanel.Dock="Right" Content="Close" Click="Close_Click"
+              Width="100" Height="36" Margin="14,0,0,0" VerticalAlignment="Top"/>
+      <StackPanel>
       <TextBlock Text="RELATIONSHIP STATUSES" FontSize="25" FontWeight="Bold"/>
       <TextBlock Text="Define Ally, Neutral, Enemy and additional statuses independently of numerical relationship attributes. Status keys are permanent."
                  Foreground="#AFCAE7" FontSize="13" Margin="0,7,0,0"/>
-    </StackPanel>
+      </StackPanel>
+    </DockPanel>
     <TextBlock DockPanel.Dock="Bottom" x:Name="StatusText" Text="Choose a status or create a new one."
                Foreground="#9CC8FA" Margin="0,9,0,2"/>
     <Grid>

@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using static SoulCaliberStudio.DialogueDesignerStore;
 
 namespace SoulCaliberStudio;
@@ -50,38 +49,6 @@ public partial class ChoiceMechanicsWindow : Window
         ReloadModifiers();
         ReloadSkill();
         RefreshConfigurationIndicators();
-    }
-
-    // These labels reflect persisted rules, not unsaved edits or cached window state.
-    // A modal child editor can add/delete rules, so refresh after it closes.
-    private void RefreshConfigurationIndicators()
-    {
-        SetConfigurationIndicator(MemoryEffectsBadge, MemoryEffectsCountText,
-            _store.MemoryEffects(_option.Id).Count, "effect");
-        SetConfigurationIndicator(StatusEffectsBadge, StatusEffectsCountText,
-            _store.StatusEffects(_option.Id).Count, "effect");
-        SetConfigurationIndicator(SimpleRequirementsBadge, SimpleRequirementsCountText,
-            _store.StatusRequirements(_option.Id).Count, "rule");
-
-        var expression = _store.GetMemoryRequirements(_option.Id);
-        SetConfigurationIndicator(AdvancedRequirementsBadge, AdvancedRequirementsCountText,
-            expression is null ? 0 : CountConditionLeaves(expression), "condition");
-    }
-
-    private static int CountConditionLeaves(SoulCaliber.Shared.MemoryConditionNode node) =>
-        node.Kind is "MEMORY" or "STATUS" ? 1 :
-        node.Children?.Sum(CountConditionLeaves) ?? 0;
-
-    private static void SetConfigurationIndicator(Border badge, TextBlock text, int count, string noun)
-    {
-        bool configured = count > 0;
-        text.Text = configured ? $"✓ {count} {noun}{(count == 1 ? "" : "s")}" : "None";
-        badge.Background = new SolidColorBrush(configured
-            ? Color.FromRgb(0x2B, 0x50, 0x40)
-            : Color.FromRgb(0x35, 0x41, 0x51));
-        text.Foreground = new SolidColorBrush(configured
-            ? Color.FromRgb(0xB6, 0xEE, 0xCB)
-            : Color.FromRgb(0xC2, 0xCD, 0xDF));
     }
 
     // Display descriptions without changing the exact string tokens Godot expects.
@@ -384,6 +351,36 @@ public partial class ChoiceMechanicsWindow : Window
         MessageBox.Show(this, $"Delete the selected {label}? No automatic backup will be created.",
             "Confirm deletion", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
 
+    // Indicators reflect SAVED authoring records, not whether a window was opened.
+    // Refresh after each modal closes so additions and removals appear immediately.
+    private static string ConfiguredCount(int count) => count == 0
+        ? "None"
+        : $"Configured ✓ ({count})";
+
+    private void RefreshConfigurationIndicators()
+    {
+        int optionId = _option.Id;
+        MemoryEffectsButton.Content =
+            $"Edit memory creation effects — {ConfiguredCount(_store.MemoryEffects(optionId).Count)}";
+        StatusEffectsButton.Content =
+            $"Edit Ally / Enemy status changes — {ConfiguredCount(_store.StatusEffects(optionId).Count)}";
+
+        bool hasSelection = _store.DynamicTargets(optionId) is not null;
+        int thirdPartyEffects = _store.PairStatusEffects(optionId).Count;
+        string dynamicState = !hasSelection
+            ? (thirdPartyEffects == 0 ? "None" : $"Effects only ({thirdPartyEffects}) — no selection rule")
+            : (thirdPartyEffects == 0 ? "Configured ✓ (selection only)"
+                : $"Configured ✓ (selection + {thirdPartyEffects} effect{(thirdPartyEffects == 1 ? "" : "s")})");
+        DynamicTargetsButton.Content =
+            $"Dynamic character selection / third-party status changes — {dynamicState}";
+
+        AdvancedRequirementsButton.Content =
+            "Advanced requirements — memory / status (AND / OR / NOT) — " +
+            (_store.GetMemoryRequirements(optionId) is null ? "None" : "Configured ✓");
+        SimpleStatusRequirementsButton.Content =
+            $"Simple relationship status requirements (AND only) — {ConfiguredCount(_store.StatusRequirements(optionId).Count)}";
+    }
+
     private void EditStatusRequirements_Click(object sender, RoutedEventArgs e)
     {
         if (!CanSwitch()) return;
@@ -421,6 +418,21 @@ public partial class ChoiceMechanicsWindow : Window
             RefreshConfigurationIndicators();
             StatusText.Text="Memory creation rules saved.";}
         catch(Exception ex){MessageBox.Show(this,ex.Message,"Memory effects",MessageBoxButton.OK,MessageBoxImage.Error);}
+    }
+
+    private void EditDynamicTargets_Click(object sender, RoutedEventArgs e)
+    {
+        if (!CanSwitch()) return;
+        try
+        {
+            new DynamicTargetsWindow(_store, _option.Id) { Owner = this }.ShowDialog();
+            RefreshConfigurationIndicators();
+            StatusText.Text = "Dynamic relationship-target selection and third-party effects configured.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Dynamic relationship targets", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private void EditStatusEffects_Click(object sender, RoutedEventArgs e)

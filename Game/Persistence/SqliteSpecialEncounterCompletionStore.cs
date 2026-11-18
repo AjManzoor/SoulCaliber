@@ -15,29 +15,7 @@ public sealed class SqliteSpecialEncounterCompletionStore
 {
     public SqliteSpecialEncounterCompletionStore()
     {
-        using var save = OpenSave();
-        using var command = save.CreateCommand();
-        command.CommandText = @"
-            CREATE TABLE IF NOT EXISTS SavedSpecialEncounterCompletions (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                EncounterKey TEXT NOT NULL COLLATE NOCASE,
-                InitiatorCharacterId TEXT NOT NULL COLLATE NOCASE,
-                RecipientCharacterId TEXT NOT NULL COLLATE NOCASE,
-                MemoryOccurrenceId INTEGER NULL
-                    REFERENCES SavedMemoryOccurrences(Id) ON DELETE CASCADE,
-                CompletedUtc TEXT NOT NULL,
-                CHECK(InitiatorCharacterId <> RecipientCharacterId COLLATE NOCASE)
-            );
-            CREATE UNIQUE INDEX IF NOT EXISTS UX_SpecialEncounter_Pair
-                ON SavedSpecialEncounterCompletions
-                   (EncounterKey, InitiatorCharacterId, RecipientCharacterId)
-                WHERE MemoryOccurrenceId IS NULL;
-            CREATE UNIQUE INDEX IF NOT EXISTS UX_SpecialEncounter_Occurrence
-                ON SavedSpecialEncounterCompletions
-                   (EncounterKey, InitiatorCharacterId, RecipientCharacterId, MemoryOccurrenceId)
-                WHERE MemoryOccurrenceId IS NOT NULL;
-            ";
-        command.ExecuteNonQuery();
+        // SaveGameSchemaManager owns the completion table and its unique indexes.
     }
 
     private static SqliteConnection OpenSave()
@@ -130,8 +108,10 @@ public sealed class SqliteSpecialEncounterCompletionStore
             throw new InvalidOperationException("Unknown encounter repetition mode: " + encounter.RepetitionMode);
         if (encounter.RepetitionMode == "ONCE_PER_OCCURRENCE" && encounter.AnchorMemoryOccurrenceId is null)
             throw new InvalidOperationException("Per-occurrence completion requires an anchor memory id.");
-        if (encounter.RepetitionMode == "ONCE_PER_PAIR" && encounter.AnchorMemoryOccurrenceId is not null)
-            throw new InvalidOperationException("Per-pair completion cannot carry an anchor memory id.");
+        // A pair-limited encounter may be ABOUT a memory. The memory is a
+        // dialogue binding, not the completion key for this repetition mode.
+        long? completionMemoryId = encounter.RepetitionMode == "ONCE_PER_OCCURRENCE"
+            ? encounter.AnchorMemoryOccurrenceId : null;
         if (encounter.AnchorMemoryOccurrenceId is long occurrenceId && occurrenceId <= 0)
             throw new InvalidOperationException("Invalid special encounter anchor memory id.");
 
@@ -148,7 +128,7 @@ public sealed class SqliteSpecialEncounterCompletionStore
         command.Parameters.AddWithValue("$encounter", key);
         command.Parameters.AddWithValue("$initiator", initiator);
         command.Parameters.AddWithValue("$recipient", recipient);
-        command.Parameters.AddWithValue("$memory", (object?)encounter.AnchorMemoryOccurrenceId ?? DBNull.Value);
+        command.Parameters.AddWithValue("$memory", (object?)completionMemoryId ?? DBNull.Value);
         command.Parameters.AddWithValue("$utc", DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
         if (command.ExecuteNonQuery() > 0) return true;
 
@@ -164,7 +144,7 @@ public sealed class SqliteSpecialEncounterCompletionStore
         existing.Parameters.AddWithValue("$encounter", key);
         existing.Parameters.AddWithValue("$initiator", initiator);
         existing.Parameters.AddWithValue("$recipient", recipient);
-        existing.Parameters.AddWithValue("$memory", (object?)encounter.AnchorMemoryOccurrenceId ?? DBNull.Value);
+        existing.Parameters.AddWithValue("$memory", (object?)completionMemoryId ?? DBNull.Value);
         if (existing.ExecuteScalar() is null)
             throw new InvalidOperationException("Completion write was ignored without a matching existing record.");
         return false;

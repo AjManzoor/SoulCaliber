@@ -143,20 +143,30 @@ public sealed partial class DialogueDesignerStore
 
     private bool AdvancedRequirementsUseStatus(string key)
     {
-        if (!Exists(_db,
-            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='OptionMemoryRequirements'"))
-            return false;
-        using var cmd = Command("SELECT ExpressionJson FROM OptionMemoryRequirements");
-        using var rows = cmd.ExecuteReader();
-        while (rows.Read())
+        // Relationship status keys can also be referenced inside JSON condition trees.
+        // These aren't foreign-key columns, so deleting a referenced catalogue status
+        // must be rejected across ALL three authoring surfaces.
+        foreach (var (table, column) in new[]
         {
-            var root = SoulCaliber.Shared.MemoryConditionRules.Read(rows.GetString(0));
-            if (Uses(root)) return true;
+            ("OptionMemoryRequirements", "ExpressionJson"),
+            ("SpecialEncounters", "ConditionJson"),
+            ("ConversationAvailability", "ConditionJson")
+        })
+        {
+            if (!Exists(_db, "SELECT 1 FROM sqlite_master WHERE type='table' AND name=$name", ("$name", table)))
+                continue;
+            using var cmd = Command($"SELECT {column} FROM {table} WHERE {column} IS NOT NULL");
+            using var rows = cmd.ExecuteReader();
+            while (rows.Read())
+            {
+                var root = SoulCaliber.Shared.MemoryConditionRules.Read(rows.GetString(0));
+                if (Uses(root)) return true;
+            }
         }
         return false;
 
         bool Uses(SoulCaliber.Shared.MemoryConditionNode node) =>
-            (node.Kind == "STATUS" &&
+            ((node.Kind is "STATUS" or "RELATIONSHIP") &&
              string.Equals(node.StatusKey, key, StringComparison.OrdinalIgnoreCase)) ||
             (node.Children?.Any(Uses) ?? false);
     }

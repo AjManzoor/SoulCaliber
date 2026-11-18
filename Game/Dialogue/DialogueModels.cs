@@ -62,12 +62,19 @@ public sealed class DialogueNode
 }
 
 public sealed record DialogueMemoryEffect(string MemoryKey, string Trigger, string Affected,
-    string? SeverityOverride, string? KnowledgeOverride);
+    string? SeverityOverride, string? KnowledgeOverride, string? CustomAudienceJson = null);
+
+/// <summary>One target is selected from a live relationship group or authored custom list, never a bulk mutation.</summary>
+/// <summary>References are INITIATOR, RECIPIENT, TARGET or an authored character ID.</summary>
+public sealed record PairStatusEffect(string FromRef, string ToRef, string StatusKey, string? ReverseStatusKey);
 
 public sealed class DialogueOption
 {
 	public string Key { get; set; } = "";
 	public string Label { get; set; } = "";
+    public DynamicTargetRule? DynamicTarget { get; set; }
+    public List<PairStatusEffect> SuccessPairStatusEffects { get; set; } = new();
+    public List<PairStatusEffect> FailurePairStatusEffects { get; set; } = new();
 	public int BaseSuccessChance { get; set; } = 50;
 
 	// Rules and effects are DATA. Add or remove attributes without adding scene code.

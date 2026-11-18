@@ -13,15 +13,8 @@ public sealed class SqliteRelationshipStore : IRelationshipStore
     public SqliteRelationshipStore()
     {
         _catalogue = RelationshipCatalogue.Load();
-        using var db = new SaveDbContext();
-        db.Database.EnsureCreated();
-        // Fail explicitly if an old six-column savegame was not actually deleted.
-        using var connection = new SqliteConnection(DatabasePaths.ConnectionString(DatabasePaths.Save));
-        connection.Open();
-        using var check = connection.CreateCommand();
-        check.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name='SavedRelationshipValues'";
-        if (check.ExecuteScalar() is null)
-            throw new InvalidOperationException("Legacy savegame schema found. Back up/delete the old soulcaliber_savegame.db and its -wal/-shm companions while the game is closed.");
+        // SaveGameSchemaManager.EnsureCurrent() runs at scene startup.
+        // Stores only read and write runtime data; they do not create tables.
     }
 
     public RelationshipStats Get(string fromCharacterId, string toCharacterId)
@@ -132,7 +125,6 @@ public sealed class SqliteInteractionHistoryStore
     public void Record(DialogueEngine engine,DialogueResolution result)
     {
         using var db = new SaveDbContext();
-        db.Database.EnsureCreated();
         var row = new SavedInteraction
         {
             OccurredUtc=DateTime.UtcNow, InteractionKey=engine.Definition.Key,

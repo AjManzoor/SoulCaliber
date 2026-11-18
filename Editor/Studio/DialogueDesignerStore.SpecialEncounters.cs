@@ -14,7 +14,8 @@ public sealed record SpecialEncounterDefinition(
     string? RecipientCharacterId, string? InitiatorCharacterId,
     string LaunchMode, string RepetitionMode, int Priority, bool IsActive,
     string? AnchorMemoryKey, string AnchorActorRef,
-    string AnchorAffectedRef, string AnchorKnowerRef)
+    string AnchorAffectedRef, string AnchorKnowerRef,
+    string? AffectedRelationshipStatusKey = null)
 {
     public override string ToString() => $"{Title} [{Key}]" + (IsActive ? "" : " (draft/inactive)");
 }
@@ -43,6 +44,7 @@ public sealed partial class DialogueDesignerStore
             catch { tx.Rollback(); throw; }
         }
         EnsureOptionalEncounterRecipientSchema();
+        EnsureMemoryAwareSpecialEncountersSchema();
     }
 
     private void EnsureOptionalEncounterRecipientSchema()
@@ -80,12 +82,40 @@ public sealed partial class DialogueDesignerStore
         catch { tx.Rollback(); throw; }
     }
 
+    private void EnsureMemoryAwareSpecialEncountersSchema()
+    {
+        bool upgraded = false;
+        using (var cmd = Command("PRAGMA table_info(SpecialEncounters)"))
+        using (var rows = cmd.ExecuteReader())
+            while (rows.Read())
+                if (string.Equals(rows.GetString(1), "AffectedRelationshipStatusKey", StringComparison.OrdinalIgnoreCase))
+                    upgraded = true;
+        if (upgraded) return;
+
+        _backupSource.Backup();
+        using var stream = typeof(DialogueDesignerStore).Assembly.GetManifestResourceStream(
+            "SoulCaliberStudio.Migrations.022_MemoryAwareSpecialEncounters.sql")
+            ?? throw new InvalidOperationException("Missing embedded 022_MemoryAwareSpecialEncounters.sql.");
+        using var reader = new StreamReader(stream);
+        using var tx = _db.BeginTransaction();
+        try
+        {
+            using (var command = Command(reader.ReadToEnd(), tx)) command.ExecuteNonQuery();
+            using var check = Command("PRAGMA foreign_key_check", tx);
+            using var rows = check.ExecuteReader();
+            if (rows.Read()) throw new InvalidOperationException("Memory-aware encounter migration failed foreign-key checks.");
+            tx.Commit();
+        }
+        catch { tx.Rollback(); throw; }
+    }
+
     public IReadOnlyList<SpecialEncounterDefinition> SpecialEncounters()
     {
         using var cmd = Command(@"
             SELECT Id, EncounterKey, Title, InteractionId, RecipientCharacterId,
                 InitiatorCharacterId, LaunchMode, RepetitionMode, Priority, IsActive,
-                AnchorMemoryKey, AnchorActorRef, AnchorAffectedRef, AnchorKnowerRef
+                AnchorMemoryKey, AnchorActorRef, AnchorAffectedRef, AnchorKnowerRef,
+                AffectedRelationshipStatusKey
             FROM SpecialEncounters ORDER BY Priority DESC, Title, Id");
         using var reader = cmd.ExecuteReader();
         var result = new List<SpecialEncounterDefinition>();
@@ -95,7 +125,8 @@ public sealed partial class DialogueDesignerStore
                 reader.IsDBNull(4) ? null : reader.GetString(4), reader.IsDBNull(5) ? null : reader.GetString(5),
                 reader.GetString(6), reader.GetString(7), reader.GetInt32(8), reader.GetInt32(9) == 1,
                 reader.IsDBNull(10) ? null : reader.GetString(10),
-                reader.GetString(11), reader.GetString(12), reader.GetString(13)));
+                reader.GetString(11), reader.GetString(12), reader.GetString(13),
+                reader.IsDBNull(14) ? null : reader.GetString(14)));
         return result;
     }
 
@@ -122,7 +153,9 @@ public sealed partial class DialogueDesignerStore
         var activeStatuses = StatusDefinitions(true).Select(x => x.Key)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         MemoryConditionRules.Validate(tree, activeMemories.Contains,
-            knownCharacters.Contains, activeStatuses.Contains);
+            knownCharacters.Contains, activeStatuses.Contains,
+            TraitDefinitions().Where(t => t.IsActive).Select(t => t.Key)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase).Contains);
     }
 
     public void SaveSpecialEncounterConditions(int encounterId, MemoryConditionNode? conditions)
@@ -165,17 +198,20 @@ public sealed partial class DialogueDesignerStore
         if (item.Priority is < 0 or > 1000)
             throw new InvalidOperationException("Priority must be between 0 and 1000.");
         string? anchorKey = NullIfBlank(item.AnchorMemoryKey);
-        if (item.RepetitionMode == "ONCE_PER_OCCURRENCE")
-        {
-            if (anchorKey is null) throw new InvalidOperationException("Once per occurrence requires an anchor memory type.");
-            if (!Exists(_db, "SELECT 1 FROM MemoryTypes WHERE Key=$key AND IsActive=1", ("$key", anchorKey)))
-                throw new InvalidOperationException("Anchor memory type must be active.");
-        }
-        else if (anchorKey is not null)
-            throw new InvalidOperationException("Only per-occurrence encounters can specify an anchor memory.");
-        string actorRef = item.RepetitionMode == "ONCE_PER_OCCURRENCE" ? item.AnchorActorRef : "ANY";
-        string affectedRef = item.RepetitionMode == "ONCE_PER_OCCURRENCE" ? item.AnchorAffectedRef : "ANY";
-        string knowerRef = item.RepetitionMode == "ONCE_PER_OCCURRENCE" ? item.AnchorKnowerRef : "ANY";
+        if (item.RepetitionMode == "ONCE_PER_OCCURRENCE" && anchorKey is null)
+            throw new InvalidOperationException("Once per occurrence requires an anchor memory type.");
+        if (anchorKey is not null &&
+            !Exists(_db, "SELECT 1 FROM MemoryTypes WHERE Key=$key AND IsActive=1", ("$key", anchorKey)))
+            throw new InvalidOperationException("Anchor memory type must be active.");
+        string? relatedStatus = NullIfBlank(item.AffectedRelationshipStatusKey);
+        if (relatedStatus is not null && anchorKey is null)
+            throw new InvalidOperationException("A relationship to an affected character requires an anchored memory.");
+        if (relatedStatus is not null &&
+            !Exists(_db, "SELECT 1 FROM RelationshipStatuses WHERE Key=$key AND IsActive=1", ("$key", relatedStatus)))
+            throw new InvalidOperationException("Choose an active relationship status for the affected character.");
+        string actorRef = anchorKey is not null ? item.AnchorActorRef : "ANY";
+        string affectedRef = anchorKey is not null ? item.AnchorAffectedRef : "ANY";
+        string knowerRef = anchorKey is not null ? item.AnchorKnowerRef : "ANY";
         var validCharacterIds = CharacterIds().ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (string reference in new[] { actorRef, affectedRef, knowerRef })
         {
@@ -203,14 +239,15 @@ public sealed partial class DialogueDesignerStore
                 INSERT INTO SpecialEncounters
                     (EncounterKey,Title,InteractionId,RecipientCharacterId,InitiatorCharacterId,
                      LaunchMode,RepetitionMode,Priority,IsActive,AnchorMemoryKey,
-                     AnchorActorRef,AnchorAffectedRef,AnchorKnowerRef)
+                     AnchorActorRef,AnchorAffectedRef,AnchorKnowerRef,AffectedRelationshipStatusKey)
                 VALUES($key,$title,$interaction,$recipient,$initiator,$launch,$repeat,$priority,
-                       $active,$anchor,$actor,$affected,$knower)" : @"
+                       $active,$anchor,$actor,$affected,$knower,$relatedStatus)" : @"
                 UPDATE SpecialEncounters SET Title=$title,InteractionId=$interaction,
                     RecipientCharacterId=$recipient,InitiatorCharacterId=$initiator,
                     LaunchMode=$launch,RepetitionMode=$repeat,Priority=$priority,
                     IsActive=$active,AnchorMemoryKey=$anchor,AnchorActorRef=$actor,
-                    AnchorAffectedRef=$affected,AnchorKnowerRef=$knower
+                    AnchorAffectedRef=$affected,AnchorKnowerRef=$knower,
+                    AffectedRelationshipStatusKey=$relatedStatus
                 WHERE Id=$id AND EncounterKey=$key", tx);
             Add(cmd, "$id", item.Id); Add(cmd, "$key", key); Add(cmd, "$title", title);
             Add(cmd, "$interaction", item.InteractionId);
@@ -219,6 +256,7 @@ public sealed partial class DialogueDesignerStore
             Add(cmd, "$priority", item.Priority); Add(cmd, "$active", item.IsActive ? 1 : 0);
             Add(cmd, "$anchor", anchorKey); Add(cmd, "$actor", actorRef);
             Add(cmd, "$affected", affectedRef); Add(cmd, "$knower", knowerRef);
+            Add(cmd, "$relatedStatus", relatedStatus);
             Changed(cmd, item.Id != 0);
             if (item.Id == 0)
             {

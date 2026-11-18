@@ -26,6 +26,10 @@ public sealed class PersonalityEffectRules
             .ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.OrdinalIgnoreCase);
     }
 
+    public bool HasTrait(string characterId, string traitKey) =>
+        _assigned.TryGetValue(characterId, out var traits) &&
+        traits.Contains(traitKey, StringComparer.OrdinalIgnoreCase);
+
     public PersonalityAdjustment Adjust(string receivingCharacterId, string attributeKey,
         int baseDelta, bool succeeded)
     {

@@ -18,9 +18,11 @@ public partial class MainWindow
         _designer?.EnsureChoiceRequirementVisibilitySchema();
         _designer?.EnsureMemoryCatalogueSchema();
         _designer?.EnsureOptionMemoryEffectsSchema();
+        _designer?.EnsureKnowledgeAudienceSchema();
         _designer?.EnsureOptionMemoryRequirementsSchema();
         _designer?.EnsureSpecialEncountersSchema();
         _designer?.EnsureConversationAvailabilitySchema();
+        _designer?.EnsureDynamicTargetChoicesSchema();
         _testingDatabasePath = path;
         TestingDatabaseText.Text = path;
     }

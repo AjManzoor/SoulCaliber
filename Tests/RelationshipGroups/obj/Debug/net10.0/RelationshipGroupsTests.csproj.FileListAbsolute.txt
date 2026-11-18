@@ -1,0 +1,17 @@
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\bin\Debug\net10.0\RelationshipGroupsTests.exe
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\bin\Debug\net10.0\RelationshipGroupsTests.deps.json
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\bin\Debug\net10.0\RelationshipGroupsTests.runtimeconfig.json
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\bin\Debug\net10.0\RelationshipGroupsTests.runtimeconfig.dev.json
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\bin\Debug\net10.0\RelationshipGroupsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\bin\Debug\net10.0\RelationshipGroupsTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\RelationshipGroupsTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\RelationshipGroupsTests.AssemblyInfoInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\RelationshipGroupsTests.AssemblyInfo.cs
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\RelationshipGroupsTests.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\RelationshipGroupsTests.sourcelink.json
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\RelationshipGroupsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\refint\RelationshipGroupsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\RelationshipGroupsTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\RelationshipGroupsTests.genruntimeconfig.cache
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\ref\RelationshipGroupsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\RelationshipGroups\obj\Debug\net10.0\Relation.C68786F8.Up2Date

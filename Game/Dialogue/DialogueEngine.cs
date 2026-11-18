@@ -24,11 +24,68 @@ public sealed class DialogueEngine
     // before any SQLite write. A failed commit retries this same prepared result.
     private sealed record PreparedChoice(
         DialogueOption Option, CharacterLine ActorLine, CharacterLine RecipientLine,
+        string? SelectedTargetId,
         bool Succeeded, int Roll, int Chance,
         IReadOnlyList<RelationshipEffect> RelationshipEffects,
         IReadOnlyList<RelationshipStatusEffect> StatusEffects,
+        IReadOnlyList<ResolvedPairStatusEffect> PairStatusEffects,
         IReadOnlyList<ResolvedMemoryEffect> MemoryEffects,
         string TargetReaction, string? NextNodeKey);
+
+    private string? _memoryActorName;
+    private string? _boundAffectedName;
+    private string? _selectedTargetId;
+    private string? _selectedTargetName;
+    public string? SelectedTargetId => _selectedTargetId;
+    public string CharacterName(string characterId) => _data.Character(characterId).Name;
+
+    /// <summary>Finds ONE selectable character per matching effective directional status.</summary>
+    public IReadOnlyList<CharacterDefinition> DynamicTargetsForOption(string optionKey)
+    {
+        var option=CurrentNode.Options.FirstOrDefault(o=>
+            string.Equals(o.Key,optionKey,StringComparison.OrdinalIgnoreCase));
+        if(option?.DynamicTarget is not DynamicTargetRule rule ||
+           (rule.SelectionMode=="GROUP" && _statuses is null))
+            return Array.Empty<CharacterDefinition>();
+        return DynamicTargetRules.Find(rule,Visitor.Id,Host.Id,_data.CharacterIds,
+                (from,to)=>_statuses?.Get(from,to) ?? "NEUTRAL")
+            .Select(_data.Character)
+            .OrderBy(c=>c.Name,StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+
+    /// <summary>Bind only the incident selected by the Special Encounter selector.</summary>
+    public void BindMemoryOccurrence(MemoryOccurrence occurrence, string? boundAffectedCharacterId)
+    {
+        ArgumentNullException.ThrowIfNull(occurrence);
+        if (_choiceExecution.PendingOptionKey is not null || _choiceExecution.HasCommittedChoice)
+            throw new InvalidOperationException("Memory context cannot change during choice resolution.");
+        _memoryActorName = _data.Character(occurrence.ActorCharacterId).Name;
+        _boundAffectedName = boundAffectedCharacterId is null ? null :
+            occurrence.AffectedCharacterIds.Any(x => string.Equals(x, boundAffectedCharacterId,
+                StringComparison.OrdinalIgnoreCase))
+                ? _data.Character(boundAffectedCharacterId).Name
+                : throw new InvalidOperationException("The bound affected character is not part of this incident.");
+    }
+
+    public string FormatDialogueText(string? text, string? targetName = null)
+    {
+        string formatted=MemoryDialogueFormatter.Format(text,Visitor.Name,Host.Name,_memoryActorName,_boundAffectedName);
+        formatted = DynamicTargetRules.FormatTarget(formatted, targetName ?? _selectedTargetName);
+        return formatted;
+    }
+
+    private CharacterLine FormatLine(CharacterLine line, string? targetName = null) => new()
+    {
+        CharacterId = line.CharacterId,
+        InteractionKey = line.InteractionKey,
+        NodeKey = line.NodeKey,
+        OptionKey = line.OptionKey,
+        VisitorId = line.VisitorId,
+        Outcome = line.Outcome,
+        Text = FormatDialogueText(line.Text,targetName),
+        ImagePath = line.ImagePath
+    };
 
     public string? PendingChoiceKey => _choiceExecution.PendingOptionKey;
     public bool HasCommittedChoice => _choiceExecution.HasCommittedChoice;
@@ -78,12 +135,16 @@ public sealed class DialogueEngine
     {
         _choiceExecution.Clear();
         CurrentNode = _nodes[Definition.StartNodeKey];
+        _selectedTargetId=null;
+        _selectedTargetName=null;
     }
 
     public IReadOnlyList<AvailableOption> GetOptions() => CurrentNode.Options
         .Select(option =>
         {
             string lockReason = LockReason(option);
+            if(lockReason.Length==0 && option.DynamicTarget is not null && DynamicTargetsForOption(option.Key).Count==0)
+                lockReason="No characters currently match this target selection rule";
             bool locked = lockReason.Length != 0;
             // A hidden choice is absent from both the UI and the engine's selectable list.
             if (locked && option.HideWhenRequirementsUnmet) return null;
@@ -97,8 +158,12 @@ public sealed class DialogueEngine
         _choiceExecution.Execute(CurrentNode.Key, optionKey,
             () => PrepareChoice(optionKey), CommitChoice);
 
-    private PreparedChoice PrepareChoice(string optionKey)
+    private PreparedChoice PrepareChoice(string selectedKey)
     {
+        // Composite selection key comes from a runtime-generated list, never the authoring database.
+        int separator=selectedKey.IndexOf("::",StringComparison.Ordinal);
+        string optionKey=separator<0 ? selectedKey : selectedKey[..separator];
+        string? targetId=separator<0 ? null : selectedKey[(separator+2)..];
         var available = GetOptions().FirstOrDefault(o =>
             string.Equals(o.Definition.Key, optionKey, StringComparison.OrdinalIgnoreCase));
         if (available is null || available.IsLocked)
@@ -107,11 +172,21 @@ public sealed class DialogueEngine
         int roll = _random.Next(1, 101);
         bool succeeded = roll <= available.Chance;
         DialogueOption option = available.Definition;
+        if(option.DynamicTarget is not null)
+        {
+            if(string.IsNullOrWhiteSpace(targetId) || !DynamicTargetsForOption(optionKey)
+                .Any(x=>string.Equals(x.Id,targetId,StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("The selected relationship target is no longer eligible.");
+        }
+        else if(targetId is not null)
+            throw new InvalidOperationException("This option does not offer dynamic target selection.");
+        string? effectiveTargetId=targetId??_selectedTargetId;
+        string? effectiveTargetName=effectiveTargetId is null ? null : _data.Character(effectiveTargetId).Name;
 
         // Resolve wording/image against BEFORE-changes relationship state.
-        var actorLine = _data.PlayerLine(Definition.Key, CurrentNode, option,
-            Visitor.Id, Host.Id, succeeded, ActorToPartner, PartnerToActor);
-        var partnerLine = _data.HostLine(Definition.Key, CurrentNode, option, Host.Id, Visitor.Id, succeeded, ActorToPartner, PartnerToActor);
+        var actorLine = FormatLine(_data.PlayerLine(Definition.Key, CurrentNode, option,
+            Visitor.Id, Host.Id, succeeded, ActorToPartner, PartnerToActor),effectiveTargetName);
+        var partnerLine = FormatLine(_data.HostLine(Definition.Key, CurrentNode, option, Host.Id, Visitor.Id, succeeded, ActorToPartner, PartnerToActor),effectiveTargetName);
         var effects = succeeded ? option.SuccessEffects : option.FailureEffects;
         // Traits belong to the character whose outgoing relationship changes.
         // Apply them after the roll, before persistence; preserve pre-effect dialogue selection.
@@ -129,6 +204,17 @@ public sealed class DialogueEngine
         var statusEffects = succeeded ? option.SuccessStatusEffects : option.FailureStatusEffects;
         if (statusEffects.Count > 0 && _statuses is null)
             throw new InvalidOperationException("Relationship status effects require an IRelationshipStatusStore.");
+        // Resolve all pair targets BEFORE writing; never mutate an entire relationship group.
+        var pairEffects = succeeded ? option.SuccessPairStatusEffects : option.FailurePairStatusEffects;
+        var resolvedPairs = DynamicTargetRules.ResolvePairEffects(
+            pairEffects.Select(e => new DynamicPairStatusEffect(
+                e.FromRef, e.ToRef, e.StatusKey, e.ReverseStatusKey)),
+            Visitor.Id, Host.Id, effectiveTargetId, id => _data.Character(id).Id)
+            .Select(e => new ResolvedPairStatusEffect(
+                e.FromCharacterId, e.ToCharacterId, e.StatusKey)).ToList();
+        if(resolvedPairs.Count>0 && _statuses is null)
+            throw new InvalidOperationException("Third-party status effects require a status store.");
+
         // Resolve memory targets and triggers BEFORE writing anything. The unit of
         // work saves every fired occurrence after status changes in one transaction.
         var memoryEffects = new List<ResolvedMemoryEffect>();
@@ -150,7 +236,7 @@ public sealed class DialogueEngine
                 _ => throw new InvalidOperationException($"Invalid affected target '{memory.Affected}'.")
             };
             memoryEffects.Add(new ResolvedMemoryEffect(memory.MemoryKey, affected,
-                memory.SeverityOverride, memory.KnowledgeOverride));
+                memory.SeverityOverride, memory.KnowledgeOverride, memory.CustomAudienceJson));
         }
 
         string targetReaction = succeeded
@@ -159,8 +245,8 @@ public sealed class DialogueEngine
         if (string.IsNullOrWhiteSpace(targetReaction))
             targetReaction = succeeded ? "RECEPTIVE" : "DISMISSIVE";
 
-        return new PreparedChoice(option, actorLine, partnerLine, succeeded, roll,
-            available.Chance, adjustedEffects, statusEffects.ToList(), memoryEffects,
+        return new PreparedChoice(option, actorLine, partnerLine, targetId, succeeded, roll,
+            available.Chance, adjustedEffects, statusEffects.ToList(), resolvedPairs, memoryEffects,
             targetReaction, succeeded ? option.SuccessNextNodeKey : option.FailureNextNodeKey);
     }
 
@@ -174,7 +260,8 @@ public sealed class DialogueEngine
             var committed = outcomeStore.CommitResolvedChoice(new ResolvedChoiceCommit(
                 Definition.Key, CurrentNode.Key, prepared.Option.Key,
                 Visitor.Id, Host.Id, prepared.Succeeded, prepared.Roll, prepared.Chance, prepared.TargetReaction,
-                prepared.RelationshipEffects, prepared.StatusEffects, prepared.MemoryEffects));
+                prepared.RelationshipEffects, prepared.StatusEffects, prepared.MemoryEffects,
+                prepared.PairStatusEffects));
             changes = committed.RelationshipChanges;
             statusChanges = committed.StatusChanges;
         }
@@ -182,8 +269,8 @@ public sealed class DialogueEngine
         {
             // Preserve pure/non-SQLite consumer support without permitting partially
             // committed memories or mixed numeric/status effects.
-            if (prepared.MemoryEffects.Count > 0)
-                throw new InvalidOperationException("Memory effects require an atomic IInteractionOutcomeStore.");
+            if (prepared.MemoryEffects.Count > 0 || prepared.PairStatusEffects.Count > 0)
+                throw new InvalidOperationException("Memory and third-party status effects require an atomic IInteractionOutcomeStore.");
             if (_effectStore is not null)
             {
                 var committed = _effectStore.Apply(Visitor.Id, Host.Id, prepared.RelationshipEffects, prepared.StatusEffects);
@@ -201,6 +288,12 @@ public sealed class DialogueEngine
             }
         }
 
+        // Bind after successful persistence only. The next dialogue node can reuse {target}.
+        if(prepared.SelectedTargetId is not null)
+        {
+            _selectedTargetId=prepared.SelectedTargetId;
+            _selectedTargetName=_data.Character(prepared.SelectedTargetId).Name;
+        }
         return new DialogueResolution(prepared.Option, prepared.ActorLine, prepared.RecipientLine,
             prepared.Succeeded, prepared.Roll, prepared.Chance, changes, statusChanges,
             prepared.NextNodeKey, prepared.TargetReaction);
@@ -215,9 +308,8 @@ public sealed class DialogueEngine
         return true;
     }
 
-    public string Introduction() => _data.Introduction(Definition.Key, CurrentNode, Host.Id, Visitor.Id, ActorToPartner, PartnerToActor)
-        .Replace("{actor}", Visitor.Name, StringComparison.OrdinalIgnoreCase)
-        .Replace("{partner}", Host.Name, StringComparison.OrdinalIgnoreCase);
+    public string Introduction() => FormatDialogueText(_data.Introduction(
+        Definition.Key, CurrentNode, Host.Id, Visitor.Id, ActorToPartner, PartnerToActor));
 
     private string LockReason(DialogueOption option)
     {
@@ -260,12 +352,15 @@ public sealed class DialogueEngine
             // missing memory history could accidentally unlock a secret choice.
             if (_memories is null && MemoryConditionRules.ContainsKind(option.MemoryRequirements, "MEMORY"))
                 return "Memory history unavailable";
-            if (_statuses is null && MemoryConditionRules.ContainsKind(option.MemoryRequirements, "STATUS"))
+            if (_statuses is null && (MemoryConditionRules.ContainsKind(option.MemoryRequirements, "STATUS") ||
+                MemoryConditionRules.ContainsKind(option.MemoryRequirements, "RELATIONSHIP") ||
+                MemoryConditionRules.ContainsKind(option.MemoryRequirements, "RELATIONSHIP_COUNT") ||
+                MemoryConditionRules.ContainsKind(option.MemoryRequirements, "RELATIONSHIP_GROUP")))
                 return "Relationship status unavailable";
             if (!MemoryConditionRules.Evaluate(option.MemoryRequirements, Visitor.Id, Host.Id,
                 (memory, actor, affected, knower) => _memories!.Count(memory, actor, affected, knower),
                 (from, to) => _statuses!.Get(from, to),
-                out string conditionFailure))
+                out string conditionFailure, _data.CharacterIds, _data.HasTrait))
                 return conditionFailure;
         }
         return "";

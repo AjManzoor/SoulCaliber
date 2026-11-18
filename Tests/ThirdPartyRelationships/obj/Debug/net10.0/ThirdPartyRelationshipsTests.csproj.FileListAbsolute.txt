@@ -1,0 +1,17 @@
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\bin\Debug\net10.0\ThirdPartyRelationshipsTests.exe
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\bin\Debug\net10.0\ThirdPartyRelationshipsTests.deps.json
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\bin\Debug\net10.0\ThirdPartyRelationshipsTests.runtimeconfig.json
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\bin\Debug\net10.0\ThirdPartyRelationshipsTests.runtimeconfig.dev.json
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\bin\Debug\net10.0\ThirdPartyRelationshipsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\bin\Debug\net10.0\ThirdPartyRelationshipsTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPartyRelationshipsTests.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPartyRelationshipsTests.AssemblyInfoInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPartyRelationshipsTests.AssemblyInfo.cs
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPartyRelationshipsTests.csproj.CoreCompileInputs.cache
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPartyRelationshipsTests.sourcelink.json
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPartyRelationshipsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\refint\ThirdPartyRelationshipsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPartyRelationshipsTests.pdb
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPartyRelationshipsTests.genruntimeconfig.cache
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ref\ThirdPartyRelationshipsTests.dll
+C:\Users\User\Documents\SoulCaliber\Tests\ThirdPartyRelationships\obj\Debug\net10.0\ThirdPar.468C1878.Up2Date

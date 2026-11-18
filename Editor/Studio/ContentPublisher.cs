@@ -66,7 +66,7 @@ public static class ContentPublisher
     [
         "Characters", "ReactionTypes", "ReactionImages", "CharacterSkills", "CharacterSkillValues", "PersonalityTraits", "PersonalityTraitModifiers", "CharacterTraits", "Interactions", "Nodes", "Options",
         "Requirements", "ChanceModifiers", "Effects", "Lines", "SkillChecks", "NodeIntroductions",
-        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles", "RelationshipAttributes", "RelationshipStatuses", "CharacterDefaultStatuses", "OptionStatusEffects", "OptionStatusRequirements", "MemoryTypes", "MemoryTypePersonalityRelevance", "OptionMemoryEffects", "OptionMemoryRequirements", "SpecialEncounters", "ConversationAvailability"
+        "ConditionalDialogueVariants", "ConditionalDialogueConditions", "CheckProfiles", "CheckProfileModifiers", "OptionCheckProfiles", "RelationshipAttributes", "RelationshipStatuses", "CharacterDefaultStatuses", "OptionStatusEffects", "OptionStatusRequirements", "MemoryTypes", "MemoryTypePersonalityRelevance", "OptionMemoryEffects", "OptionMemoryRequirements", "SpecialEncounters", "ConversationAvailability", "MemoryTypeKnowledgeAudiences", "OptionMemoryEffectKnowledgeAudiences", "OptionDynamicTargets", "OptionDynamicTargetCharacters", "OptionPairStatusEffects"
     ];
 
     private sealed record CharacterRow(string Id, string Name, string DefaultImage, string WinImage, string LoseImage);
@@ -276,6 +276,14 @@ public static class ContentPublisher
             if (exists.ExecuteScalar() is null) report.Error("Schema", $"Missing table '{table}'.");
         }
         if (report.Errors > 0) return report;
+        using(var modeColumn=new SqliteCommand("SELECT 1 FROM pragma_table_info('OptionDynamicTargets') WHERE name='SelectionMode'",db))
+        {
+            if(modeColumn.ExecuteScalar() is null)
+            {
+                report.Error("Schema","OptionDynamicTargets.SelectionMode is missing (run migration 024 in Studio).");
+                return report;
+            }
+        }
         using (var keys = new SqliteCommand("PRAGMA foreign_key_check;", db))
         using (var reader = keys.ExecuteReader())
         {
@@ -361,6 +369,60 @@ public static class ContentPublisher
             if(group.GroupBy(e=>e.Direction,StringComparer.OrdinalIgnoreCase).Any(g=>g.Count()>1) ||
                group.Any(e=>e.Direction=="BOTH") && group.Count()>1)
                 report.Error("OptionStatusEffects",$"Conflicting directions for choice {group.Key.OptionId}/{group.Key.Outcome}.");
+        }
+
+        // Phase 13H-4 + custom lists: exactly one selection mode per option.
+        var dynamicTargets=Read(db,
+            "SELECT OptionId,OwnerRef,RelationshipDirection,RequiredStatusKey,SelectionMode FROM OptionDynamicTargets",
+            r=>(OptionId:r.GetInt64(0),Owner:r.GetString(1),Direction:r.GetString(2),Status:r.GetString(3),Mode:r.GetString(4)));
+        var targetCharacters=Read(db,
+            "SELECT OptionId,CharacterId FROM OptionDynamicTargetCharacters",
+            r=>(OptionId:r.GetInt64(0),CharacterId:r.GetString(1)));
+        var optionDynamicIds=dynamicTargets.Select(x=>x.OptionId).ToHashSet();
+        foreach(var rule in dynamicTargets)
+        {
+            if(!validStatusOptionIds.Contains(rule.OptionId))
+                report.Error("OptionDynamicTargets",$"Unknown dialogue option #{rule.OptionId}.");
+            if(rule.Mode is not ("GROUP" or "CUSTOM"))
+                report.Error("OptionDynamicTargets",$"Invalid selection mode on option #{rule.OptionId}.");
+            if(rule.Owner is not ("INITIATOR" or "RECIPIENT") ||
+               rule.Direction is not ("OUTGOING" or "INCOMING"))
+                report.Error("OptionDynamicTargets",$"Invalid target group settings on option #{rule.OptionId}.");
+            if(rule.Mode=="GROUP" && !activeStatusKeys.Contains(rule.Status))
+                report.Error("OptionDynamicTargets",$"Option #{rule.OptionId} uses inactive status {rule.Status}.");
+            if(rule.Mode=="CUSTOM" && !targetCharacters.Any(x=>x.OptionId==rule.OptionId))
+                report.Error("OptionDynamicTargets",$"Custom list on option #{rule.OptionId} contains no characters.");
+            if(rule.Mode=="GROUP" && targetCharacters.Any(x=>x.OptionId==rule.OptionId))
+                report.Error("OptionDynamicTargets",$"Group selection on option #{rule.OptionId} has unexpected custom characters.");
+        }
+        foreach(var member in targetCharacters)
+        {
+            if(!optionDynamicIds.Contains(member.OptionId))
+                report.Error("OptionDynamicTargetCharacters",$"Custom target is missing its choice rule #{member.OptionId}.");
+            if(!characterIds.Contains(member.CharacterId))
+                report.Error("OptionDynamicTargetCharacters",$"Unknown selected character {member.CharacterId} for choice #{member.OptionId}.");
+        }
+        var pairStatusEffects=Read(db,
+            "SELECT Id,OptionId,Outcome,FromRef,ToRef,StatusKey,ReverseStatusKey FROM OptionPairStatusEffects",
+            r=>(Id:r.GetInt64(0),OptionId:r.GetInt64(1),Outcome:r.GetString(2),From:r.GetString(3),To:r.GetString(4),Status:r.GetString(5),Reverse:r.IsDBNull(6)?null:r.GetString(6)));
+        foreach(var effect in pairStatusEffects)
+        {
+            string location=$"OptionPairStatusEffects #{effect.Id}";
+            if(!validStatusOptionIds.Contains(effect.OptionId)) report.Error(location,"Unknown option.");
+            if(effect.Outcome is not ("SUCCESS" or "FAILURE")) report.Error(location,"Invalid outcome.");
+            if(!activeStatusKeys.Contains(effect.Status) ||
+                (effect.Reverse is not null && !activeStatusKeys.Contains(effect.Reverse)))
+                report.Error(location,"Unknown or inactive relationship status.");
+            if(effect.From.Equals(effect.To,StringComparison.OrdinalIgnoreCase))
+                report.Error(location,"A character cannot have a relationship to themselves.");
+            foreach(string reference in new[]{effect.From,effect.To})
+            {
+                if(reference=="TARGET" && !optionDynamicIds.Contains(effect.OptionId))
+                    report.Warn(location,"Selected target must be bound by a dynamic choice earlier in this conversation path.");
+                if(reference is not ("INITIATOR" or "RECIPIENT" or "TARGET") &&
+                   !characterIds.Contains(reference))
+                    report.Error(location,$"Unknown fixed character {reference}.");
+            }
         }
 
         // Phase 12D: every status requirement must reference a real option and an active
@@ -536,6 +598,30 @@ public static class ContentPublisher
                 report.Error(location,"Invalid knowledge override.");
         }
 
+        // Phase 13H: validate custom distribution rules and references before publishing.
+        // The runtime's resolver is also used by the authoring preview, so a rule
+        // with missing statuses/characters must be rejected here rather than silently skipped.
+        void ValidateAudience(string location, string json)
+        {
+            try
+            {
+                var spec = KnowledgeAudienceSpec.Parse(json);
+                foreach (string status in spec.ActorStatusKeys.Concat(spec.AffectedStatusKeys))
+                    if (!activeStatusKeys.Contains(status))
+                        report.Error(location, $"Unknown or inactive audience status {status}.");
+                foreach (string id in spec.OtherCharacterIds.Concat(spec.ExcludedCharacterIds))
+                    if (!characterIds.Contains(id))
+                        report.Error(location, $"Unknown audience character {id}.");
+            }
+            catch (Exception ex) { report.Error(location, "Invalid audience rules: " + ex.Message); }
+        }
+        foreach (var rule in Read(db, "SELECT MemoryKey,AudienceJson FROM MemoryTypeKnowledgeAudiences",
+            r => (Key:r.GetString(0), Json:r.GetString(1))))
+            ValidateAudience($"MemoryTypeKnowledgeAudiences {rule.Key}", rule.Json);
+        foreach (var rule in Read(db, "SELECT OptionMemoryEffectId,AudienceJson FROM OptionMemoryEffectKnowledgeAudiences",
+            r => (Id:r.GetInt64(0), Json:r.GetString(1))))
+            ValidateAudience($"OptionMemoryEffectKnowledgeAudiences #{rule.Id}", rule.Json);
+
         // Phase 13D: reject broken expressions before a snapshot is published.
         foreach (var memoryRequirement in Read(db,
             "SELECT OptionId,ExpressionJson FROM OptionMemoryRequirements",
@@ -546,7 +632,8 @@ public static class ContentPublisher
                 var tree = MemoryConditionRules.Read(memoryRequirement.Json);
                 MemoryConditionRules.Validate(tree,
                     key => memoryMap.TryGetValue(key, out var type) && type.Active,
-                    characterIds.Contains, activeStatusKeys.Contains);
+                    characterIds.Contains, activeStatusKeys.Contains,
+                    key => traitMap.TryGetValue(key, out var trait) && trait.Active);
             }
             catch (Exception ex)
             {
@@ -564,14 +651,15 @@ public static class ContentPublisher
             SELECT Id, EncounterKey, Title, InteractionId, RecipientCharacterId,
                    InitiatorCharacterId, LaunchMode, RepetitionMode, Priority, IsActive,
                    ConditionJson, AnchorMemoryKey, AnchorActorRef,
-                   AnchorAffectedRef, AnchorKnowerRef FROM SpecialEncounters",
+                   AnchorAffectedRef, AnchorKnowerRef, AffectedRelationshipStatusKey FROM SpecialEncounters",
             r => (Id:r.GetInt64(0), Key:r.GetString(1), Title:r.GetString(2),
                 InteractionId:r.GetInt64(3), Recipient:NullableText(r,4),
                 Initiator:NullableText(r,5), Launch:r.GetString(6),
                 Repeat:r.GetString(7), Priority:r.GetInt32(8), Active:r.GetInt32(9)==1,
                 Json:NullableText(r,10), Anchor:NullableText(r,11),
                 AnchorActor:r.GetString(12), AnchorAffected:r.GetString(13),
-                AnchorKnower:r.GetString(14))))
+                AnchorKnower:r.GetString(14),
+                AffectedRelationship:NullableText(r,15))))
         {
             string location = $"SpecialEncounter {encounter.Key}";
             if (!Regex.IsMatch(encounter.Key, "^[A-Z][A-Z0-9_]{0,47}$"))
@@ -590,10 +678,16 @@ public static class ContentPublisher
                 encounter.Repeat is not ("ONCE_PER_PAIR" or "ONCE_PER_OCCURRENCE" or "REPEATABLE") ||
                 encounter.Priority is < 0 or > 1000)
                 report.Error(location, "Invalid launch, repetition or priority value.");
-            if (encounter.Repeat == "ONCE_PER_OCCURRENCE")
+            if (encounter.Repeat == "ONCE_PER_OCCURRENCE" && encounter.Anchor is null)
+                report.Error(location, "Per-occurrence mode requires an anchor memory type.");
+            if (encounter.AffectedRelationship is not null && encounter.Anchor is null)
+                report.Error(location, "Affected relationship requirement needs a memory anchor.");
+            if (encounter.AffectedRelationship is not null && !activeStatusKeys.Contains(encounter.AffectedRelationship))
+                report.Error(location, "Affected relationship status is unknown or inactive.");
+            if (encounter.Anchor is not null)
             {
-                if (encounter.Anchor is null || !memoryMap.TryGetValue(encounter.Anchor, out var anchorType) || !anchorType.Active)
-                    report.Error(location, "Per-occurrence mode requires an active anchor memory type.");
+                if (!memoryMap.TryGetValue(encounter.Anchor, out var anchorType) || !anchorType.Active)
+                    report.Error(location, "Anchor memory type must be active.");
                 else
                 {
                     try
@@ -606,13 +700,13 @@ public static class ContentPublisher
                         };
                         MemoryConditionRules.Validate(anchor,
                             key => memoryMap.TryGetValue(key, out var type) && type.Active,
-                            characterIds.Contains, activeStatusKeys.Contains);
+                            characterIds.Contains, activeStatusKeys.Contains,
+                    key => traitMap.TryGetValue(key, out var trait) && trait.Active);
                     }
                     catch (Exception ex) { report.Error(location, "Invalid anchor filter: " + ex.Message); }
                 }
             }
-            else if (encounter.Anchor is not null)
-                report.Error(location, "Unexpected anchor memory for non-occurrence mode.");
+
             if (encounter.Json is null)
             {
                 if (encounter.Active) report.Error(location, "Active encounter requires eligibility conditions.");
@@ -624,7 +718,8 @@ public static class ContentPublisher
                     var tree = MemoryConditionRules.Read(encounter.Json);
                     MemoryConditionRules.Validate(tree,
                         key => memoryMap.TryGetValue(key, out var type) && type.Active,
-                        characterIds.Contains, activeStatusKeys.Contains);
+                        characterIds.Contains, activeStatusKeys.Contains,
+                    key => traitMap.TryGetValue(key, out var trait) && trait.Active);
                 }
                 catch (Exception ex)
                 {
@@ -669,7 +764,8 @@ public static class ContentPublisher
                     var tree = MemoryConditionRules.Read(topic.Json);
                     MemoryConditionRules.Validate(tree,
                         key => memoryMap.TryGetValue(key, out var type) && type.Active,
-                        characterIds.Contains, activeStatusKeys.Contains);
+                        characterIds.Contains, activeStatusKeys.Contains,
+                    key => traitMap.TryGetValue(key, out var trait) && trait.Active);
                 }
                 catch (Exception ex)
                 {

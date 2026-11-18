@@ -60,13 +60,46 @@ public partial class MainWindow
         _designerLoading = true;
         try
         {
-            var items = _designer.Interactions();
+            var all = _designer.Interactions();
+            var items = FilterInteractions(all);
+            // Saving a new/renamed interaction should always reveal it, even if
+            // the current search no longer matches the saved title/key.
+            if (selectedId.HasValue && items.All(x => x.Id != selectedId.Value))
+            {
+                InteractionSearchBox.Text = "";
+                items = all;
+            }
             InteractionList.ItemsSource = items;
-            InteractionList.SelectedItem = items.FirstOrDefault(x => x.Id == selectedId) ?? items.FirstOrDefault();
+            int? wanted = selectedId ?? _activeInteraction?.Id;
+            InteractionList.SelectedItem = items.FirstOrDefault(x => x.Id == wanted) ?? items.FirstOrDefault();
             PopulateInteraction(InteractionList.SelectedItem as Interaction);
         }
         finally { _designerLoading = false; _designerDirty = false; }
     }
+    private List<Interaction> FilterInteractions(List<Interaction> all)
+    {
+        string query = InteractionSearchBox.Text.Trim();
+        return query.Length == 0 ? all : all.Where(x =>
+            x.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+            x.Key.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private void InteractionSearch_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (_designerLoading || _designer is null) return;
+        // Filtering the browser must not discard unsaved edits or switch the
+        // actual interaction. A hidden selection remains editable and is
+        // restored when its search match reappears.
+        _designerLoading = true;
+        try
+        {
+            var filtered = FilterInteractions(_designer.Interactions());
+            InteractionList.ItemsSource = filtered;
+            InteractionList.SelectedItem = filtered.FirstOrDefault(x => x.Id == _activeInteraction?.Id);
+        }
+        finally { _designerLoading = false; }
+    }
+
     private void PopulateInteraction(Interaction? interaction)
     {
         _activeInteraction = interaction;
@@ -183,6 +216,7 @@ public partial class MainWindow
     private void NewInteraction_Click(object sender, RoutedEventArgs e)
     {
         if (_designer is null || !DesignerCanSwitch()) return;
+        InteractionEditorExpander.IsExpanded = true;
         _designerLoading = true;
         try
         {

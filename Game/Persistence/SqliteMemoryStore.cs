@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Microsoft.Data.Sqlite;
+using SoulCaliber.Shared;
 
 namespace SoulCaliber.Dialogue;
 
@@ -25,6 +26,7 @@ public sealed class SqliteMemoryStore
 	private readonly Dictionary<string, MemoryTypeInfo> _types =
 		new(StringComparer.OrdinalIgnoreCase);
 	private readonly HashSet<string> _characters = new(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, KnowledgeAudienceSpec> _customTypeAudiences = new(StringComparer.OrdinalIgnoreCase);
 	private readonly SqliteRelationshipStatusStore _statuses;
 
 	public SqliteMemoryStore(SqliteRelationshipStatusStore statuses)
@@ -57,6 +59,18 @@ public sealed class SqliteMemoryStore
 					_types.Add(memory.Key, memory);
 				}
 			}
+			using (var existsAudience = content.CreateCommand())
+			{
+				existsAudience.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name='MemoryTypeKnowledgeAudiences'";
+				if (existsAudience.ExecuteScalar() is not null)
+				{
+					using var command = content.CreateCommand();
+					command.CommandText = "SELECT MemoryKey,AudienceJson FROM MemoryTypeKnowledgeAudiences";
+					using var reader = command.ExecuteReader();
+					while (reader.Read())
+						_customTypeAudiences.Add(Key(reader.GetString(0)), KnowledgeAudienceSpec.Parse(reader.GetString(1)));
+				}
+			}
 			using (var command = content.CreateCommand())
 			{
 				command.CommandText = "SELECT Id FROM Characters";
@@ -65,36 +79,7 @@ public sealed class SqliteMemoryStore
 			}
 		}
 
-		using var save = OpenSave();
-		using var create = save.CreateCommand();
-		create.CommandText = @"
-            CREATE TABLE IF NOT EXISTS SavedMemoryOccurrences (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                MemoryKey TEXT NOT NULL COLLATE NOCASE,
-                ActorCharacterId TEXT NOT NULL COLLATE NOCASE,
-                PlayerCharacterId TEXT NOT NULL COLLATE NOCASE,
-                Severity TEXT NOT NULL CHECK(Severity IN ('MAJOR','MINOR')),
-                KnowledgeLevel TEXT NOT NULL CHECK(KnowledgeLevel IN ('QUIET','ALLIES','GLOBAL')),
-                OccurredUtc TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS IX_SavedMemoryOccurrences_MemoryKeyActor
-                ON SavedMemoryOccurrences(MemoryKey, ActorCharacterId);
-            CREATE TABLE IF NOT EXISTS SavedMemoryAffectedCharacters (
-                MemoryId INTEGER NOT NULL REFERENCES SavedMemoryOccurrences(Id) ON DELETE CASCADE,
-                CharacterId TEXT NOT NULL COLLATE NOCASE,
-                PRIMARY KEY (MemoryId,CharacterId)
-            ) WITHOUT ROWID;
-            CREATE INDEX IF NOT EXISTS IX_SavedMemoryAffectedCharacters_Character
-                ON SavedMemoryAffectedCharacters(CharacterId,MemoryId);
-            CREATE TABLE IF NOT EXISTS SavedMemoryKnowledge (
-                MemoryId INTEGER NOT NULL REFERENCES SavedMemoryOccurrences(Id) ON DELETE CASCADE,
-                CharacterId TEXT NOT NULL COLLATE NOCASE,
-                PRIMARY KEY (MemoryId,CharacterId)
-            ) WITHOUT ROWID;
-            CREATE INDEX IF NOT EXISTS IX_SavedMemoryKnowledge_Character
-                ON SavedMemoryKnowledge(CharacterId,MemoryId);
-			";
-		create.ExecuteNonQuery();
+		// SaveGameSchemaManager creates and validates the save tables before use.
 	}
 
 	public IReadOnlyList<MemoryTypeInfo> Types => _types.Values.OrderBy(x => x.Key).ToList();
@@ -126,12 +111,12 @@ public sealed class SqliteMemoryStore
     /// </summary>
     public MemoryOccurrence Record(string memoryKey, string actorCharacterId,
         string playerCharacterId, IReadOnlyCollection<string> affectedCharacterIds,
-        string? severityOverride = null, string? knowledgeOverride = null)
+        string? severityOverride = null, string? knowledgeOverride = null, string? customAudienceJson = null)
     {
         using var save = OpenSave();
         using var transaction = save.BeginTransaction();
         var occurrence = RecordInTransaction(save, transaction, memoryKey, actorCharacterId,
-            playerCharacterId, affectedCharacterIds, severityOverride, knowledgeOverride);
+            playerCharacterId, affectedCharacterIds, severityOverride, knowledgeOverride, customAudienceJson);
         transaction.Commit();
         return occurrence;
     }
@@ -145,7 +130,7 @@ public sealed class SqliteMemoryStore
 	internal MemoryOccurrence RecordInTransaction(SqliteConnection save, SqliteTransaction transaction,
 		string memoryKey, string actorCharacterId, string playerCharacterId,
 		IReadOnlyCollection<string> affectedCharacterIds,
-		string? severityOverride = null, string? knowledgeOverride = null)
+		string? severityOverride = null, string? knowledgeOverride = null, string? customAudienceJson = null)
 	{
 		if (save is null) throw new ArgumentNullException(nameof(save));
 		if (transaction is null) throw new ArgumentNullException(nameof(transaction));
@@ -160,14 +145,26 @@ public sealed class SqliteMemoryStore
 		foreach (string affectedId in affected) RequireCharacter(affectedId);
 
 		string severity = severityOverride is null ? definition.DefaultSeverity : Key(severityOverride);
-		string knowledge = knowledgeOverride is null ? definition.DefaultKnowledge : Key(knowledgeOverride);
+		KnowledgeAudienceSpec? customAudience = customAudienceJson is not null
+			? KnowledgeAudienceSpec.Parse(customAudienceJson)
+			: knowledgeOverride is null && _customTypeAudiences.TryGetValue(key, out var typeAudience)
+				? typeAudience : null;
+		string knowledge = customAudience is not null ? "CUSTOM"
+			: knowledgeOverride is null ? definition.DefaultKnowledge : Key(knowledgeOverride);
 		if (severity is not ("MAJOR" or "MINOR"))
 			throw new ArgumentException("Memory severity must be MAJOR or MINOR.", nameof(severityOverride));
-		if (knowledge is not ("QUIET" or "ALLIES" or "GLOBAL"))
-			throw new ArgumentException("Knowledge must be QUIET, ALLIES or GLOBAL.", nameof(knowledgeOverride));
+		if (knowledge is not ("QUIET" or "ALLIES" or "GLOBAL" or "CUSTOM"))
+			throw new ArgumentException("Knowledge must be QUIET, ALLIES, GLOBAL or CUSTOM.", nameof(knowledgeOverride));
 
 		var knowers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { player };
 		knowers.UnionWith(affected);
+		if (knowledge == "CUSTOM")
+		{
+			knowers = KnowledgeAudienceRules.Resolve(customAudience!, actor, affected, _characters,
+				(source, candidate) => _statuses.GetInTransaction(save, transaction, source, candidate))
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			foreach (string knower in knowers) RequireCharacter(knower);
+		}
 		if (knowledge == "ALLIES")
 		{
 			// Outgoing ALLY relationships are directional, and pending status effects
@@ -191,7 +188,9 @@ public sealed class SqliteMemoryStore
 			Add(insert, "$actor", actor);
 			Add(insert, "$player", player);
 			Add(insert, "$severity", severity);
-			Add(insert, "$knowledge", knowledge);
+			// Preset column stays backward compatible; custom mode is recorded
+			// separately, while individual knowledge rows remain authoritative.
+			Add(insert, "$knowledge", knowledge == "CUSTOM" ? "QUIET" : knowledge);
 			Add(insert, "$utc", now);
 			insert.ExecuteNonQuery();
 		}
@@ -201,6 +200,14 @@ public sealed class SqliteMemoryStore
 			getId.Transaction = transaction;
 			getId.CommandText = "SELECT last_insert_rowid()";
 			id = (long)getId.ExecuteScalar()!;
+		}
+		if (knowledge == "CUSTOM")
+		{
+			using var mode = save.CreateCommand();
+			mode.Transaction = transaction;
+			mode.CommandText = "INSERT INTO SavedMemoryAudienceModes(MemoryId,Mode) VALUES($id,'CUSTOM')";
+			Add(mode, "$id", id);
+			mode.ExecuteNonQuery();
 		}
 		foreach (string target in affected)
 		{
@@ -241,8 +248,9 @@ public sealed class SqliteMemoryStore
 		{
 			query.CommandText = @"
                 SELECT m.Id,m.MemoryKey,m.ActorCharacterId,m.PlayerCharacterId,
-                       m.Severity,m.KnowledgeLevel,m.OccurredUtc
+                       m.Severity,CASE WHEN am.Mode='CUSTOM' THEN 'CUSTOM' ELSE m.KnowledgeLevel END,m.OccurredUtc
                 FROM SavedMemoryOccurrences m
+                LEFT JOIN SavedMemoryAudienceModes am ON am.MemoryId=m.Id
                 WHERE ($memory IS NULL OR m.MemoryKey=$memory)
                   AND ($actor IS NULL OR m.ActorCharacterId=$actor)
                   AND ($affected IS NULL OR EXISTS (
@@ -277,6 +285,40 @@ public sealed class SqliteMemoryStore
 				affectedCharacters));
 		}
 		return results;
+	}
+
+	/// <summary>Load only the selected historical occurrence, not the newest incident of this type.</summary>
+	public MemoryOccurrence? FindById(long occurrenceId)
+	{
+		if (occurrenceId <= 0) throw new ArgumentOutOfRangeException(nameof(occurrenceId));
+		using var save = OpenSave();
+		string key, actor, player, severity, knowledge, utc;
+		using (var query = save.CreateCommand())
+		{
+			query.CommandText = @"
+                SELECT m.MemoryKey,m.ActorCharacterId,m.PlayerCharacterId,m.Severity,
+                       CASE WHEN am.Mode='CUSTOM' THEN 'CUSTOM' ELSE m.KnowledgeLevel END,
+                       m.OccurredUtc
+                FROM SavedMemoryOccurrences m
+                LEFT JOIN SavedMemoryAudienceModes am ON am.MemoryId=m.Id
+				WHERE m.Id=$id";
+			Add(query, "$id", occurrenceId);
+			using var reader = query.ExecuteReader();
+			if (!reader.Read()) return null;
+			key = reader.GetString(0); actor = reader.GetString(1);
+			player = reader.GetString(2); severity = reader.GetString(3);
+			knowledge = reader.GetString(4); utc = reader.GetString(5);
+		}
+		var affected = new List<string>();
+		using (var query = save.CreateCommand())
+		{
+			query.CommandText = "SELECT CharacterId FROM SavedMemoryAffectedCharacters WHERE MemoryId=$id ORDER BY CharacterId";
+			Add(query, "$id", occurrenceId);
+			using var reader = query.ExecuteReader();
+			while (reader.Read()) affected.Add(reader.GetString(0));
+		}
+		return new MemoryOccurrence(occurrenceId, key, actor, player, severity, knowledge,
+			DateTimeOffset.Parse(utc, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind), affected);
 	}
 
 	/// <summary>Efficient COUNT for dialogue conditions; does not materialise occurrences.</summary>
